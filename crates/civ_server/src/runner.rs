@@ -1,25 +1,44 @@
+use log::error;
 use log::info;
 use std::{
-    sync::{Arc, RwLock, RwLockWriteGuard},
+    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
     thread,
     time::{Duration, Instant},
 };
 
-use crate::state::State;
+use crate::{context::Context, state::State};
 
 pub struct Runner {
     tick_base_period: u64,
     lag: Duration,
+    context: Arc<RwLock<Context>>,
     state: Arc<RwLock<State>>,
 }
 
 impl Runner {
-    pub fn new(tick_base_period: u64, state: Arc<RwLock<State>>) -> Self {
+    pub fn new(
+        tick_base_period: u64,
+        context: Arc<RwLock<Context>>,
+        state: Arc<RwLock<State>>,
+    ) -> Self {
         Self {
             tick_base_period,
             lag: Duration::ZERO,
+            context,
             state,
         }
+    }
+
+    fn context(&self) -> RwLockReadGuard<Context> {
+        self.context
+            .read()
+            .expect("Context must be readable or we crash")
+    }
+
+    fn context_mut(&self) -> RwLockWriteGuard<Context> {
+        self.context
+            .write()
+            .expect("Context must be writeable or we crash")
     }
 
     fn state_mut(&self) -> RwLockWriteGuard<State> {
@@ -29,7 +48,7 @@ impl Runner {
 
     pub fn run(&mut self) {
         self.start_stats();
-        loop {
+        while !self.context().stop_is_required() {
             self.tick();
             self.state_mut().increment();
         }
@@ -53,16 +72,32 @@ impl Runner {
     }
 
     fn start_stats(&self) {
+        let context = Arc::clone(&self.context);
         let state = Arc::clone(&self.state);
         let sleet_time = Duration::from_secs(1);
 
-        thread::spawn(move || loop {
-            let previous_frame_i = *state.read().unwrap().frame_i();
-            thread::sleep(sleet_time);
+        thread::spawn(move || {
+            while !context
+                .read()
+                .expect("Context must be readable or we crash")
+                .stop_is_required()
+            {
+                let previous_frame_i = *state.read().unwrap().frame_i();
+                thread::sleep(sleet_time);
 
-            // FIXME: stop all by Context
-            let frame_count = state.read().unwrap().frame_i().0 - previous_frame_i.0;
-            info!("{} tick/s", frame_count);
+                let frame_count = match state.read() {
+                    Ok(state) => state.frame_i().0 - previous_frame_i.0,
+                    Err(error) => {
+                        error!("Error from runner stats: {}", error);
+                        context
+                            .write()
+                            .expect("Context must be writeable or we crash")
+                            .require_stop();
+                        break;
+                    }
+                };
+                info!("{} tick/s", frame_count);
+            }
         });
     }
 }
