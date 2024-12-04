@@ -1,3 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["crates/civ_server"]
+
+[workspace.dependencies]
+env_logger = "0.11.5"
+log = "0.4.22"

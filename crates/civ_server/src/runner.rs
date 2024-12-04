@@ -1,3 +1,4 @@
+use log::info;
 use std::{
     sync::{Arc, RwLock, RwLockWriteGuard},
     thread,
@@ -61,7 +62,7 @@ impl Runner {
 
             // FIXME: stop all by Context
             let frame_count = state.read().unwrap().frame_i().0 - previous_frame_i.0;
-            println!("{} tick/s", frame_count);
+            info!("{} tick/s", frame_count);
         });
     }
 }
