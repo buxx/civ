@@ -1,9 +1,11 @@
 use std::ops::{Add, AddAssign};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct FrameI(pub u64);
+pub const GAME_FRAMES_PER_SECOND: u64 = 10;
 
-impl Add<u64> for FrameI {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub struct GameFrame(pub u64);
+
+impl Add<u64> for GameFrame {
     type Output = Self;
 
     fn add(self, rhs: u64) -> Self::Output {
@@ -11,7 +13,7 @@ impl Add<u64> for FrameI {
     }
 }
 
-impl AddAssign for FrameI {
+impl AddAssign for GameFrame {
     fn add_assign(&mut self, rhs: Self) {
         self.0 += rhs.0
     }
@@ -19,15 +21,15 @@ impl AddAssign for FrameI {
 
 #[derive(Default)]
 pub struct State {
-    frame_i: FrameI,
+    frame_i: GameFrame,
 }
 
 impl State {
-    pub fn frame_i(&self) -> &FrameI {
+    pub fn frame(&self) -> &GameFrame {
         &self.frame_i
     }
 
     pub fn increment(&mut self) {
-        self.frame_i += FrameI(1);
+        self.frame_i += GameFrame(1);
     }
 }

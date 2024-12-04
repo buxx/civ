@@ -6,13 +6,17 @@ use std::{
     time::{Duration, Instant},
 };
 
+use crate::state::GAME_FRAMES_PER_SECOND;
 use crate::{context::Context, state::State};
 
 pub struct Runner {
-    tick_base_period: u64,
-    lag: Duration,
     context: Arc<RwLock<Context>>,
     state: Arc<RwLock<State>>,
+    tick_base_period: u64,
+    lag: Duration,
+    ticks_since_last_increment: u64,
+    ticks_since_last_stats: u64,
+    last_stat: Instant,
 }
 
 impl Runner {
@@ -22,10 +26,13 @@ impl Runner {
         state: Arc<RwLock<State>>,
     ) -> Self {
         Self {
-            tick_base_period,
-            lag: Duration::ZERO,
             context,
             state,
+            tick_base_period,
+            lag: Duration::ZERO,
+            ticks_since_last_increment: 0,
+            ticks_since_last_stats: 0,
+            last_stat: Instant::now(),
         }
     }
 
@@ -41,16 +48,40 @@ impl Runner {
             .expect("Context must be writeable or we crash")
     }
 
+    fn state(&self) -> RwLockReadGuard<State> {
+        // FIXME: stop all by Context
+        self.state.read().unwrap()
+    }
+
     fn state_mut(&self) -> RwLockWriteGuard<State> {
         // FIXME: stop all by Context
         self.state.write().unwrap()
     }
 
     pub fn run(&mut self) {
-        self.start_stats();
         while !self.context().stop_is_required() {
             self.tick();
-            self.state_mut().increment();
+
+            // Game frame increment management
+            let increment_each = self.tick_base_period / GAME_FRAMES_PER_SECOND;
+            if self.ticks_since_last_increment >= increment_each {
+                self.ticks_since_last_increment = 0;
+                self.state_mut().increment();
+            }
+            self.ticks_since_last_increment += 1;
+
+            // Stats print management
+            if Instant::now().duration_since(self.last_stat).as_millis() >= 1000 {
+                info!(
+                    "{} tick/s, frame {}",
+                    self.ticks_since_last_stats,
+                    self.state().frame().0
+                );
+
+                self.ticks_since_last_stats = 0;
+                self.last_stat = Instant::now();
+            }
+            self.ticks_since_last_stats += 1;
         }
     }
 
@@ -69,35 +100,5 @@ impl Runner {
         let can_catch_lag = self.lag.min(need_sleep);
         self.lag -= can_catch_lag;
         thread::sleep(need_sleep - can_catch_lag);
-    }
-
-    fn start_stats(&self) {
-        let context = Arc::clone(&self.context);
-        let state = Arc::clone(&self.state);
-        let sleet_time = Duration::from_secs(1);
-
-        thread::spawn(move || {
-            while !context
-                .read()
-                .expect("Context must be readable or we crash")
-                .stop_is_required()
-            {
-                let previous_frame_i = *state.read().unwrap().frame_i();
-                thread::sleep(sleet_time);
-
-                let frame_count = match state.read() {
-                    Ok(state) => state.frame_i().0 - previous_frame_i.0,
-                    Err(error) => {
-                        error!("Error from runner stats: {}", error);
-                        context
-                            .write()
-                            .expect("Context must be writeable or we crash")
-                            .require_stop();
-                        break;
-                    }
-                };
-                info!("{} tick/s", frame_count);
-            }
-        });
     }
 }
