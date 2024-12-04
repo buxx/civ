@@ -1,4 +1,3 @@
-use log::error;
 use log::info;
 use std::{
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
@@ -60,35 +59,38 @@ impl Runner {
 
     pub fn run(&mut self) {
         while !self.context().stop_is_required() {
+            let tick_start = Instant::now();
             self.tick();
-
-            // Game frame increment management
-            let increment_each = self.tick_base_period / GAME_FRAMES_PER_SECOND;
-            if self.ticks_since_last_increment >= increment_each {
-                self.ticks_since_last_increment = 0;
-                self.state_mut().increment();
-            }
-            self.ticks_since_last_increment += 1;
-
-            // Stats print management
-            if Instant::now().duration_since(self.last_stat).as_millis() >= 1000 {
-                info!(
-                    "{} tick/s, frame {}",
-                    self.ticks_since_last_stats,
-                    self.state().frame().0
-                );
-
-                self.ticks_since_last_stats = 0;
-                self.last_stat = Instant::now();
-            }
-            self.ticks_since_last_stats += 1;
+            self.fps_target(tick_start);
+            self.game_frame_increment();
+            self.stats_log();
         }
     }
 
-    fn tick(&mut self) {
-        let tick_start = Instant::now();
+    fn game_frame_increment(&mut self) {
+        let increment_each = self.tick_base_period / GAME_FRAMES_PER_SECOND;
+        if self.ticks_since_last_increment >= increment_each {
+            self.ticks_since_last_increment = 0;
+            self.state_mut().increment();
+        }
+        self.ticks_since_last_increment += 1;
+    }
 
-        // FPS target
+    fn stats_log(&mut self) {
+        if Instant::now().duration_since(self.last_stat).as_millis() >= 1000 {
+            info!(
+                "{} tick/s, frame {}",
+                self.ticks_since_last_stats,
+                self.state().frame().0
+            );
+
+            self.ticks_since_last_stats = 0;
+            self.last_stat = Instant::now();
+        }
+        self.ticks_since_last_stats += 1;
+    }
+
+    fn fps_target(&mut self, tick_start: Instant) {
         let tick_duration = Instant::now() - tick_start;
         let sleep_target_ns: u64 = 1_000_000_000 / self.tick_base_period;
         let sleep_target = Duration::from_nanos(sleep_target_ns);
@@ -101,4 +103,6 @@ impl Runner {
         self.lag -= can_catch_lag;
         thread::sleep(need_sleep - can_catch_lag);
     }
+
+    fn tick(&mut self) {}
 }

@@ -4,6 +4,7 @@ use context::Context;
 use runner::Runner;
 use state::State;
 
+mod action;
 mod context;
 mod runner;
 mod state;
