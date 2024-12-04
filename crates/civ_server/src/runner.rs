@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::state::GAME_FRAMES_PER_SECOND;
+use crate::{action::Effect, state::GAME_FRAMES_PER_SECOND};
 use crate::{context::Context, state::State};
 
 pub struct Runner {
@@ -60,7 +60,8 @@ impl Runner {
     pub fn run(&mut self) {
         while !self.context().stop_is_required() {
             let tick_start = Instant::now();
-            self.tick();
+            let effects = self.tick();
+            self.apply_effects(effects);
             self.fps_target(tick_start);
             self.game_frame_increment();
             self.stats_log();
@@ -104,5 +105,21 @@ impl Runner {
         thread::sleep(need_sleep - can_catch_lag);
     }
 
-    fn tick(&mut self) {}
+    fn tick(&mut self) -> Vec<Effect> {
+        let state = self.state();
+        let frame = *state.frame();
+        let mut effects = vec![];
+        for action in state.actions() {
+            let effects_ = action.tick(frame);
+            effects.extend(effects_);
+        }
+        effects
+    }
+
+    fn apply_effects(&mut self, effects: Vec<Effect>) {
+        let mut state = self.state_mut();
+        for effect in effects {
+            state.apply(effect)
+        }
+    }
 }
