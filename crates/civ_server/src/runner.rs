@@ -51,13 +51,13 @@ impl Runner {
     }
 
     fn state(&self) -> RwLockReadGuard<State> {
-        // FIXME: stop all by Context
-        self.state.read().unwrap()
+        self.state.read().expect("Assume state is always readable")
     }
 
     fn state_mut(&self) -> RwLockWriteGuard<State> {
-        // FIXME: stop all by Context
-        self.state.write().unwrap()
+        self.state
+            .write()
+            .expect("Assume state is always writeable")
     }
 
     pub fn run(&mut self) {
@@ -108,7 +108,6 @@ impl Runner {
         thread::sleep(need_sleep - can_catch_lag);
     }
 
-    // FIXME: thread pool (take from neoroll)
     fn tick(&mut self) -> Vec<Effect> {
         let workers_count = num_cpus::get();
         let (tx, rx): (Sender<Vec<Effect>>, Receiver<Vec<Effect>>) = unbounded();
@@ -136,7 +135,6 @@ impl Runner {
             let tx = tx.clone();
 
             scope.spawn(move |_| {
-                // FIXME
                 let state = state.read().expect("State must be readable");
                 let actions = state.actions();
                 for action in &actions[start..end] {
