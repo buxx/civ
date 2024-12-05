@@ -10,3 +10,6 @@ path = "src/main.rs"
 [dependencies]
 env_logger.workspace = true
 log.workspace = true
+rayon.workspace = true
+num_cpus.workspace = true
+crossbeam.workspace = true

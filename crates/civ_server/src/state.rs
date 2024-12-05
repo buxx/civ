@@ -35,7 +35,7 @@ impl State {
         self.frame_i += GameFrame(1);
     }
 
-    pub fn actions(&self) -> Vec<Box<dyn Action>> {
+    pub fn actions(&self) -> Vec<&Box<dyn Action>> {
         vec![]
     }
 

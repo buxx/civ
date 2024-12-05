@@ -1,11 +1,14 @@
-use log::info;
+use crossbeam::channel::{unbounded, Receiver, Sender};
+use log::{error, info};
+use rayon::{Scope, ThreadPoolBuilder};
 use std::{
+    error::Error,
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
     thread,
     time::{Duration, Instant},
 };
 
-use crate::{action::Effect, state::GAME_FRAMES_PER_SECOND};
+use crate::{action::Effect, state::GAME_FRAMES_PER_SECOND, utils::collection::slices};
 use crate::{context::Context, state::State};
 
 pub struct Runner {
@@ -105,15 +108,46 @@ impl Runner {
         thread::sleep(need_sleep - can_catch_lag);
     }
 
+    // FIXME: thread pool (take from neoroll)
     fn tick(&mut self) -> Vec<Effect> {
+        let workers_count = num_cpus::get();
+        let (tx, rx): (Sender<Vec<Effect>>, Receiver<Vec<Effect>>) = unbounded();
+        ThreadPoolBuilder::new()
+            .num_threads(workers_count)
+            .build()
+            .expect("Thread pool build must be stable")
+            .scope(|scope| self.tick_actions_chunk(tx, scope, workers_count));
+
+        rx.try_iter()
+            .collect::<Vec<Vec<Effect>>>()
+            .into_iter()
+            .flatten()
+            .collect()
+    }
+
+    fn tick_actions_chunk(&self, tx: Sender<Vec<Effect>>, scope: &Scope<'_>, workers_count: usize) {
         let state = self.state();
         let frame = *state.frame();
-        let mut effects = vec![];
-        for action in state.actions() {
-            let effects_ = action.tick(frame);
-            effects.extend(effects_);
+        let actions_count = state.actions().len();
+        drop(state);
+
+        for (start, end) in slices(actions_count, workers_count) {
+            let state = Arc::clone(&self.state);
+            let tx = tx.clone();
+
+            scope.spawn(move |_| {
+                // FIXME
+                let state = state.read().expect("State must be readable");
+                let actions = state.actions();
+                for action in &actions[start..end] {
+                    let effects_ = action.tick(frame);
+                    if tx.send(effects_).is_err() {
+                        error!("Channel closed in actions scope: abort");
+                        return;
+                    }
+                }
+            })
         }
-        effects
     }
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
