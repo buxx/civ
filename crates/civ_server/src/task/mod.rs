@@ -17,6 +17,7 @@ pub trait Task {
     }
     fn tick_(&self, frame: GameFrame) -> Vec<Effect>;
     fn context(&self) -> &TaskContext;
+    fn type_(&self) -> TaskType;
 }
 
 #[derive(Builder)]
@@ -42,6 +43,16 @@ impl TaskContext {
     pub fn end(&self) -> GameFrame {
         self.end
     }
+}
+
+#[derive(Builder, Clone)]
+pub struct PhysicalContext {
+    x: u64,
+    y: u64,
+}
+
+pub enum TaskType {
+    Physical(PhysicalContext),
 }
 
 pub enum Effect {

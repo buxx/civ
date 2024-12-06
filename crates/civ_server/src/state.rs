@@ -2,7 +2,7 @@ use std::ops::{Add, AddAssign};
 
 use uuid::Uuid;
 
-use crate::task::{settle::Settle, Effect, Task, TaskContext};
+use crate::task::{settle::Settle, Effect, PhysicalContext, Task, TaskContext};
 
 pub const GAME_FRAMES_PER_SECOND: u64 = 10;
 
@@ -49,6 +49,7 @@ impl State {
                                 .end(self.frame_i + GAME_FRAMES_PER_SECOND * 5)
                                 .build(),
                         )
+                        .physic(PhysicalContext::builder().x(0).y(0).build())
                         .build(),
                 ))
             }
