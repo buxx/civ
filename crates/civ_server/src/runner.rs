@@ -2,8 +2,7 @@ use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{error, info};
 use rayon::{Scope, ThreadPoolBuilder};
 use std::{
-    error::Error,
-    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    sync::{Arc, Mutex, MutexGuard},
     thread,
     time::{Duration, Instant},
 };
@@ -12,8 +11,8 @@ use crate::{action::Effect, state::GAME_FRAMES_PER_SECOND, utils::collection::sl
 use crate::{context::Context, state::State};
 
 pub struct Runner {
-    context: Arc<RwLock<Context>>,
-    state: Arc<RwLock<State>>,
+    context: Mutex<Context>,
+    state: Mutex<State>,
     tick_base_period: u64,
     lag: Duration,
     ticks_since_last_increment: u64,
@@ -22,11 +21,7 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn new(
-        tick_base_period: u64,
-        context: Arc<RwLock<Context>>,
-        state: Arc<RwLock<State>>,
-    ) -> Self {
+    pub fn new(tick_base_period: u64, context: Mutex<Context>, state: Mutex<State>) -> Self {
         Self {
             context,
             state,
@@ -38,26 +33,16 @@ impl Runner {
         }
     }
 
-    fn context(&self) -> RwLockReadGuard<Context> {
+    fn context(&self) -> MutexGuard<Context> {
         self.context
-            .read()
-            .expect("Context must be readable or we crash")
+            .lock()
+            .expect("Assume context is always accessible")
     }
 
-    fn context_mut(&self) -> RwLockWriteGuard<Context> {
-        self.context
-            .write()
-            .expect("Context must be writeable or we crash")
-    }
-
-    fn state(&self) -> RwLockReadGuard<State> {
-        self.state.read().expect("Assume state is always readable")
-    }
-
-    fn state_mut(&self) -> RwLockWriteGuard<State> {
+    fn state(&self) -> MutexGuard<State> {
         self.state
-            .write()
-            .expect("Assume state is always writeable")
+            .lock()
+            .expect("Assume state is always accessible")
     }
 
     pub fn run(&mut self) {
@@ -75,7 +60,7 @@ impl Runner {
         let increment_each = self.tick_base_period / GAME_FRAMES_PER_SECOND;
         if self.ticks_since_last_increment >= increment_each {
             self.ticks_since_last_increment = 0;
-            self.state_mut().increment();
+            self.state().increment();
         }
         self.ticks_since_last_increment += 1;
     }
@@ -124,18 +109,24 @@ impl Runner {
             .collect()
     }
 
-    fn tick_actions_chunk(&self, tx: Sender<Vec<Effect>>, scope: &Scope<'_>, workers_count: usize) {
+    fn tick_actions_chunk<'a>(
+        &'a self,
+        tx: Sender<Vec<Effect>>,
+        scope: &Scope<'a>,
+        workers_count: usize,
+    ) {
         let state = self.state();
         let frame = *state.frame();
         let actions_count = state.actions().len();
         drop(state);
 
+        let state = Arc::new(&self.state);
         for (start, end) in slices(actions_count, workers_count) {
-            let state = Arc::clone(&self.state);
+            let state = Arc::clone(&state);
             let tx = tx.clone();
 
             scope.spawn(move |_| {
-                let state = state.read().expect("State must be readable");
+                let state = state.lock().expect("Assume state is always accessible");
                 let actions = state.actions();
                 for action in &actions[start..end] {
                     let effects_ = action.tick(frame);
@@ -149,7 +140,7 @@ impl Runner {
     }
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
-        let mut state = self.state_mut();
+        let mut state = self.state();
         for effect in effects {
             state.apply(effect)
         }

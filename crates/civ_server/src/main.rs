@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Mutex;
 
 use context::Context;
 use runner::Runner;
@@ -16,8 +16,8 @@ fn main() {
     let env = env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info");
     env_logger::init_from_env(env);
 
-    let context = Arc::new(RwLock::new(Context::new()));
-    let state = Arc::new(RwLock::new(State::default()));
+    let context = Mutex::new(Context::new());
+    let state = Mutex::new(State::default());
     let mut runner = Runner::new(TICK_BASE_PERIOD, context, state);
     runner.run();
 }

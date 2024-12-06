@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign};
 
-use crate::action::{Action, Effect};
+use crate::action::{settle::Settle, Action, Effect};
 
 pub const GAME_FRAMES_PER_SECOND: u64 = 10;
 
@@ -24,6 +24,7 @@ impl AddAssign for GameFrame {
 #[derive(Default)]
 pub struct State {
     frame_i: GameFrame,
+    actions: Vec<Box<dyn Action + Send>>,
 }
 
 impl State {
@@ -33,6 +34,11 @@ impl State {
 
     pub fn increment(&mut self) {
         self.frame_i += GameFrame(1);
+
+        // HACK
+        if self.frame_i.0 == 19 {
+            self.actions.push(Box::new(Settle::new()))
+        }
     }
 
     pub fn actions(&self) -> Vec<&Box<dyn Action>> {
