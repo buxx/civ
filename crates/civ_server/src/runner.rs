@@ -66,11 +66,16 @@ impl Runner {
     }
 
     fn stats_log(&mut self) {
+        let state = self.state();
+        let actions_length = state.actions().len();
+        drop(state);
+
         if Instant::now().duration_since(self.last_stat).as_millis() >= 1000 {
             info!(
-                "{} tick/s, frame {}",
+                "⏰{} 🌍{} 🎯{}",
                 self.ticks_since_last_stats,
-                self.state().frame().0
+                self.state().frame().0,
+                actions_length,
             );
 
             self.ticks_since_last_stats = 0;
@@ -140,9 +145,6 @@ impl Runner {
     }
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
-        let mut state = self.state();
-        for effect in effects {
-            state.apply(effect)
-        }
+        self.state().apply(effects)
     }
 }
