@@ -7,8 +7,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{action::Effect, state::GAME_FRAMES_PER_SECOND, utils::collection::slices};
 use crate::{context::Context, state::State};
+use crate::{state::GAME_FRAMES_PER_SECOND, task::Effect, utils::collection::slices};
 
 pub struct Runner {
     context: Mutex<Context>,
@@ -67,7 +67,7 @@ impl Runner {
 
     fn stats_log(&mut self) {
         let state = self.state();
-        let actions_length = state.actions().len();
+        let tasks_length = state.tasks().len();
         drop(state);
 
         if Instant::now().duration_since(self.last_stat).as_millis() >= 1000 {
@@ -75,7 +75,7 @@ impl Runner {
                 "⏰{} 🌍{} 🎯{}",
                 self.ticks_since_last_stats,
                 self.state().frame().0,
-                actions_length,
+                tasks_length,
             );
 
             self.ticks_since_last_stats = 0;
@@ -105,7 +105,7 @@ impl Runner {
             .num_threads(workers_count)
             .build()
             .expect("Thread pool build must be stable")
-            .scope(|scope| self.tick_actions_chunk(tx, scope, workers_count));
+            .scope(|scope| self.tick_tasks_chunk(tx, scope, workers_count));
 
         rx.try_iter()
             .collect::<Vec<Vec<Effect>>>()
@@ -114,7 +114,7 @@ impl Runner {
             .collect()
     }
 
-    fn tick_actions_chunk<'a>(
+    fn tick_tasks_chunk<'a>(
         &'a self,
         tx: Sender<Vec<Effect>>,
         scope: &Scope<'a>,
@@ -122,21 +122,21 @@ impl Runner {
     ) {
         let state = self.state();
         let frame = *state.frame();
-        let actions_count = state.actions().len();
+        let tasks_count = state.tasks().len();
         drop(state);
 
         let state = Arc::new(&self.state);
-        for (start, end) in slices(actions_count, workers_count) {
+        for (start, end) in slices(tasks_count, workers_count) {
             let state = Arc::clone(&state);
             let tx = tx.clone();
 
             scope.spawn(move |_| {
                 let state = state.lock().expect("Assume state is always accessible");
-                let actions = state.actions();
-                for action in &actions[start..end] {
-                    let effects_ = action.tick(frame);
+                let tasks = state.tasks();
+                for task in &tasks[start..end] {
+                    let effects_ = task.tick(frame);
                     if tx.send(effects_).is_err() {
-                        error!("Channel closed in actions scope: abort");
+                        error!("Channel closed in tasks scope: abort");
                         return;
                     }
                 }

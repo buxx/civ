@@ -2,7 +2,7 @@ use std::ops::{Add, AddAssign};
 
 use uuid::Uuid;
 
-use crate::action::{settle::Settle, Action, ActionContext, Effect};
+use crate::task::{settle::Settle, Effect, Task, TaskContext};
 
 pub const GAME_FRAMES_PER_SECOND: u64 = 10;
 
@@ -26,7 +26,7 @@ impl AddAssign for GameFrame {
 #[derive(Default)]
 pub struct State {
     frame_i: GameFrame,
-    actions: Vec<Box<dyn Action + Send>>,
+    tasks: Vec<Box<dyn Task + Send>>,
 }
 
 impl State {
@@ -40,10 +40,10 @@ impl State {
         // HACK
         if self.frame_i.0 == 19 {
             for _ in 0..1_000 {
-                self.actions.push(Box::new(
+                self.tasks.push(Box::new(
                     Settle::builder()
                         .context(
-                            ActionContext::builder()
+                            TaskContext::builder()
                                 .id(Uuid::new_v4())
                                 .start(self.frame_i)
                                 .end(self.frame_i + GAME_FRAMES_PER_SECOND * 5)
@@ -55,8 +55,8 @@ impl State {
         }
     }
 
-    pub fn actions(&self) -> &Vec<Box<dyn Action + Send>> {
-        &self.actions
+    pub fn tasks(&self) -> &Vec<Box<dyn Task + Send>> {
+        &self.tasks
     }
 
     pub fn apply(&mut self, effects: Vec<Effect>) {
@@ -64,14 +64,14 @@ impl State {
 
         for effect in effects {
             match effect {
-                Effect::ActionFinished(uuid) => remove_ids.push(uuid),
+                Effect::TaskFinished(uuid) => remove_ids.push(uuid),
             }
         }
 
         if !remove_ids.is_empty() {
-            // TODO: this is not a good performance way (idea: transport actions index in tick)
-            self.actions
-                .retain(|action| !remove_ids.contains(&action.context().id()));
+            // TODO: this is not a good performance way (idea: transport tasks index in tick)
+            self.tasks
+                .retain(|task| !remove_ids.contains(&task.context().id()));
         }
     }
 }

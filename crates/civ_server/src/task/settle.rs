@@ -1,20 +1,20 @@
 use bon::Builder;
 
-use super::{Action, ActionContext, Effect};
+use super::{Task, TaskContext, Effect};
 
 #[derive(Builder)]
 pub struct Settle {
-    context: ActionContext,
+    context: TaskContext,
 }
 
 impl Settle {}
 
-impl Action for Settle {
+impl Task for Settle {
     fn tick_(&self, _frame: crate::state::GameFrame) -> Vec<Effect> {
         vec![]
     }
 
-    fn context(&self) -> &ActionContext {
+    fn context(&self) -> &TaskContext {
         &self.context
     }
 }

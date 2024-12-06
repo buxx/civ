@@ -5,28 +5,28 @@ use crate::state::GameFrame;
 
 pub mod settle;
 
-pub trait Action {
+pub trait Task {
     fn tick(&self, frame: GameFrame) -> Vec<Effect> {
         let mut effects = self.tick_(frame);
 
         if self.context().is_finished(frame) {
-            effects.push(Effect::ActionFinished(self.context().id));
+            effects.push(Effect::TaskFinished(self.context().id));
         }
 
         effects
     }
     fn tick_(&self, frame: GameFrame) -> Vec<Effect>;
-    fn context(&self) -> &ActionContext;
+    fn context(&self) -> &TaskContext;
 }
 
 #[derive(Builder)]
-pub struct ActionContext {
+pub struct TaskContext {
     id: Uuid,
     start: GameFrame,
     end: GameFrame,
 }
 
-impl ActionContext {
+impl TaskContext {
     pub fn is_finished(&self, frame: GameFrame) -> bool {
         frame >= self.end
     }
@@ -45,5 +45,5 @@ impl ActionContext {
 }
 
 pub enum Effect {
-    ActionFinished(Uuid),
+    TaskFinished(Uuid),
 }

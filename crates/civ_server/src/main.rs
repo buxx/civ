@@ -4,10 +4,10 @@ use context::Context;
 use runner::Runner;
 use state::State;
 
-mod action;
 mod context;
 mod runner;
 mod state;
+mod task;
 mod utils;
 
 pub const TICK_BASE_PERIOD: u64 = 60;
