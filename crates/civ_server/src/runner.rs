@@ -7,8 +7,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{context::Context, state::State};
-use crate::{state::GAME_FRAMES_PER_SECOND, task::Effect, utils::collection::slices};
+use crate::{context::Context, state::State, task::effect::Effect};
+use crate::{state::GAME_FRAMES_PER_SECOND, utils::collection::slices};
 
 pub struct Runner {
     context: Mutex<Context>,

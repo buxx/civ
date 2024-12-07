@@ -1,8 +1,10 @@
-pub mod context;
 use context::{PhysicalContext, TaskContext};
-use uuid::Uuid;
+use effect::Effect;
 
 use crate::state::GameFrame;
+
+pub mod context;
+pub mod effect;
 
 pub trait Task {
     fn tick(&self, frame: GameFrame) -> Vec<Effect> {
@@ -21,8 +23,4 @@ pub trait Task {
 
 pub enum TaskType<'a> {
     Physical(&'a PhysicalContext),
-}
-
-pub enum Effect {
-    TaskFinished(Uuid),
 }

@@ -6,7 +6,8 @@ use crate::{
     game::{city::City, task::settle::Settle},
     task::{
         context::{PhysicalContext, TaskContext},
-        Effect, Task,
+        effect::Effect,
+        Task,
     },
 };
 

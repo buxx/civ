@@ -4,7 +4,8 @@ use crate::{
     state::GameFrame,
     task::{
         context::{PhysicalContext, TaskContext},
-        Effect, Task, TaskType,
+        effect::Effect,
+        Task, TaskType,
     },
 };
 
