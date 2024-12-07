@@ -3,8 +3,6 @@ use uuid::Uuid;
 
 use crate::state::GameFrame;
 
-pub mod settle;
-
 pub trait Task {
     fn tick(&self, frame: GameFrame) -> Vec<Effect> {
         let mut effects = self.tick_(frame);
@@ -51,8 +49,8 @@ pub struct PhysicalContext {
     y: u64,
 }
 
-pub enum TaskType {
-    Physical(PhysicalContext),
+pub enum TaskType<'a> {
+    Physical(&'a PhysicalContext),
 }
 
 pub enum Effect {

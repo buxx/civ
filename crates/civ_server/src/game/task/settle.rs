@@ -1,8 +1,9 @@
 use bon::Builder;
 
-use crate::state::GameFrame;
-
-use super::{Effect, PhysicalContext, Task, TaskContext, TaskType};
+use crate::{
+    state::GameFrame,
+    task::{Effect, PhysicalContext, Task, TaskContext, TaskType},
+};
 
 #[derive(Builder)]
 pub struct Settle {
@@ -22,6 +23,6 @@ impl Task for Settle {
     }
 
     fn type_(&self) -> TaskType {
-        TaskType::Physical(self.physic.clone())
+        TaskType::Physical(&self.physic)
     }
 }

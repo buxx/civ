@@ -3,8 +3,8 @@ use std::ops::{Add, AddAssign};
 use uuid::Uuid;
 
 use crate::{
-    game::city::City,
-    task::{settle::Settle, Effect, PhysicalContext, Task, TaskContext},
+    game::{city::City, task::settle::Settle},
+    task::{Effect, PhysicalContext, Task, TaskContext},
 };
 
 pub const GAME_FRAMES_PER_SECOND: u64 = 10;
