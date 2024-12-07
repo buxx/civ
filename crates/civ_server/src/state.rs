@@ -2,7 +2,10 @@ use std::ops::{Add, AddAssign};
 
 use uuid::Uuid;
 
-use crate::task::{settle::Settle, Effect, PhysicalContext, Task, TaskContext};
+use crate::{
+    game::city::City,
+    task::{settle::Settle, Effect, PhysicalContext, Task, TaskContext},
+};
 
 pub const GAME_FRAMES_PER_SECOND: u64 = 10;
 
@@ -27,6 +30,7 @@ impl AddAssign for GameFrame {
 pub struct State {
     frame_i: GameFrame,
     tasks: Vec<Box<dyn Task + Send>>,
+    cities: Vec<City>,
 }
 
 impl State {
@@ -38,6 +42,18 @@ impl State {
         self.frame_i += GameFrame(1);
 
         // HACK
+        if self.frame_i.0 == 0 {
+            for x in 0..100 {
+                for y in 0..100 {
+                    self.cities.push(
+                        City::builder()
+                            .id(Uuid::new_v4())
+                            .physics(PhysicalContext::builder().x(x * 5).y(y * 5).build())
+                            .build(),
+                    );
+                }
+            }
+        }
         if self.frame_i.0 == 19 {
             for _ in 0..1_000 {
                 self.tasks.push(Box::new(

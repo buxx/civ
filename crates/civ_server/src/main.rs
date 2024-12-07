@@ -5,6 +5,7 @@ use runner::Runner;
 use state::State;
 
 mod context;
+mod game;
 mod runner;
 mod state;
 mod task;
