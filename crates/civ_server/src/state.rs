@@ -4,7 +4,10 @@ use uuid::Uuid;
 
 use crate::{
     game::{city::City, task::settle::Settle},
-    task::{Effect, PhysicalContext, Task, TaskContext},
+    task::{
+        context::{PhysicalContext, TaskContext},
+        Effect, Task,
+    },
 };
 
 pub const GAME_FRAMES_PER_SECOND: u64 = 10;

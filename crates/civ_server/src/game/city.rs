@@ -1,7 +1,7 @@
 use bon::Builder;
 use uuid::Uuid;
 
-use crate::task::PhysicalContext;
+use crate::task::context::PhysicalContext;
 
 #[derive(Builder)]
 pub struct City {

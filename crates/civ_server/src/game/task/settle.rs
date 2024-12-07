@@ -2,7 +2,10 @@ use bon::Builder;
 
 use crate::{
     state::GameFrame,
-    task::{Effect, PhysicalContext, Task, TaskContext, TaskType},
+    task::{
+        context::{PhysicalContext, TaskContext},
+        Effect, Task, TaskType,
+    },
 };
 
 #[derive(Builder)]
