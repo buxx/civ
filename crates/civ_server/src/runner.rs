@@ -1,3 +1,5 @@
+use bon::Builder;
+use common::network::message::FromClientMessage;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{error, info};
 use rayon::{Scope, ThreadPoolBuilder};
@@ -10,29 +12,23 @@ use std::{
 use crate::{context::Context, state::State, task::effect::Effect};
 use crate::{state::GAME_FRAMES_PER_SECOND, utils::collection::slices};
 
+#[derive(Builder)]
 pub struct Runner {
     context: Mutex<Context>,
     state: Mutex<State>,
     tick_base_period: u64,
+    from_clients_receiver: Receiver<FromClientMessage>,
+    #[builder(default = Duration::ZERO)]
     lag: Duration,
+    #[builder(default = 0)]
     ticks_since_last_increment: u64,
+    #[builder(default = 0)]
     ticks_since_last_stats: u64,
+    #[builder(default = Instant::now())]
     last_stat: Instant,
 }
 
 impl Runner {
-    pub fn new(tick_base_period: u64, context: Mutex<Context>, state: Mutex<State>) -> Self {
-        Self {
-            context,
-            state,
-            tick_base_period,
-            lag: Duration::ZERO,
-            ticks_since_last_increment: 0,
-            ticks_since_last_stats: 0,
-            last_stat: Instant::now(),
-        }
-    }
-
     fn context(&self) -> MutexGuard<Context> {
         self.context
             .lock()
@@ -48,6 +44,12 @@ impl Runner {
     pub fn run(&mut self) {
         while !self.context().stop_is_required() {
             let tick_start = Instant::now();
+
+            // FIXME: placer ecoute clients logiquement
+            if let Ok(message) = self.from_clients_receiver.try_recv() {
+                dbg!(message);
+            }
+
             let effects = self.tick();
             self.apply_effects(effects);
             self.fps_target(tick_start);

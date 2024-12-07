@@ -1,0 +1,12 @@
+[package]
+name = "civ_tui"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "tui"
+path = "src/main.rs"
+
+[dependencies]
+env_logger.workspace = true
+log.workspace = true

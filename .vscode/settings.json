@@ -1,5 +1,7 @@
 {
     "cSpell.words": [
-        "nanos"
+        "bincode",
+        "nanos",
+        "serde"
     ]
 }
