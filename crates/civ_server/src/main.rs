@@ -1,6 +1,6 @@
 use std::{sync::Mutex, thread};
 
-use common::network::message::FromClientMessage;
+use common::network::message::ClientToServerMessage;
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use network::Network;
@@ -24,8 +24,8 @@ fn main() {
     let context = Mutex::new(Context::new());
     let state = Mutex::new(State::default());
     let (from_clients_sender, from_clients_receiver): (
-        Sender<FromClientMessage>,
-        Receiver<FromClientMessage>,
+        Sender<ClientToServerMessage>,
+        Receiver<ClientToServerMessage>,
     ) = unbounded();
 
     let network = Network::builder()

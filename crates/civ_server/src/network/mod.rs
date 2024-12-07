@@ -1,7 +1,7 @@
 use std::thread;
 
 use bon::Builder;
-use common::network::message::FromClientMessage;
+use common::network::message::ClientToServerMessage;
 use crossbeam::channel::Sender;
 
 pub mod message;
@@ -9,7 +9,7 @@ pub mod message;
 #[derive(Builder)]
 pub struct Network {
     clients_listener_address: String,
-    from_clients_sender: Sender<FromClientMessage>,
+    from_clients_sender: Sender<ClientToServerMessage>,
 }
 
 // TODO: unwraps
@@ -39,7 +39,7 @@ impl Network {
                 };
 
                 // Decode received bytes into collection of messages
-                let message: FromClientMessage = match bincode::deserialize(&messages_bytes) {
+                let message: ClientToServerMessage = match bincode::deserialize(&messages_bytes) {
                     Ok(messages) => messages,
                     Err(error) => {
                         // TODO

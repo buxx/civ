@@ -164,8 +164,14 @@ dependencies = [
 name = "civ_tui"
 version = "0.1.0"
 dependencies = [
+ "bincode",
+ "bon",
+ "civ_common",
+ "crossbeam",
  "env_logger",
  "log",
+ "uuid",
+ "zmq",
 ]
 
 [[package]]

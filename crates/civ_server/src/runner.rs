@@ -1,5 +1,5 @@
 use bon::Builder;
-use common::network::message::FromClientMessage;
+use common::network::message::ClientToServerMessage;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{error, info};
 use rayon::{Scope, ThreadPoolBuilder};
@@ -17,7 +17,7 @@ pub struct Runner {
     context: Mutex<Context>,
     state: Mutex<State>,
     tick_base_period: u64,
-    from_clients_receiver: Receiver<FromClientMessage>,
+    from_clients_receiver: Receiver<ClientToServerMessage>,
     #[builder(default = Duration::ZERO)]
     lag: Duration,
     #[builder(default = 0)]

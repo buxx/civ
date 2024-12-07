@@ -8,5 +8,11 @@ name = "tui"
 path = "src/main.rs"
 
 [dependencies]
+civ_common = { path = "../civ_common" }
 env_logger.workspace = true
 log.workspace = true
+bon.workspace = true
+uuid.workspace = true
+crossbeam.workspace = true
+zmq.workspace = true
+bincode.workspace = true
