@@ -33,6 +33,7 @@ impl AddAssign for GameFrame {
 #[derive(Default)]
 pub struct State {
     frame_i: GameFrame,
+    clients: usize,
     tasks: Vec<Box<dyn Task + Send>>,
     cities: Vec<City>,
 }
@@ -40,6 +41,18 @@ pub struct State {
 impl State {
     pub fn frame(&self) -> &GameFrame {
         &self.frame_i
+    }
+
+    pub fn tasks(&self) -> &Vec<Box<dyn Task + Send>> {
+        &self.tasks
+    }
+
+    pub fn clients(&self) -> usize {
+        self.clients
+    }
+
+    pub fn set_clients(&mut self, value: usize) {
+        self.clients = value
     }
 
     pub fn increment(&mut self) {
@@ -74,10 +87,6 @@ impl State {
                 ))
             }
         }
-    }
-
-    pub fn tasks(&self) -> &Vec<Box<dyn Task + Send>> {
-        &self.tasks
     }
 
     pub fn apply(&mut self, effects: Vec<Effect>) {

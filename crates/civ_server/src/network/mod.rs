@@ -1,60 +1,145 @@
-use std::thread;
+use clients::Clients;
+use common::network::message::{
+    ClientToServerEnveloppe, ClientToServerMessage, ServerToClientMessage,
+};
+use crossbeam::channel::{Receiver, Sender};
+use log::info;
+use message_io::network::{NetEvent, Transport};
+use message_io::node::{self, NodeHandler, NodeListener};
+use std::io;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use uuid::Uuid;
 
-use bon::Builder;
-use common::network::message::ClientToServerMessage;
-use crossbeam::channel::Sender;
+use crate::context::Context;
+use crate::state::State;
 
-pub mod message;
+mod clients;
 
-#[derive(Builder)]
+const SEND_INTERVAL: Duration = Duration::from_millis(25);
+const CHECK_STOP_INTERVAL: Duration = Duration::from_millis(250);
+
+enum Signal {
+    SendServerToClientsMessages,
+    CheckStopRequired,
+}
+
 pub struct Network {
-    clients_listener_address: String,
-    from_clients_sender: Sender<ClientToServerMessage>,
+    context: Arc<Mutex<Context>>,
+    state: Arc<Mutex<State>>,
+    from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
+    to_clients_receiver: Receiver<(Uuid, ServerToClientMessage)>,
+    handler: NodeHandler<Signal>,
+    node_listener: NodeListener<Signal>,
+    clients: Clients,
 }
 
 // TODO: unwraps
 // TODO: stop required
 impl Network {
-    pub fn run(&self) {
-        self.start_clients_listener();
+    pub fn new(
+        context: Arc<Mutex<Context>>,
+        state: Arc<Mutex<State>>,
+        listen_addr: &str,
+        from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
+        to_clients_receiver: Receiver<(Uuid, ServerToClientMessage)>,
+    ) -> io::Result<Self> {
+        let (handler, node_listener) = node::split::<Signal>();
+        handler
+            .network()
+            .listen(Transport::FramedTcp, listen_addr)?;
+
+        info!("Network server running at {}", listen_addr);
+        Ok(Self {
+            context,
+            state,
+            from_clients_sender,
+            to_clients_receiver,
+            handler,
+            node_listener,
+            clients: Clients::default(),
+        })
     }
 
-    fn start_clients_listener(&self) {
-        let from_clients_sender = self.from_clients_sender.clone();
-        let address = self.clients_listener_address.clone();
-        let zmq_context = zmq::Context::new();
-        let socket = zmq_context.socket(zmq::REP).unwrap();
-        socket.bind(&address).unwrap();
-        let ok = bincode::serialize(&1).unwrap();
+    pub fn run(mut self) {
+        let node_listener = self.node_listener;
 
-        let clients_listener = thread::spawn(move || {
-            loop {
-                // Receive client REQ messages bytes
-                let messages_bytes = match socket.recv_bytes(0) {
-                    Ok(message_bytes) => message_bytes,
-                    Err(_) => {
-                        // TODO
-                        continue;
+        // TODO : Trigger signal to start the signal loop of sending messages to clients
+        // This could probably be enhanced for better performances. To check ...
+        self.handler
+            .signals()
+            .send(Signal::SendServerToClientsMessages);
+        self.handler.signals().send(Signal::CheckStopRequired);
+
+        node_listener.for_each(move |event| match event {
+            node::NodeEvent::Network(event) => match event {
+                NetEvent::Connected(_, _) => unreachable!(), // There is no connect() calls.
+                NetEvent::Accepted(_, _) => {}
+                NetEvent::Message(endpoint, input_data) => {
+                    let message: ClientToServerEnveloppe =
+                        bincode::deserialize(input_data).unwrap();
+                    match message {
+                        ClientToServerEnveloppe::Hello(client_id) => {
+                            self.clients.insert(client_id, endpoint);
+                            self.state
+                                .lock()
+                                .expect("Assume state is always accessible")
+                                .set_clients(self.clients.length());
+                        }
+                        ClientToServerEnveloppe::Goodbye => {
+                            self.clients.remove(&endpoint);
+                            self.state
+                                .lock()
+                                .expect("Assume state is always accessible")
+                                .set_clients(self.clients.length());
+                        }
+                        ClientToServerEnveloppe::Message(message) => {
+                            let client_id = self.clients.client_id(&endpoint).unwrap();
+                            self.from_clients_sender
+                                .send((*client_id, message))
+                                .unwrap();
+                        }
+                    }
+                }
+                NetEvent::Disconnected(endpoint) => {
+                    self.clients.remove(&endpoint);
+                    self.state
+                        .lock()
+                        .expect("Assume state is always accessible")
+                        .set_clients(self.clients.length());
+                }
+            },
+            node::NodeEvent::Signal(signal) => {
+                match signal {
+                    Signal::SendServerToClientsMessages => {
+                        while let Ok((client_id, message)) = self.to_clients_receiver.try_recv() {
+                            if let Some(endpoint) = self.clients.endpoint(&client_id) {
+                                let data = bincode::serialize(&message).unwrap();
+                                self.handler.network().send(*endpoint, &data);
+                            }
+                        }
+                        self.handler
+                            .signals()
+                            .send_with_timer(Signal::SendServerToClientsMessages, SEND_INTERVAL);
+                    }
+                    Signal::CheckStopRequired => {
+                        if self
+                            .context
+                            .lock()
+                            .expect("Assume context is always accessible")
+                            .stop_is_required()
+                        {
+                            self.handler.stop();
+                        }
+                        self.handler.signals().send_with_timer(
+                            Signal::SendServerToClientsMessages,
+                            CHECK_STOP_INTERVAL,
+                        );
                     }
                 };
-
-                // Decode received bytes into collection of messages
-                let message: ClientToServerMessage = match bincode::deserialize(&messages_bytes) {
-                    Ok(messages) => messages,
-                    Err(error) => {
-                        // TODO
-                        continue;
-                    }
-                };
-
-                // Send client expected acknowledgement
-                socket.send(&ok, 0).unwrap();
-
-                // Send through channel the decoded messages
-                from_clients_sender.send(message).unwrap();
             }
         });
 
-        clients_listener.join().unwrap();
+        info!("Network server finished running");
     }
 }

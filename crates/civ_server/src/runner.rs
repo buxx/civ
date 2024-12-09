@@ -1,5 +1,5 @@
 use bon::Builder;
-use common::network::message::ClientToServerMessage;
+use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{error, info};
 use rayon::{Scope, ThreadPoolBuilder};
@@ -8,16 +8,18 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+use uuid::Uuid;
 
 use crate::{context::Context, state::State, task::effect::Effect};
 use crate::{state::GAME_FRAMES_PER_SECOND, utils::collection::slices};
 
 #[derive(Builder)]
 pub struct Runner {
-    context: Mutex<Context>,
-    state: Mutex<State>,
+    context: Arc<Mutex<Context>>,
+    state: Arc<Mutex<State>>,
     tick_base_period: u64,
-    from_clients_receiver: Receiver<ClientToServerMessage>,
+    from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
+    to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
     #[builder(default = Duration::ZERO)]
     lag: Duration,
     #[builder(default = 0)]
@@ -46,8 +48,18 @@ impl Runner {
             let tick_start = Instant::now();
 
             // FIXME: placer ecoute clients logiquement
-            if let Ok(message) = self.from_clients_receiver.try_recv() {
-                dbg!(message);
+            // info!("Check clients messages");
+            if let Ok((client_id, message)) = self.from_clients_receiver.try_recv() {
+                match message {
+                    ClientToServerMessage::SetWindow(window) => {
+                        info!("Client {} sent {:?}", &client_id, &window);
+
+                        // TODO: fake response for now
+                        self.to_client_sender
+                            .send((client_id, ServerToClientMessage::Hello(42)))
+                            .unwrap()
+                    }
+                }
             }
 
             let effects = self.tick();
@@ -70,14 +82,16 @@ impl Runner {
     fn stats_log(&mut self) {
         let state = self.state();
         let tasks_length = state.tasks().len();
+        let clients = state.clients();
         drop(state);
 
         if Instant::now().duration_since(self.last_stat).as_millis() >= 1000 {
             info!(
-                "⏰{} 🌍{} 🎯{}",
+                "⏰{} 🌍{} 🎯{} 👥{}",
                 self.ticks_since_last_stats,
                 self.state().frame().0,
                 tasks_length,
+                clients
             );
 
             self.ticks_since_last_stats = 0;
