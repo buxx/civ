@@ -18,3 +18,5 @@ zmq.workspace = true
 bincode.workspace = true
 message-io.workspace = true
 thiserror.workspace = true
+clap = { version = "4.5.23", features = ["derive"] }
+shellwords = "1.1.0"

@@ -12,6 +12,7 @@ use state::State;
 use thiserror::Error;
 use uuid::Uuid;
 
+mod command;
 mod context;
 mod network;
 mod runner;
