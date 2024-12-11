@@ -43,6 +43,8 @@ fn main() -> Result<(), Error> {
     let network = Network::new(
         client_id,
         "127.0.0.1:9876",
+        Arc::clone(&context),
+        Arc::clone(&state),
         to_server_receiver,
         from_server_sender,
     )

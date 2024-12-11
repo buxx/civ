@@ -1,20 +1,31 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Window {
-    from_x: u32,
-    from_y: u32,
-    to_x: u32,
-    to_y: u32,
+    start_x: u32,
+    start_y: u32,
+    end_x: u32,
+    end_y: u32,
 }
 
 impl Window {
-    pub fn new(from_x: u32, from_y: u32, to_x: u32, to_y: u32) -> Self {
+    pub fn new(start_x: u32, start_y: u32, end_x: u32, end_y: u32) -> Self {
         Self {
-            from_x,
-            from_y,
-            to_x,
-            to_y,
+            start_x,
+            start_y,
+            end_x,
+            end_y,
         }
+    }
+}
+
+impl Display for Window {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "start_x: {}, start_y: {}, end_x: {}, end_y: {}",
+            self.start_x, self.start_y, self.end_x, self.end_y,
+        ))
     }
 }
