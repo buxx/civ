@@ -1,12 +1,12 @@
-pub mod status;
-pub mod window;
-use std::sync::{Arc, Mutex};
-
+use crate::{context::Context, state::State};
 use clap::{Args, Parser, Subcommand};
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use crossbeam::channel::{Receiver, Sender};
+use std::sync::{Arc, Mutex};
 
-use crate::{context::Context, state::State};
+pub mod errors;
+pub mod status;
+pub mod window;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -28,6 +28,7 @@ pub struct GlobalOpts {
 pub enum SubCommand {
     Exit,
     Status,
+    Errors,
     Window {
         #[clap(subcommand)]
         subcommand: WindowSubCommand,

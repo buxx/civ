@@ -14,6 +14,7 @@ use uuid::Uuid;
 
 mod command;
 mod context;
+mod error;
 mod network;
 mod runner;
 mod state;

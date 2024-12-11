@@ -45,6 +45,9 @@ impl Runner {
                             SubCommand::Status => {
                                 command::status::status(self.into());
                             }
+                            SubCommand::Errors => {
+                                command::errors::errors(self.into());
+                            }
                             SubCommand::Window { subcommand } => {
                                 match subcommand {
                                     WindowSubCommand::Set {
@@ -79,7 +82,16 @@ impl Runner {
     }
 
     fn print_prompt(&mut self) {
-        print!("> ");
+        let state = self
+            .state
+            .lock()
+            .expect("Assume state is always accessible");
+        if state.errors().is_empty() {
+            print!("---> ");
+        } else {
+            print!("-!-> ");
+        }
+
         io::stdout().flush().unwrap();
     }
 }

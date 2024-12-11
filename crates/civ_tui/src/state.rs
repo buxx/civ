@@ -1,10 +1,13 @@
 use common::space::Window;
 use uuid::Uuid;
 
+use crate::error::PublicError;
+
 pub struct State {
     client_id: Uuid,
     connected: bool,
     window: Option<Window>,
+    errors: Vec<PublicError>,
 }
 
 impl State {
@@ -13,6 +16,7 @@ impl State {
             client_id,
             connected: false,
             window: None,
+            errors: vec![],
         }
     }
 
@@ -34,5 +38,17 @@ impl State {
 
     pub fn set_window(&mut self, window: Option<Window>) {
         self.window = window;
+    }
+
+    pub fn errors(&self) -> &[PublicError] {
+        &self.errors
+    }
+
+    pub fn push_error(&mut self, error: PublicError) {
+        self.errors.push(error);
+    }
+
+    pub fn clear_error(&mut self) {
+        self.errors.clear();
     }
 }
