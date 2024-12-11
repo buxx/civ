@@ -10,16 +10,49 @@ use std::{
 };
 use uuid::Uuid;
 
-use crate::{context::Context, state::State, task::effect::Effect};
+use crate::{
+    context::Context, request::SetWindowRequestDealer, state::State, task::effect::Effect,
+};
 use crate::{state::GAME_FRAMES_PER_SECOND, utils::collection::slices};
+
+pub struct RunnerContext {
+    pub context: Arc<Mutex<Context>>,
+    pub state: Arc<Mutex<State>>,
+    pub from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
+    pub to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
+}
+
+impl RunnerContext {
+    pub fn new(
+        context: Arc<Mutex<Context>>,
+        state: Arc<Mutex<State>>,
+        from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
+        to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
+    ) -> Self {
+        Self {
+            context,
+            state,
+            from_clients_receiver,
+            to_client_sender,
+        }
+    }
+}
+
+impl Clone for RunnerContext {
+    fn clone(&self) -> Self {
+        Self::new(
+            Arc::clone(&self.context),
+            Arc::clone(&self.state),
+            self.from_clients_receiver.clone(),
+            self.to_client_sender.clone(),
+        )
+    }
+}
 
 #[derive(Builder)]
 pub struct Runner {
-    context: Arc<Mutex<Context>>,
-    state: Arc<Mutex<State>>,
+    context: RunnerContext,
     tick_base_period: u64,
-    from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
-    to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
     #[builder(default = Duration::ZERO)]
     lag: Duration,
     #[builder(default = 0)]
@@ -33,12 +66,14 @@ pub struct Runner {
 impl Runner {
     fn context(&self) -> MutexGuard<Context> {
         self.context
+            .context
             .lock()
             .expect("Assume context is always accessible")
     }
 
     fn state(&self) -> MutexGuard<State> {
-        self.state
+        self.context
+            .state
             .lock()
             .expect("Assume state is always accessible")
     }
@@ -47,19 +82,10 @@ impl Runner {
         while !self.context().stop_is_required() {
             let tick_start = Instant::now();
 
-            // FIXME: placer ecoute clients logiquement
-            // info!("Check clients messages");
-            if let Ok((client_id, message)) = self.from_clients_receiver.try_recv() {
-                match message {
-                    ClientToServerMessage::SetWindow(window) => {
-                        info!("Client {} sent {:?}", &client_id, &window);
-
-                        // TODO: fake response for now
-                        self.to_client_sender
-                            .send((client_id, ServerToClientMessage::Hello(42)))
-                            .unwrap()
-                    }
-                }
+            // FIXME: placer deal client requests logiquement (sous fonction, toussa)
+            // FIXME: dans un thread a part ou pas ?
+            if let Ok((client_id, message)) = self.context.from_clients_receiver.try_recv() {
+                self.deal_client_request(client_id, message);
             }
 
             let effects = self.tick();
@@ -141,7 +167,7 @@ impl Runner {
         let tasks_count = state.tasks().len();
         drop(state);
 
-        let state = Arc::new(&self.state);
+        let state = Arc::new(&self.context.state);
         for (start, end) in slices(tasks_count, workers_count) {
             let state = Arc::clone(&state);
             let tx = tx.clone();
@@ -162,5 +188,13 @@ impl Runner {
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
         self.state().apply(effects)
+    }
+
+    fn deal_client_request(&self, client_id: Uuid, message: ClientToServerMessage) {
+        match message {
+            ClientToServerMessage::SetWindow(window) => {
+                SetWindowRequestDealer::new(self.context.clone()).deal(&window);
+            }
+        }
     }
 }

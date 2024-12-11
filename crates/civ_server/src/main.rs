@@ -2,7 +2,7 @@ use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use network::Network;
-use runner::Runner;
+use runner::{Runner, RunnerContext};
 use state::State;
 use std::{
     sync::{Arc, Mutex},
@@ -14,6 +14,7 @@ use uuid::Uuid;
 mod context;
 mod game;
 mod network;
+mod request;
 mod runner;
 mod state;
 mod task;
@@ -55,10 +56,12 @@ fn main() -> Result<(), Error> {
     .map_err(|e| Error::PrepareNetwork(e.to_string()))?;
     let mut runner = Runner::builder()
         .tick_base_period(TICK_BASE_PERIOD)
-        .context(Arc::clone(&context))
-        .state(Arc::clone(&state))
-        .from_clients_receiver(from_clients_receiver)
-        .to_client_sender(to_clients_sender)
+        .context(RunnerContext::new(
+            Arc::clone(&context),
+            Arc::clone(&state),
+            from_clients_receiver,
+            to_clients_sender,
+        ))
         .build();
 
     let network = thread::spawn(move || network.run());

@@ -3,6 +3,8 @@ use uuid::Uuid;
 
 use crate::task::context::PhysicalContext;
 
+use super::Physics;
+
 #[derive(Builder)]
 pub struct City {
     id: Uuid,
@@ -13,8 +15,10 @@ impl City {
     pub fn id(&self) -> Uuid {
         self.id
     }
+}
 
-    pub fn physics(&self) -> &PhysicalContext {
+impl Physics for City {
+    fn physics(&self) -> &PhysicalContext {
         &self.physics
     }
 }

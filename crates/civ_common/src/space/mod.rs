@@ -24,7 +24,7 @@ impl Window {
 impl Display for Window {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!(
-            "start_x: {}, start_y: {}, end_x: {}, end_y: {}",
+            "{}:{} {}:{}",
             self.start_x, self.start_y, self.end_x, self.end_y,
         ))
     }

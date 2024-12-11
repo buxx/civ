@@ -8,7 +8,6 @@ use common::network::message::{
     ClientToServerEnveloppe, ClientToServerMessage, ServerToClientMessage,
 };
 use crossbeam::channel::{Receiver, Sender};
-use log::info;
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node::{self, NodeHandler, NodeListener},
@@ -107,7 +106,6 @@ impl Network {
                 match signal {
                     Signal::SendClientToServerMessages => {
                         while let Ok(message) = self.to_server_receiver.try_recv() {
-                            info!("Send message to server");
                             let data =
                                 bincode::serialize(&ClientToServerEnveloppe::Message(message))
                                     .unwrap();

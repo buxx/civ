@@ -12,5 +12,6 @@ pub fn status(context: CommandContext) {
 
     println!("client_id: {}", state.client_id());
     println!("connected: {}", state.connected());
+    println!("errors: {}", state.errors().len());
     println!("window: {}", window_str);
 }
