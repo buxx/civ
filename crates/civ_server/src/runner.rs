@@ -36,6 +36,18 @@ impl RunnerContext {
             to_client_sender,
         }
     }
+
+    pub fn context(&self) -> MutexGuard<Context> {
+        self.context
+            .lock()
+            .expect("Assume context is always accessible")
+    }
+
+    pub fn state(&self) -> MutexGuard<State> {
+        self.state
+            .lock()
+            .expect("Assume state is always accessible")
+    }
 }
 
 impl Clone for RunnerContext {
@@ -82,18 +94,28 @@ impl Runner {
         while !self.context().stop_is_required() {
             let tick_start = Instant::now();
 
-            // FIXME: placer deal client requests logiquement (sous fonction, toussa)
-            // FIXME: dans un thread a part ou pas ?
-            if let Ok((client_id, message)) = self.context.from_clients_receiver.try_recv() {
-                self.deal_client_request(client_id, message);
-            }
+            // FIXME: do client requests in thread pool to not block task tick
+            // and solve all effects here by reading channel
+            let effects = self.clients();
+            self.apply_effects(effects);
 
             let effects = self.tick();
             self.apply_effects(effects);
+
             self.fps_target(tick_start);
             self.game_frame_increment();
             self.stats_log();
         }
+    }
+
+    fn clients(&mut self) -> Vec<Effect> {
+        let mut effects = vec![];
+
+        while let Ok((client_id, message)) = self.context.from_clients_receiver.try_recv() {
+            effects.extend(self.client(client_id, message));
+        }
+
+        effects
     }
 
     fn game_frame_increment(&mut self) {
@@ -108,7 +130,7 @@ impl Runner {
     fn stats_log(&mut self) {
         let state = self.state();
         let tasks_length = state.tasks().len();
-        let clients = state.clients();
+        let clients_count = state.clients().count();
         drop(state);
 
         if Instant::now().duration_since(self.last_stat).as_millis() >= 1000 {
@@ -117,7 +139,7 @@ impl Runner {
                 self.ticks_since_last_stats,
                 self.state().frame().0,
                 tasks_length,
-                clients
+                clients_count,
             );
 
             self.ticks_since_last_stats = 0;
@@ -190,10 +212,10 @@ impl Runner {
         self.state().apply(effects)
     }
 
-    fn deal_client_request(&self, client_id: Uuid, message: ClientToServerMessage) {
+    fn client(&self, client_id: Uuid, message: ClientToServerMessage) -> Vec<Effect> {
         match message {
             ClientToServerMessage::SetWindow(window) => {
-                SetWindowRequestDealer::new(self.context.clone()).deal(&window);
+                SetWindowRequestDealer::new(self.context.clone(), client_id).deal(&window)
             }
         }
     }

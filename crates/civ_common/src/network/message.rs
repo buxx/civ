@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::space::Window;
+use crate::{
+    game::slice::GameSlice,
+    space::window::{SetWindow, Window},
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientToServerEnveloppe {
@@ -12,10 +15,11 @@ pub enum ClientToServerEnveloppe {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientToServerMessage {
-    SetWindow(Window),
+    SetWindow(SetWindow),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ServerToClientMessage {
-    Hello(u32),
+    SetWindow(Window),
+    SetGameSlice(GameSlice),
 }

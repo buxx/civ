@@ -84,14 +84,16 @@ impl Network {
                             self.state
                                 .lock()
                                 .expect("Assume state is always accessible")
-                                .set_clients(self.clients.length());
+                                .clients_mut()
+                                .set_count(self.clients.length());
                         }
                         ClientToServerEnveloppe::Goodbye => {
                             self.clients.remove(&endpoint);
                             self.state
                                 .lock()
                                 .expect("Assume state is always accessible")
-                                .set_clients(self.clients.length());
+                                .clients_mut()
+                                .set_count(self.clients.length());
                         }
                         ClientToServerEnveloppe::Message(message) => {
                             let client_id = self.clients.client_id(&endpoint).unwrap();
@@ -106,7 +108,8 @@ impl Network {
                     self.state
                         .lock()
                         .expect("Assume state is always accessible")
-                        .set_clients(self.clients.length());
+                        .clients_mut()
+                        .set_count(self.clients.length());
                 }
             },
             node::NodeEvent::Signal(signal) => {

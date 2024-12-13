@@ -1,8 +1,5 @@
-use crate::task::context::PhysicalContext;
-
+pub mod extractor;
 pub mod city;
+pub mod physics;
 pub mod task;
-
-pub trait Physics {
-    fn physics(&self) -> &PhysicalContext;
-}
+pub mod unit;

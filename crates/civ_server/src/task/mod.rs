@@ -1,5 +1,5 @@
 use context::{PhysicalContext, TaskContext};
-use effect::Effect;
+use effect::{Effect, StateEffect, TaskEffect};
 
 use crate::state::GameFrame;
 
@@ -11,7 +11,10 @@ pub trait Task {
         let mut effects = self.tick_(frame);
 
         if self.context().is_finished(frame) {
-            effects.push(Effect::TaskFinished(self.context().id()));
+            effects.push(Effect::State(StateEffect::Task(
+                self.context().id(),
+                TaskEffect::Finished,
+            )));
         }
 
         effects

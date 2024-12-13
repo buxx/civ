@@ -37,10 +37,10 @@ pub enum SubCommand {
 #[derive(Debug, Subcommand)]
 pub enum WindowSubCommand {
     Set {
-        start_x: u32,
-        start_y: u32,
-        end_x: u32,
-        end_y: u32,
+        start_x: u64,
+        start_y: u64,
+        end_x: u64,
+        end_y: u64,
     },
 }
 

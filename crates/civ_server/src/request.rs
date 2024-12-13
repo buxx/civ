@@ -1,18 +1,50 @@
-use common::space::Window;
+use common::{
+    network::message::ServerToClientMessage,
+    space::window::{DisplayStep, SetWindow, Window},
+};
+use uuid::Uuid;
 
-use crate::runner::RunnerContext;
+use crate::{
+    game::extractor::Extractor,
+    runner::RunnerContext,
+    task::effect::{ClientEffect, Effect, StateEffect},
+};
 
 pub struct SetWindowRequestDealer {
-    // TODO: pas contexte mais que le necessaire a cette action ?
     context: RunnerContext,
+    client_id: Uuid,
 }
 
 impl SetWindowRequestDealer {
-    pub fn new(context: RunnerContext) -> Self {
-        Self { context }
+    pub fn new(context: RunnerContext, client_id: Uuid) -> Self {
+        Self { context, client_id }
     }
 
-    pub fn deal(&self, window: &Window) {
-        todo!()
+    pub fn deal(&self, set_window: &SetWindow) -> Vec<Effect> {
+        let window = Window::new(
+            set_window.start_x(),
+            set_window.start_y(),
+            set_window.end_x(),
+            set_window.end_y(),
+            DisplayStep::from_shape(set_window.shape()),
+        );
+
+        let new_game_slice =
+            Extractor::new(self.context.clone()).game_slice(&self.client_id, &window);
+
+        for message in [
+            ServerToClientMessage::SetWindow(window.clone()),
+            ServerToClientMessage::SetGameSlice(new_game_slice),
+        ] {
+            self.context
+                .to_client_sender
+                .send((self.client_id, message))
+                .unwrap();
+        }
+
+        vec![Effect::State(StateEffect::Client(
+            self.client_id,
+            ClientEffect::SetWindow(window),
+        ))]
     }
 }

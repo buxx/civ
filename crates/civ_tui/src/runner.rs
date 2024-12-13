@@ -1,6 +1,7 @@
 use std::{
     io::{self, Write},
     sync::{Arc, Mutex},
+    thread,
 };
 
 use bon::Builder;
@@ -24,6 +25,21 @@ pub struct Runner {
 
 impl Runner {
     pub fn run(&mut self) {
+        // FIXME clean
+        let from_server_receiver = self.from_server_receiver.clone();
+        let state = Arc::clone(&self.state);
+        thread::spawn(move || {
+            while let Ok(message) = from_server_receiver.recv() {
+                match message {
+                    ServerToClientMessage::SetWindow(window) => {
+                        let mut state = state.lock().expect("Assume state is always accessible");
+                        state.set_window(Some(window));
+                    }
+                    ServerToClientMessage::SetGameSlice(game_slice) => todo!(),
+                }
+            }
+        });
+
         println!("Type help for help");
         loop {
             self.print_prompt();

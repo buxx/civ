@@ -1,4 +1,4 @@
-use common::space::Window;
+use common::space::window::Window;
 use uuid::Uuid;
 
 use crate::error::PublicError;
