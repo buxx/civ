@@ -3,6 +3,7 @@
         "bincode",
         "nanos",
         "serde",
-        "shellwords"
+        "shellwords",
+        "uuids"
     ]
 }

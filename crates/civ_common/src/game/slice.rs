@@ -1,4 +1,7 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use crate::space::context::ClientPhysicalContext;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GameSlice {
@@ -13,7 +16,25 @@ impl GameSlice {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ClientCity {}
+pub struct ClientCity {
+    id: Uuid,
+    physics: ClientPhysicalContext,
+}
+
+impl ClientCity {
+    pub fn new(id: Uuid, physics: ClientPhysicalContext) -> Self {
+        Self { id, physics }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ClientUnit {}
+pub struct ClientUnit {
+    id: Uuid,
+    physics: ClientPhysicalContext,
+}
+
+impl ClientUnit {
+    pub fn new(id: Uuid, physics: ClientPhysicalContext) -> Self {
+        Self { id, physics }
+    }
+}

@@ -1,4 +1,5 @@
 use bon::Builder;
+use common::game::slice::ClientCity;
 use uuid::Uuid;
 
 use crate::task::context::PhysicalContext;
@@ -20,5 +21,11 @@ impl City {
 impl Physics for City {
     fn physics(&self) -> &PhysicalContext {
         &self.physics
+    }
+}
+
+impl Into<ClientCity> for &City {
+    fn into(self) -> ClientCity {
+        ClientCity::new(self.id, self.physics.clone().into())
     }
 }

@@ -1,3 +1,4 @@
+use common::game::slice::ClientUnit;
 use uuid::Uuid;
 
 use crate::task::context::PhysicalContext;
@@ -19,5 +20,11 @@ impl Unit {
 impl Physics for Unit {
     fn physics(&self) -> &PhysicalContext {
         &self.physics
+    }
+}
+
+impl Into<ClientUnit> for &Unit {
+    fn into(self) -> ClientUnit {
+        ClientUnit::new(self.id, self.physics.clone().into())
     }
 }

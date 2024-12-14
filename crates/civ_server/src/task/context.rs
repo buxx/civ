@@ -1,4 +1,5 @@
 use bon::Builder;
+use common::space::context::ClientPhysicalContext;
 use uuid::Uuid;
 
 use crate::state::GameFrame;
@@ -32,4 +33,10 @@ impl TaskContext {
 pub struct PhysicalContext {
     x: u64,
     y: u64,
+}
+
+impl Into<ClientPhysicalContext> for PhysicalContext {
+    fn into(self) -> ClientPhysicalContext {
+        ClientPhysicalContext::new(self.x, self.y)
+    }
 }

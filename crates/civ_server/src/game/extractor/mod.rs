@@ -1,12 +1,10 @@
 use common::{
-    game::slice::GameSlice,
-    space::window::{DisplayStep, Window},
+    game::slice::{ClientCity, ClientUnit, GameSlice},
+    space::window::Window,
 };
 use uuid::Uuid;
 
 use crate::runner::RunnerContext;
-
-use super::city::City;
 
 pub struct Extractor {
     context: RunnerContext,
@@ -17,11 +15,10 @@ impl Extractor {
         Self { context }
     }
 
-    pub fn game_slice(&self, client_id: &Uuid, window: &Window) -> GameSlice {
+    pub fn game_slice(&self, _client_id: &Uuid, window: &Window) -> GameSlice {
         let state = self.context.state();
-        let step = DisplayStep::from_shape(window.shape());
         let index = state.index();
-        let cities: Vec<City> = index
+        let cities: Vec<ClientCity> = index
             .xy_cities(window)
             .iter()
             .map(|uuid| {
@@ -34,9 +31,9 @@ impl Extractor {
                 )
             })
             .map(|(uuid, index)| state.city(*index, &uuid).unwrap())
-            .cloned()
-            .collect();
-        let units: Vec<City> = index
+            .map(|city| city.into())
+            .collect::<Vec<ClientCity>>();
+        let units: Vec<ClientUnit> = index
             .xy_units(window)
             .iter()
             .map(|uuid| {
@@ -49,8 +46,8 @@ impl Extractor {
                 )
             })
             .map(|(uuid, index)| state.unit(*index, &uuid).unwrap())
-            .cloned()
-            .collect();
+            .map(|unit| unit.into())
+            .collect::<Vec<ClientUnit>>();
         GameSlice::new(cities, units)
     }
 }
