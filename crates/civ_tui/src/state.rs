@@ -1,4 +1,8 @@
-use common::space::window::Window;
+use common::{
+    game::slice::{ClientCity, ClientUnit},
+    network::message::ClientStateMessage,
+    space::window::Window,
+};
 use uuid::Uuid;
 
 use crate::error::PublicError;
@@ -8,6 +12,8 @@ pub struct State {
     connected: bool,
     window: Option<Window>,
     errors: Vec<PublicError>,
+    cities: Vec<ClientCity>,
+    units: Vec<ClientUnit>,
 }
 
 impl State {
@@ -17,6 +23,8 @@ impl State {
             connected: false,
             window: None,
             errors: vec![],
+            cities: vec![],
+            units: vec![],
         }
     }
 
@@ -50,5 +58,25 @@ impl State {
 
     pub fn clear_error(&mut self) {
         self.errors.clear();
+    }
+
+    pub fn apply(&mut self, message: ClientStateMessage) {
+        match message {
+            ClientStateMessage::SetWindow(window) => {
+                self.set_window(Some(window));
+            }
+            ClientStateMessage::SetGameSlice(slice) => {
+                self.cities = slice.cities().into();
+                self.units = slice.units().into();
+            }
+        }
+    }
+
+    pub fn cities(&self) -> &[ClientCity] {
+        &self.cities
+    }
+
+    pub fn units(&self) -> &[ClientUnit] {
+        &self.units
     }
 }

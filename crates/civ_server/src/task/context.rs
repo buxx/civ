@@ -35,6 +35,17 @@ pub struct PhysicalContext {
     y: u64,
 }
 
+impl PhysicalContext {
+    pub fn xy(&self) -> (u64, u64) {
+        (self.x, self.y)
+    }
+
+    pub fn set_xy(&mut self, value: (u64, u64)) {
+        self.x = value.0;
+        self.y = value.1;
+    }
+}
+
 impl Into<ClientPhysicalContext> for PhysicalContext {
     fn into(self) -> ClientPhysicalContext {
         ClientPhysicalContext::new(self.x, self.y)

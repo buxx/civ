@@ -131,15 +131,19 @@ impl Runner {
         let state = self.state();
         let tasks_length = state.tasks().len();
         let clients_count = state.clients().count();
+        let cities_count = state.cities().len();
+        let units_count = state.units().len();
         drop(state);
 
         if Instant::now().duration_since(self.last_stat).as_millis() >= 1000 {
             info!(
-                "⏰{} 🌍{} 🎯{} 👥{}",
+                "⏰{} 🌍{} 🎯{} 👥{} 🚹{} 🏠{}",
                 self.ticks_since_last_stats,
                 self.state().frame().0,
                 tasks_length,
                 clients_count,
+                units_count,
+                cities_count
             );
 
             self.ticks_since_last_stats = 0;

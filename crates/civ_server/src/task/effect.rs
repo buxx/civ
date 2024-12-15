@@ -23,23 +23,21 @@ pub enum ClientEffect {
 }
 pub enum CityEffect {
     New(City),
-    Remove,
+    Remove(City),
 }
 pub enum UnitEffect {
     New(Unit),
-    Remove,
-    Move(Unit),
+    Remove(Unit),
+    Move(Unit, (u64, u64), (u64, u64)),
 }
 
 #[derive(Clone)]
 pub enum IndexEffect {
-    RefreshCityIndexes,
-    RefreshUnitIndexes,
     NewlyCity(City),
-    RemovedCity(Uuid),
+    RemovedCity(City),
     NewlyUnit(Unit),
-    RemovedUnit(Uuid),
-    MovedUnit(Unit),
+    RemovedUnit(Unit),
+    MovedUnit(Unit, (u64, u64), (u64, u64)),
 }
 
 impl Effect {
@@ -48,14 +46,16 @@ impl Effect {
             Effect::State(effect) => match effect {
                 StateEffect::Task(_, _) => None,
                 StateEffect::Client(_, _) => None,
-                StateEffect::City(uuid, effect) => match effect {
+                StateEffect::City(_, effect) => match effect {
                     CityEffect::New(city) => Some(IndexEffect::NewlyCity(city.clone())),
-                    CityEffect::Remove => Some(IndexEffect::RemovedCity(*uuid)),
+                    CityEffect::Remove(city) => Some(IndexEffect::RemovedCity(city.clone())),
                 },
-                StateEffect::Unit(uuid, effect) => match effect {
+                StateEffect::Unit(_, effect) => match effect {
                     UnitEffect::New(unit) => Some(IndexEffect::NewlyUnit(unit.clone())),
-                    UnitEffect::Remove => Some(IndexEffect::RemovedUnit(*uuid)),
-                    UnitEffect::Move(unit) => Some(IndexEffect::MovedUnit(unit.clone())),
+                    UnitEffect::Remove(unit) => Some(IndexEffect::RemovedUnit(unit.clone())),
+                    UnitEffect::Move(unit, from_, to_) => {
+                        Some(IndexEffect::MovedUnit(unit.clone(), *from_, *to_))
+                    }
                 },
             },
         }
@@ -68,32 +68,6 @@ pub trait IntoIndexEffects {
 
 impl IntoIndexEffects for Vec<Effect> {
     fn index_effects(&self) -> Vec<IndexEffect> {
-        let mut refresh_cities_index = false;
-        let mut refresh_units_index = false;
-        let mut index_effects = vec![];
-
-        for effect in self.iter() {
-            if let Some(index_effect) = effect.index_effect() {
-                match index_effect {
-                    IndexEffect::RefreshCityIndexes => refresh_cities_index = true,
-                    IndexEffect::RefreshUnitIndexes => refresh_units_index = true,
-                    IndexEffect::NewlyCity(_) => index_effects.push(index_effect.clone()),
-                    IndexEffect::RemovedCity(_) => index_effects.push(index_effect.clone()),
-                    IndexEffect::NewlyUnit(_) => index_effects.push(index_effect.clone()),
-                    IndexEffect::RemovedUnit(_) => index_effects.push(index_effect.clone()),
-                    IndexEffect::MovedUnit(_) => index_effects.push(index_effect.clone()),
-                }
-            }
-        }
-
-        if refresh_cities_index {
-            index_effects.push(IndexEffect::RefreshCityIndexes)
-        }
-
-        if refresh_units_index {
-            index_effects.push(IndexEffect::RefreshUnitIndexes)
-        }
-
-        index_effects
+        self.iter().filter_map(|e| e.index_effect()).collect()
     }
 }

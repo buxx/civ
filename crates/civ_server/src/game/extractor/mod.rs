@@ -18,6 +18,7 @@ impl Extractor {
     pub fn game_slice(&self, _client_id: &Uuid, window: &Window) -> GameSlice {
         let state = self.context.state();
         let index = state.index();
+
         let cities: Vec<ClientCity> = index
             .xy_cities(window)
             .iter()
@@ -27,7 +28,7 @@ impl Extractor {
                     index
                         .uuid_cities()
                         .get(uuid)
-                        .expect("Index must respect integrity"),
+                        .expect("Index must respect cities integrity"),
                 )
             })
             .map(|(uuid, index)| state.city(*index, &uuid).unwrap())
@@ -42,7 +43,7 @@ impl Extractor {
                     index
                         .uuid_units()
                         .get(uuid)
-                        .expect("Index must respect integrity"),
+                        .expect("Index must respect units integrity"),
                 )
             })
             .map(|(uuid, index)| state.unit(*index, &uuid).unwrap())

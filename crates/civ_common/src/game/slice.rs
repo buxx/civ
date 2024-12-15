@@ -13,6 +13,14 @@ impl GameSlice {
     pub fn new(cities: Vec<ClientCity>, units: Vec<ClientUnit>) -> Self {
         Self { cities, units }
     }
+
+    pub fn cities(&self) -> &[ClientCity] {
+        &self.cities
+    }
+
+    pub fn units(&self) -> &[ClientUnit] {
+        &self.units
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -7,9 +7,8 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    game::{city::City, task::settle::Settle, unit::Unit},
+    game::{city::City, physics::Physics, unit::Unit},
     task::{
-        context::{PhysicalContext, TaskContext},
         effect::{CityEffect, Effect, IntoIndexEffects, StateEffect, TaskEffect, UnitEffect},
         Task,
     },
@@ -65,36 +64,6 @@ impl State {
 
     pub fn increment(&mut self) {
         self.frame_i += GameFrame(1);
-
-        // HACK
-        if self.frame_i.0 == 0 {
-            for x in 0..100 {
-                for y in 0..100 {
-                    self.cities.push(
-                        City::builder()
-                            .id(Uuid::new_v4())
-                            .physics(PhysicalContext::builder().x(x * 5).y(y * 5).build())
-                            .build(),
-                    );
-                }
-            }
-        }
-        if self.frame_i.0 == 19 {
-            for _ in 0..1_000 {
-                self.tasks.push(Box::new(
-                    Settle::builder()
-                        .context(
-                            TaskContext::builder()
-                                .id(Uuid::new_v4())
-                                .start(self.frame_i)
-                                .end(self.frame_i + GAME_FRAMES_PER_SECOND * 5)
-                                .build(),
-                        )
-                        .physic(PhysicalContext::builder().x(0).y(0).build())
-                        .build(),
-                ))
-            }
-        }
     }
 
     pub fn apply(&mut self, effects: Vec<Effect>) {
@@ -114,7 +83,7 @@ impl State {
                         CityEffect::New(city) => {
                             self.cities.push(city);
                         }
-                        CityEffect::Remove => {
+                        CityEffect::Remove(_) => {
                             self.cities.retain(|city| city.id() != uuid);
                         }
                     },
@@ -122,10 +91,15 @@ impl State {
                         UnitEffect::New(unit) => {
                             self.units.push(unit);
                         }
-                        UnitEffect::Remove => {
+                        UnitEffect::Remove(_) => {
                             self.units.retain(|unit| unit.id() != uuid);
                         }
-                        UnitEffect::Move(_unit) => todo!(),
+                        UnitEffect::Move(unit, _from, to_) => {
+                            if let Some(unit) = self.units.iter_mut().find(|u| u.id() == unit.id())
+                            {
+                                unit.physics_mut().set_xy(to_)
+                            }
+                        }
                     },
                 },
             }

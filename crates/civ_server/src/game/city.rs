@@ -22,6 +22,10 @@ impl Physics for City {
     fn physics(&self) -> &PhysicalContext {
         &self.physics
     }
+
+    fn physics_mut(&mut self) -> &mut PhysicalContext {
+        &mut self.physics
+    }
 }
 
 impl Into<ClientCity> for &City {

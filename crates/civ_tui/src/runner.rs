@@ -6,7 +6,7 @@ use std::{
 
 use bon::Builder;
 use clap::Parser;
-use common::network::message::{ClientToServerMessage, ServerToClientMessage};
+use common::network::message::{ClientStateMessage, ClientToServerMessage, ServerToClientMessage};
 use crossbeam::channel::{Receiver, Sender};
 
 use crate::{
@@ -31,11 +31,10 @@ impl Runner {
         thread::spawn(move || {
             while let Ok(message) = from_server_receiver.recv() {
                 match message {
-                    ServerToClientMessage::SetWindow(window) => {
-                        let mut state = state.lock().expect("Assume state is always accessible");
-                        state.set_window(Some(window));
-                    }
-                    ServerToClientMessage::SetGameSlice(game_slice) => todo!(),
+                    ServerToClientMessage::State(message) => state
+                        .lock()
+                        .expect("Assume state is always accessible")
+                        .apply(message),
                 }
             }
         });

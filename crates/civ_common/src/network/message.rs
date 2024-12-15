@@ -20,6 +20,11 @@ pub enum ClientToServerMessage {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ServerToClientMessage {
+    State(ClientStateMessage),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum ClientStateMessage {
     SetWindow(Window),
     SetGameSlice(GameSlice),
 }

@@ -14,4 +14,6 @@ pub fn status(context: CommandContext) {
     println!("connected: {}", state.connected());
     println!("errors: {}", state.errors().len());
     println!("window: {}", window_str);
+    println!("cities: {}", state.cities().len());
+    println!("units: {}", state.units().len());
 }
