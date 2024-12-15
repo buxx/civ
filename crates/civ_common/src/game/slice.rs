@@ -1,11 +1,14 @@
+use std::fmt::Display;
+
+use bon::Builder;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::space::context::ClientPhysicalContext;
 
-use super::unit::UnitType;
+use super::unit::{UnitTask, UnitType};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct GameSlice {
     cities: Vec<ClientCity>,
     units: Vec<ClientUnit>,
@@ -50,18 +53,15 @@ impl ClientCity {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Builder)]
 pub struct ClientUnit {
     id: Uuid,
     type_: UnitType,
+    tasks: ClientUnitTasks,
     physics: ClientPhysicalContext,
 }
 
 impl ClientUnit {
-    pub fn new(id: Uuid, type_: UnitType, physics: ClientPhysicalContext) -> Self {
-        Self { id, type_, physics }
-    }
-
     pub fn id(&self) -> Uuid {
         self.id
     }
@@ -72,5 +72,36 @@ impl ClientUnit {
 
     pub fn type_(&self) -> &UnitType {
         &self.type_
+    }
+
+    pub fn tasks(&self) -> &ClientUnitTasks {
+        &self.tasks
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ClientUnitTasks {
+    stack: Vec<(Uuid, UnitTask)>,
+}
+
+impl ClientUnitTasks {
+    pub fn new(stack: Vec<(Uuid, UnitTask)>) -> Self {
+        Self { stack }
+    }
+}
+
+impl Display for ClientUnitTasks {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.stack.is_empty() {
+            return f.write_str("Idle");
+        }
+
+        let sentence = self
+            .stack
+            .iter()
+            .map(|(_, task)| format!("{} (?%)", task))
+            .collect::<Vec<String>>()
+            .join(", ");
+        f.write_str(&sentence)
     }
 }

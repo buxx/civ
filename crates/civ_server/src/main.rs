@@ -4,7 +4,7 @@ use common::{
 };
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
-use game::{city::City, unit::Unit};
+use game::unit::Unit;
 use network::Network;
 use runner::{Runner, RunnerContext};
 use state::State;
@@ -14,7 +14,7 @@ use std::{
 };
 use task::{
     context::PhysicalContext,
-    effect::{CityEffect, Effect, StateEffect, UnitEffect},
+    effect::{Effect, StateEffect, UnitEffect},
 };
 use thiserror::Error;
 use uuid::Uuid;

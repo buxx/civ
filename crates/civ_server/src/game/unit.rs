@@ -1,5 +1,8 @@
 use bon::Builder;
-use common::game::{slice::ClientUnit, unit::UnitType};
+use common::game::{
+    slice::{ClientUnit, ClientUnitTasks},
+    unit::{UnitTask, UnitType},
+};
 use uuid::Uuid;
 
 use crate::task::context::PhysicalContext;
@@ -10,6 +13,8 @@ use super::physics::Physics;
 pub struct Unit {
     id: Uuid,
     type_: UnitType,
+    #[builder(default)]
+    tasks: UnitTasks,
     physics: PhysicalContext,
 }
 
@@ -35,6 +40,22 @@ impl Physics for Unit {
 
 impl Into<ClientUnit> for &Unit {
     fn into(self) -> ClientUnit {
-        ClientUnit::new(self.id, self.type_.clone(), self.physics.clone().into())
+        ClientUnit::builder()
+            .id(self.id)
+            .type_(self.type_.clone())
+            .tasks(self.tasks.clone().into())
+            .physics(self.physics.clone().into())
+            .build()
+    }
+}
+
+#[derive(Default, Clone)]
+pub struct UnitTasks {
+    stack: Vec<(Uuid, UnitTask)>,
+}
+
+impl Into<ClientUnitTasks> for UnitTasks {
+    fn into(self) -> ClientUnitTasks {
+        ClientUnitTasks::new(self.stack.clone())
     }
 }

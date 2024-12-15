@@ -22,5 +22,6 @@ pub fn detail(context: CommandContext, id: Uuid) {
         println!("id: {}", unit.id());
         println!("xy: {:?}", unit.physics().xy());
         println!("type: {:?}", unit.type_().to_string());
+        println!("tasks: {}", unit.tasks());
     }
 }

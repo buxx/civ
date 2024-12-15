@@ -6,24 +6,24 @@ use crate::{
     space::window::{SetWindow, Window},
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerEnveloppe {
     Hello(Uuid),
     Goodbye,
     Message(ClientToServerMessage),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerMessage {
     SetWindow(SetWindow),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum ServerToClientMessage {
     State(ClientStateMessage),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum ClientStateMessage {
     SetWindow(Window),
     SetGameSlice(GameSlice),

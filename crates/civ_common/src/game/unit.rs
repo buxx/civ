@@ -14,3 +14,16 @@ impl Display for UnitType {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum UnitTask {
+    Settle,
+}
+
+impl Display for UnitTask {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UnitTask::Settle => f.write_str("Settle"),
+        }
+    }
+}
