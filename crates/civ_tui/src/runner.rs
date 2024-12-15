@@ -6,7 +6,7 @@ use std::{
 
 use bon::Builder;
 use clap::Parser;
-use common::network::message::{ClientStateMessage, ClientToServerMessage, ServerToClientMessage};
+use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use crossbeam::channel::{Receiver, Sender};
 
 use crate::{
@@ -81,6 +81,10 @@ impl Runner {
                                     }
                                 };
                             }
+                            SubCommand::Cities => command::city::cities(self.into()),
+                            SubCommand::City { id } => command::city::city(self.into(), id),
+                            SubCommand::Units => command::unit::units(self.into()),
+                            SubCommand::Unit { id } => command::unit::unit(self.into(), id),
                         };
                     }
                     Err(error) => {

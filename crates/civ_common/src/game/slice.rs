@@ -26,12 +26,25 @@ impl GameSlice {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ClientCity {
     id: Uuid,
+    name: String,
     physics: ClientPhysicalContext,
 }
 
 impl ClientCity {
-    pub fn new(id: Uuid, physics: ClientPhysicalContext) -> Self {
-        Self { id, physics }
+    pub fn new(id: Uuid, name: String, physics: ClientPhysicalContext) -> Self {
+        Self { id, name, physics }
+    }
+
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn physics(&self) -> &ClientPhysicalContext {
+        &self.physics
     }
 }
 
@@ -44,5 +57,13 @@ pub struct ClientUnit {
 impl ClientUnit {
     pub fn new(id: Uuid, physics: ClientPhysicalContext) -> Self {
         Self { id, physics }
+    }
+
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+
+    pub fn physics(&self) -> &ClientPhysicalContext {
+        &self.physics
     }
 }

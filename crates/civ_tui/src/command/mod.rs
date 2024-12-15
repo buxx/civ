@@ -3,9 +3,12 @@ use clap::{Args, Parser, Subcommand};
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use crossbeam::channel::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
+use uuid::Uuid;
 
+pub mod city;
 pub mod errors;
 pub mod status;
+pub mod unit;
 pub mod window;
 
 #[derive(Parser, Debug)]
@@ -32,6 +35,14 @@ pub enum SubCommand {
     Window {
         #[clap(subcommand)]
         subcommand: WindowSubCommand,
+    },
+    Cities,
+    City {
+        id: Uuid,
+    },
+    Units,
+    Unit {
+        id: Uuid,
     },
 }
 #[derive(Debug, Subcommand)]

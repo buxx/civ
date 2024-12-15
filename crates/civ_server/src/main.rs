@@ -56,6 +56,7 @@ fn main() -> Result<(), Error> {
                 CityEffect::New(
                     City::builder()
                         .id(uuid)
+                        .name("Vity name".into())
                         .physics(PhysicalContext::builder().x(x * 5).y(y * 5).build())
                         .build(),
                 ),
