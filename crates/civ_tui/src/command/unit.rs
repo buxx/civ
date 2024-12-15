@@ -12,7 +12,7 @@ pub fn units(context: CommandContext) {
     }
 }
 
-pub fn unit(context: CommandContext, id: Uuid) {
+pub fn detail(context: CommandContext, id: Uuid) {
     let state = context
         .state
         .lock()
@@ -21,5 +21,6 @@ pub fn unit(context: CommandContext, id: Uuid) {
     if let Some(unit) = state.units().iter().find(|c| c.id() == id) {
         println!("id: {}", unit.id());
         println!("xy: {:?}", unit.physics().xy());
+        println!("type: {:?}", unit.type_().to_string());
     }
 }

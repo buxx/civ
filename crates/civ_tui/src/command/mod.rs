@@ -43,8 +43,17 @@ pub enum SubCommand {
     Units,
     Unit {
         id: Uuid,
+        #[clap(subcommand)]
+        subcommand: Option<UnitSubCommand>,
     },
 }
+
+#[derive(Debug, Subcommand)]
+pub enum UnitSubCommand {
+    Detail,
+    Settle,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum WindowSubCommand {
     Set {

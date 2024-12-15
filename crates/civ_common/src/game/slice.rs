@@ -3,6 +3,8 @@ use uuid::Uuid;
 
 use crate::space::context::ClientPhysicalContext;
 
+use super::unit::UnitType;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GameSlice {
     cities: Vec<ClientCity>,
@@ -51,12 +53,13 @@ impl ClientCity {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ClientUnit {
     id: Uuid,
+    type_: UnitType,
     physics: ClientPhysicalContext,
 }
 
 impl ClientUnit {
-    pub fn new(id: Uuid, physics: ClientPhysicalContext) -> Self {
-        Self { id, physics }
+    pub fn new(id: Uuid, type_: UnitType, physics: ClientPhysicalContext) -> Self {
+        Self { id, type_, physics }
     }
 
     pub fn id(&self) -> Uuid {
@@ -65,5 +68,9 @@ impl ClientUnit {
 
     pub fn physics(&self) -> &ClientPhysicalContext {
         &self.physics
+    }
+
+    pub fn type_(&self) -> &UnitType {
+        &self.type_
     }
 }

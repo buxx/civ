@@ -1,12 +1,20 @@
-use common::network::message::{ClientToServerMessage, ServerToClientMessage};
+use common::{
+    game::unit::UnitType,
+    network::message::{ClientToServerMessage, ServerToClientMessage},
+};
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
+use game::{city::City, unit::Unit};
 use network::Network;
 use runner::{Runner, RunnerContext};
 use state::State;
 use std::{
     sync::{Arc, Mutex},
     thread,
+};
+use task::{
+    context::PhysicalContext,
+    effect::{CityEffect, Effect, StateEffect, UnitEffect},
 };
 use thiserror::Error;
 use uuid::Uuid;
@@ -41,8 +49,22 @@ fn main() -> Result<(), Error> {
     let env = env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info");
     env_logger::init_from_env(env);
 
+    let mut state = State::default();
+    // HACK
+    let uuid = Uuid::new_v4();
+    state.apply(vec![Effect::State(StateEffect::Unit(
+        uuid,
+        UnitEffect::New(
+            Unit::builder()
+                .id(uuid)
+                .type_(UnitType::Settlers)
+                .physics(PhysicalContext::builder().x(0).y(0).build())
+                .build(),
+        ),
+    ))]);
+
     let context = Arc::new(Mutex::new(Context::new()));
-    let state = Arc::new(Mutex::new(State::default()));
+    let state = Arc::new(Mutex::new(state));
     let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
     let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
 

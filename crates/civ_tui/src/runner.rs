@@ -10,7 +10,7 @@ use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use crossbeam::channel::{Receiver, Sender};
 
 use crate::{
-    command::{self, Command, CommandContext, SubCommand, WindowSubCommand},
+    command::{self, Command, CommandContext, SubCommand, UnitSubCommand, WindowSubCommand},
     context::Context,
     state::State,
 };
@@ -84,7 +84,17 @@ impl Runner {
                             SubCommand::Cities => command::city::cities(self.into()),
                             SubCommand::City { id } => command::city::city(self.into(), id),
                             SubCommand::Units => command::unit::units(self.into()),
-                            SubCommand::Unit { id } => command::unit::unit(self.into(), id),
+                            SubCommand::Unit { id, subcommand } => {
+                                match subcommand {
+                                    Some(command) => match command {
+                                        UnitSubCommand::Detail => {
+                                            command::unit::detail(self.into(), id)
+                                        }
+                                        UnitSubCommand::Settle => todo!(),
+                                    },
+                                    None => command::unit::detail(self.into(), id),
+                                };
+                            }
                         };
                     }
                     Err(error) => {
