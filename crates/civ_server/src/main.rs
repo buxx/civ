@@ -1,6 +1,7 @@
 use common::{
     game::unit::UnitType,
     network::message::{ClientToServerMessage, ServerToClientMessage},
+    rules::std1::Std1RuleSet,
 };
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
@@ -49,6 +50,7 @@ fn main() -> Result<(), Error> {
     let env = env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info");
     env_logger::init_from_env(env);
 
+    let rules = Std1RuleSet;
     let mut state = State::default();
     // HACK
     let uuid = Uuid::new_v4();
@@ -63,7 +65,7 @@ fn main() -> Result<(), Error> {
         ),
     ))]);
 
-    let context = Arc::new(Mutex::new(Context::new()));
+    let context = Arc::new(Mutex::new(Context::new(Box::new(rules))));
     let state = Arc::new(Mutex::new(state));
     let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
     let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();

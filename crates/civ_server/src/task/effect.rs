@@ -3,6 +3,8 @@ use uuid::Uuid;
 
 use crate::game::{city::City, unit::Unit};
 
+use super::Task;
+
 // FIXME: Move this mod into state
 pub enum Effect {
     State(StateEffect),
@@ -15,6 +17,7 @@ pub enum StateEffect {
     Unit(Uuid, UnitEffect),
 }
 pub enum TaskEffect {
+    Push(Box<dyn Task + Send>),
     Finished,
 }
 
@@ -23,21 +26,21 @@ pub enum ClientEffect {
 }
 pub enum CityEffect {
     New(City),
-    Remove(City),
+    Remove,
 }
 pub enum UnitEffect {
     New(Unit),
-    Remove(Unit),
-    Move(Unit, (u64, u64), (u64, u64)),
+    Remove,
+    Move((u64, u64)),
 }
 
 #[derive(Clone)]
 pub enum IndexEffect {
-    NewlyCity(City),
-    RemovedCity(City),
-    NewlyUnit(Unit),
-    RemovedUnit(Unit),
-    MovedUnit(Unit, (u64, u64), (u64, u64)),
+    NewCity(City),
+    RemovedCity(Uuid),
+    NewUnit(Unit),
+    RemovedUnit(Uuid),
+    MovedUnit(Uuid, (u64, u64)),
 }
 
 impl Effect {
@@ -46,16 +49,14 @@ impl Effect {
             Effect::State(effect) => match effect {
                 StateEffect::Task(_, _) => None,
                 StateEffect::Client(_, _) => None,
-                StateEffect::City(_, effect) => match effect {
-                    CityEffect::New(city) => Some(IndexEffect::NewlyCity(city.clone())),
-                    CityEffect::Remove(city) => Some(IndexEffect::RemovedCity(city.clone())),
+                StateEffect::City(uuid, effect) => match effect {
+                    CityEffect::New(city) => Some(IndexEffect::NewCity(city.clone())),
+                    CityEffect::Remove => Some(IndexEffect::RemovedCity(*uuid)),
                 },
-                StateEffect::Unit(_, effect) => match effect {
-                    UnitEffect::New(unit) => Some(IndexEffect::NewlyUnit(unit.clone())),
-                    UnitEffect::Remove(unit) => Some(IndexEffect::RemovedUnit(unit.clone())),
-                    UnitEffect::Move(unit, from_, to_) => {
-                        Some(IndexEffect::MovedUnit(unit.clone(), *from_, *to_))
-                    }
+                StateEffect::Unit(uuid, effect) => match effect {
+                    UnitEffect::New(unit) => Some(IndexEffect::NewUnit(unit.clone())),
+                    UnitEffect::Remove => Some(IndexEffect::RemovedUnit(*uuid)),
+                    UnitEffect::Move(to_) => Some(IndexEffect::MovedUnit(*uuid, *to_)),
                 },
             },
         }

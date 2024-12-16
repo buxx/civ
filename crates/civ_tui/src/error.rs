@@ -4,4 +4,6 @@ use thiserror::Error;
 pub enum PublicError {
     #[error("Not connected to server")]
     NotConnected,
+    #[error("{0}")]
+    ServerNotification(String),
 }

@@ -6,12 +6,13 @@ use std::{
 
 use bon::Builder;
 use clap::Parser;
-use common::network::message::{ClientToServerMessage, ServerToClientMessage};
+use common::network::message::{ClientToServerMessage, NotificationLevel, ServerToClientMessage};
 use crossbeam::channel::{Receiver, Sender};
 
 use crate::{
     command::{self, Command, CommandContext, SubCommand, UnitSubCommand, WindowSubCommand},
     context::Context,
+    error::PublicError,
     state::State,
 };
 
@@ -30,11 +31,20 @@ impl Runner {
         let state = Arc::clone(&self.state);
         thread::spawn(move || {
             while let Ok(message) = from_server_receiver.recv() {
+                let mut state = state.lock().expect("Assume state is always accessible");
                 match message {
-                    ServerToClientMessage::State(message) => state
-                        .lock()
-                        .expect("Assume state is always accessible")
-                        .apply(message),
+                    ServerToClientMessage::State(message) => {
+                        state.apply(message);
+                    }
+                    ServerToClientMessage::Notification(level, message) => {
+                        match level {
+                            NotificationLevel::Error => {
+                                state.push_error(PublicError::ServerNotification(message));
+                            }
+                            NotificationLevel::Warning => todo!(),
+                            NotificationLevel::Info => todo!(),
+                        };
+                    }
                 }
             }
         });
@@ -90,7 +100,9 @@ impl Runner {
                                         UnitSubCommand::Detail => {
                                             command::unit::detail(self.into(), id)
                                         }
-                                        UnitSubCommand::Settle => todo!(),
+                                        UnitSubCommand::Settle => {
+                                            command::unit::settle(self.into(), id);
+                                        }
                                     },
                                     None => command::unit::detail(self.into(), id),
                                 };

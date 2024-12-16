@@ -1,10 +1,19 @@
+use std::sync::{Arc, Mutex, MutexGuard};
+
 use bon::Builder;
+use common::{
+    game::GameFrame,
+    task::{CreateTaskError, GamePlayError},
+};
+use uuid::Uuid;
 
 use crate::{
-    state::GameFrame,
+    context::Context,
+    game::{city::City, physics::Physics},
+    state::State,
     task::{
         context::{PhysicalContext, TaskContext},
-        effect::Effect,
+        effect::{CityEffect, Effect, StateEffect, UnitEffect},
         Task, TaskType,
     },
 };
@@ -13,9 +22,50 @@ use crate::{
 pub struct Settle {
     context: TaskContext,
     physic: PhysicalContext,
+    settler: Uuid,
+    city_name: String,
 }
 
-impl Settle {}
+impl Settle {
+    pub fn new(
+        context: Arc<Mutex<Context>>,
+        state: MutexGuard<State>,
+        unit_uuid: &Uuid,
+        city_name: String,
+    ) -> Result<Self, CreateTaskError> {
+        let unit = state.find_unit(unit_uuid).map_err(|e| {
+            CreateTaskError::IncoherentContext(
+                "Unit not available anymore".to_string(),
+                Some(Box::new(e)),
+            )
+        })?;
+
+        let context = context
+            .lock()
+            .expect("Assume contexte is always accessible");
+        if !context.rules().can_settle(unit.type_()) {
+            return Err(CreateTaskError::GamePlay(GamePlayError::CantSettle(
+                format!("{} cant do this action", unit.type_()),
+            )));
+        }
+
+        let task_id = Uuid::new_v4();
+        let end = *state.frame() + context.rules().settle_duration(unit.type_()).0;
+        let task = Settle::builder()
+            .settler(*unit_uuid)
+            .city_name(city_name)
+            .physic(unit.physics().clone())
+            .context(
+                TaskContext::builder()
+                    .id(task_id)
+                    .start(*state.frame())
+                    .end(end)
+                    .build(),
+            )
+            .build();
+        Ok(task)
+    }
+}
 
 impl Task for Settle {
     fn tick_(&self, _frame: GameFrame) -> Vec<Effect> {
@@ -28,5 +78,22 @@ impl Task for Settle {
 
     fn type_(&self) -> TaskType {
         TaskType::Physical(&self.physic)
+    }
+
+    fn then(&self) -> (Vec<Effect>, Vec<Box<dyn Task + Send>>) {
+        let city_id = Uuid::new_v4();
+        let city = City::builder()
+            .id(city_id)
+            .name(self.city_name.clone())
+            .physics(self.physic.clone())
+            .build();
+
+        (
+            vec![
+                Effect::State(StateEffect::Unit(self.settler, UnitEffect::Remove)),
+                Effect::State(StateEffect::City(self.settler, CityEffect::New(city))),
+            ],
+            vec![],
+        )
     }
 }

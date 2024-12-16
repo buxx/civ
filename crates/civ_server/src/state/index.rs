@@ -10,24 +10,32 @@ use crate::{
 
 #[derive(Default)]
 pub struct Index {
-    uuid_cities: HashMap<Uuid, usize>,
-    uuid_units: HashMap<Uuid, usize>,
+    cities_index: HashMap<Uuid, usize>,
+    units_index: HashMap<Uuid, usize>,
+    cities_xy: HashMap<Uuid, (u64, u64)>,
+    units_xy: HashMap<Uuid, (u64, u64)>,
     xy_cities: HashMap<(u64, u64), Uuid>,
     xy_units: HashMap<(u64, u64), Vec<Uuid>>,
 }
 
 impl Index {
-    pub fn refresh_cities_indexes(&mut self, cities: &Vec<City>) {
-        self.uuid_cities.clear();
+    pub fn refresh_all_cities(&mut self, cities: &Vec<City>) {
+        self.cities_index.clear();
+        self.cities_xy.clear();
+
         for (i, city) in cities.iter().enumerate() {
-            self.uuid_cities.insert(city.id(), i);
+            self.cities_index.insert(city.id(), i);
+            self.cities_xy.insert(city.id(), city.physics().xy());
         }
     }
 
-    pub fn refresh_units_indexes(&mut self, units: &Vec<Unit>) {
-        self.uuid_units.clear();
+    pub fn refresh_all_units(&mut self, units: &Vec<Unit>) {
+        self.units_index.clear();
+        self.units_xy.clear();
+
         for (i, unit) in units.iter().enumerate() {
-            self.uuid_units.insert(unit.id(), i);
+            self.units_index.insert(unit.id(), i);
+            self.units_xy.insert(unit.id(), unit.physics().xy());
         }
     }
 
@@ -71,54 +79,55 @@ impl Index {
 
         for effect in effects {
             match effect {
-                IndexEffect::NewlyCity(city) => {
+                IndexEffect::NewCity(city) => {
                     self.xy_cities.insert(city.physics().xy(), city.id());
                     refresh_cities_index = true;
                 }
-                IndexEffect::RemovedCity(city) => {
-                    self.xy_cities
-                        .remove(&city.physics().xy())
-                        .expect("Index integrity");
+                IndexEffect::RemovedCity(uuid) => {
+                    let city_xy = self.cities_xy.get(&uuid).expect("Index integrity");
+                    self.xy_cities.remove(&city_xy).expect("Index integrity");
                     refresh_cities_index = true;
                 }
-                IndexEffect::NewlyUnit(unit) => {
+                IndexEffect::NewUnit(unit) => {
                     self.xy_units
                         .entry(unit.physics().xy())
                         .or_default()
                         .push(unit.id());
                     refresh_units_index = true;
                 }
-                IndexEffect::RemovedUnit(unit) => {
+                IndexEffect::RemovedUnit(uuid) => {
+                    let unit_xy = self.units_xy.get(&uuid).expect("Index integrity");
                     self.xy_units
-                        .entry(unit.physics().xy())
+                        .entry(*unit_xy)
                         .or_default()
-                        .retain(|id| id != &unit.id());
+                        .retain(|id| id != &uuid);
                     refresh_cities_index = true;
                 }
-                IndexEffect::MovedUnit(unit, from_, to_) => {
+                IndexEffect::MovedUnit(uuid, to_) => {
+                    let old_unit_xy = self.units_xy.get(&uuid).expect("Index integrity");
                     self.xy_units
-                        .entry(from_)
+                        .entry(*old_unit_xy)
                         .or_default()
-                        .retain(|id| id != &unit.id());
-                    self.xy_units.entry(to_).or_default().push(unit.id());
+                        .retain(|id| id != &uuid);
+                    self.xy_units.entry(to_).or_default().push(uuid);
                 }
             }
         }
 
         if refresh_cities_index {
-            self.refresh_cities_indexes(cities);
+            self.refresh_all_cities(cities);
         }
 
         if refresh_units_index {
-            self.refresh_units_indexes(units);
+            self.refresh_all_units(units);
         }
     }
 
     pub fn uuid_cities(&self) -> &HashMap<Uuid, usize> {
-        &self.uuid_cities
+        &self.cities_index
     }
 
     pub fn uuid_units(&self) -> &HashMap<Uuid, usize> {
-        &self.uuid_units
+        &self.units_index
     }
 }

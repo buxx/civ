@@ -7,6 +7,13 @@ use crate::{
 };
 
 #[derive(Serialize, Deserialize, Clone)]
+pub enum NotificationLevel {
+    Error,
+    Warning,
+    Info,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerEnveloppe {
     Hello(Uuid),
     Goodbye,
@@ -16,11 +23,18 @@ pub enum ClientToServerEnveloppe {
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerMessage {
     SetWindow(SetWindow),
+    CreateTask(CreateTaskMessage),
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum CreateTaskMessage {
+    Settle(Uuid, String),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ServerToClientMessage {
     State(ClientStateMessage),
+    Notification(NotificationLevel, String),
 }
 
 #[derive(Serialize, Deserialize, Clone)]

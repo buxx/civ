@@ -1,7 +1,7 @@
 pub mod clients;
-use std::ops::{Add, AddAssign};
 
 use clients::Clients;
+use common::game::GameFrame;
 use index::Index;
 use thiserror::Error;
 use uuid::Uuid;
@@ -15,25 +15,6 @@ use crate::{
 };
 
 pub mod index;
-
-pub const GAME_FRAMES_PER_SECOND: u64 = 10;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub struct GameFrame(pub u64);
-
-impl Add<u64> for GameFrame {
-    type Output = Self;
-
-    fn add(self, rhs: u64) -> Self::Output {
-        Self(self.0 + rhs)
-    }
-}
-
-impl AddAssign for GameFrame {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 += rhs.0
-    }
-}
 
 #[derive(Default)]
 pub struct State {
@@ -78,12 +59,13 @@ impl State {
                     }
                     StateEffect::Task(uuid, effect) => match effect {
                         TaskEffect::Finished => remove_ids.push(uuid),
+                        TaskEffect::Push(task) => self.tasks.push(task),
                     },
                     StateEffect::City(uuid, effect) => match effect {
                         CityEffect::New(city) => {
                             self.cities.push(city);
                         }
-                        CityEffect::Remove(_) => {
+                        CityEffect::Remove => {
                             self.cities.retain(|city| city.id() != uuid);
                         }
                     },
@@ -91,12 +73,11 @@ impl State {
                         UnitEffect::New(unit) => {
                             self.units.push(unit);
                         }
-                        UnitEffect::Remove(_) => {
+                        UnitEffect::Remove => {
                             self.units.retain(|unit| unit.id() != uuid);
                         }
-                        UnitEffect::Move(unit, _from, to_) => {
-                            if let Some(unit) = self.units.iter_mut().find(|u| u.id() == unit.id())
-                            {
+                        UnitEffect::Move(to_) => {
+                            if let Some(unit) = self.units.iter_mut().find(|u| u.id() == uuid) {
                                 unit.physics_mut().set_xy(to_)
                             }
                         }
@@ -128,6 +109,15 @@ impl State {
         Err(StateError::CityNotFound(index, *uuid))
     }
 
+    pub fn find_city(&self, uuid: &Uuid) -> Result<&City, StateError> {
+        let unit_index = self
+            .index()
+            .uuid_cities()
+            .get(uuid)
+            .ok_or(StateError::CityUuidFound(*uuid))?;
+        self.city(*unit_index, uuid)
+    }
+
     pub fn unit(&self, index: usize, uuid: &Uuid) -> Result<&Unit, StateError> {
         if let Some(unit) = self.units.get(index) {
             if &unit.id() == uuid {
@@ -136,6 +126,15 @@ impl State {
         }
 
         Err(StateError::UnitNotFound(index, *uuid))
+    }
+
+    pub fn find_unit(&self, uuid: &Uuid) -> Result<&Unit, StateError> {
+        let unit_index = self
+            .index()
+            .uuid_units()
+            .get(uuid)
+            .ok_or(StateError::UnitUuidNotFound(*uuid))?;
+        self.unit(*unit_index, uuid)
     }
 
     pub fn units(&self) -> &[Unit] {
@@ -151,6 +150,10 @@ impl State {
 pub enum StateError {
     #[error("No city for index {0} and uuid {1}")]
     CityNotFound(usize, Uuid),
+    #[error("No city for uuid {0}")]
+    CityUuidFound(Uuid),
     #[error("No unit for index {0} and uuid {1}")]
     UnitNotFound(usize, Uuid),
+    #[error("No unit for uuid {0}")]
+    UnitUuidNotFound(Uuid),
 }

@@ -1,3 +1,4 @@
+use common::network::message::{ClientToServerMessage, CreateTaskMessage};
 use uuid::Uuid;
 
 use super::CommandContext;
@@ -24,4 +25,13 @@ pub fn detail(context: CommandContext, id: Uuid) {
         println!("type: {:?}", unit.type_().to_string());
         println!("tasks: {}", unit.tasks());
     }
+}
+
+pub fn settle(context: CommandContext, id: Uuid) {
+    context
+        .to_server_sender
+        .send(ClientToServerMessage::CreateTask(
+            CreateTaskMessage::Settle(id, "City name".to_string()),
+        ))
+        .unwrap()
 }

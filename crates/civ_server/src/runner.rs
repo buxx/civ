@@ -1,5 +1,8 @@
 use bon::Builder;
-use common::network::message::{ClientToServerMessage, ServerToClientMessage};
+use common::{
+    game::GAME_FRAMES_PER_SECOND,
+    network::message::{ClientToServerMessage, NotificationLevel, ServerToClientMessage},
+};
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{error, info};
 use rayon::{Scope, ThreadPoolBuilder};
@@ -10,10 +13,13 @@ use std::{
 };
 use uuid::Uuid;
 
+use crate::utils::collection::slices;
 use crate::{
-    context::Context, request::SetWindowRequestDealer, state::State, task::effect::Effect,
+    context::Context,
+    request::SetWindowRequestDealer,
+    state::State,
+    task::effect::{Effect, StateEffect, TaskEffect},
 };
-use crate::{state::GAME_FRAMES_PER_SECOND, utils::collection::slices};
 
 pub struct RunnerContext {
     pub context: Arc<Mutex<Context>>,
@@ -63,7 +69,7 @@ impl Clone for RunnerContext {
 
 #[derive(Builder)]
 pub struct Runner {
-    context: RunnerContext,
+    pub(super) context: RunnerContext,
     tick_base_period: u64,
     #[builder(default = Duration::ZERO)]
     lag: Duration,
@@ -83,7 +89,7 @@ impl Runner {
             .expect("Assume context is always accessible")
     }
 
-    fn state(&self) -> MutexGuard<State> {
+    pub(super) fn state(&self) -> MutexGuard<State> {
         self.context
             .state
             .lock()
@@ -220,6 +226,31 @@ impl Runner {
         match message {
             ClientToServerMessage::SetWindow(window) => {
                 SetWindowRequestDealer::new(self.context.clone(), client_id).deal(&window)
+            }
+            // FIXME: move into separated module
+            ClientToServerMessage::CreateTask(message) => {
+                match self.create_task(message) {
+                    Ok(task) => {
+                        //
+                        vec![Effect::State(StateEffect::Task(
+                            task.context().id(),
+                            TaskEffect::Push(task),
+                        ))]
+                    }
+                    Err(error) => {
+                        self.context
+                            .to_client_sender
+                            .send((
+                                client_id,
+                                ServerToClientMessage::Notification(
+                                    NotificationLevel::Error,
+                                    error.to_string(),
+                                ),
+                            ))
+                            .unwrap();
+                        vec![]
+                    }
+                }
             }
         }
     }

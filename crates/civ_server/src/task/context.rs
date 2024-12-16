@@ -1,8 +1,6 @@
 use bon::Builder;
-use common::space::context::ClientPhysicalContext;
+use common::{game::GameFrame, space::context::ClientPhysicalContext};
 use uuid::Uuid;
-
-use crate::state::GameFrame;
 
 #[derive(Builder)]
 pub struct TaskContext {
