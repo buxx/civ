@@ -69,6 +69,15 @@ impl State {
                 self.cities = slice.cities().into();
                 self.units = slice.units().into();
             }
+            ClientStateMessage::AddCity(city) => self.cities.push(city),
+            ClientStateMessage::RemoveCity(uuid) => self.cities.retain(|c| c.id() != uuid),
+            ClientStateMessage::AddUnit(unit) => self.units.push(unit),
+            ClientStateMessage::MoveUnit(uuid, to_) => {
+                if let Some(u) = self.units.iter_mut().find(|u| u.id() == uuid) {
+                    u.physics_mut().set_xy(to_)
+                }
+            }
+            ClientStateMessage::RemoveUnit(uuid) => self.units.retain(|u| u.id() != uuid),
         }
     }
 

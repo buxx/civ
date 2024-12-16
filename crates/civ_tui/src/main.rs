@@ -3,6 +3,7 @@ use std::{
     thread,
 };
 
+use clap::Parser;
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};

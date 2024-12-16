@@ -70,6 +70,10 @@ impl ClientUnit {
         &self.physics
     }
 
+    pub fn physics_mut(&mut self) -> &mut ClientPhysicalContext {
+        &mut self.physics
+    }
+
     pub fn type_(&self) -> &UnitType {
         &self.type_
     }

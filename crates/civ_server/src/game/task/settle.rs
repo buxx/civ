@@ -90,7 +90,10 @@ impl Task for Settle {
 
         (
             vec![
-                Effect::State(StateEffect::Unit(self.settler, UnitEffect::Remove)),
+                Effect::State(StateEffect::Unit(
+                    self.settler,
+                    UnitEffect::Remove(self.settler),
+                )),
                 Effect::State(StateEffect::City(self.settler, CityEffect::New(city))),
             ],
             vec![],

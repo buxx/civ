@@ -219,7 +219,30 @@ impl Runner {
     }
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
-        self.state().apply(effects)
+        self.reflect(&effects);
+        self.state().apply(effects);
+    }
+
+    fn reflect(&self, effects: &Vec<Effect>) {
+        for effect in effects {
+            if let Some(message) = effect.reflect() {
+                for client_id in self.concerned(effect) {
+                    self.context
+                        .to_client_sender
+                        .send((client_id, message.clone()))
+                        .unwrap()
+                }
+            }
+        }
+    }
+
+    fn concerned(&self, effect: &Effect) -> Vec<Uuid> {
+        let state = self.state();
+        if let Some(point) = state.effect_point(effect) {
+            return state.clients().clients_displaying(&point);
+        }
+
+        vec![]
     }
 
     fn client(&self, client_id: Uuid, message: ClientToServerMessage) -> Vec<Effect> {

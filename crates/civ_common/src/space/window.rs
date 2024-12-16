@@ -44,6 +44,13 @@ impl Window {
         let height = self.end_x - self.start_y;
         width * height
     }
+
+    pub fn contains(&self, point: &(u64, u64)) -> bool {
+        point.0 >= self.start_x
+            && point.0 <= self.end_x
+            && point.1 >= self.start_y
+            && point.1 <= self.end_y
+    }
 }
 
 impl Display for Window {

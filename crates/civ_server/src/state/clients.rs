@@ -25,11 +25,24 @@ impl Clients {
             ClientEffect::SetWindow(window) => {
                 self.states
                     .entry(client_id)
-                    .or_insert(ClientState::default())
+                    .or_default()
                     .set_window(Some(window));
-                // window
             }
         }
+    }
+
+    pub fn clients_displaying(&self, point: &(u64, u64)) -> Vec<Uuid> {
+        let mut clients = vec![];
+
+        for (uuid, state) in self.states.iter() {
+            if let Some(window) = &state.window {
+                if window.contains(point) {
+                    clients.push(*uuid)
+                }
+            }
+        }
+
+        clients
     }
 }
 

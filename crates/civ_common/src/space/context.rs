@@ -14,4 +14,9 @@ impl ClientPhysicalContext {
     pub fn xy(&self) -> (u64, u64) {
         (self.x, self.y)
     }
+
+    pub fn set_xy(&mut self, to: (u64, u64)) {
+        self.x = to.0;
+        self.y = to.1;
+    }
 }
