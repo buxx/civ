@@ -227,7 +227,6 @@ impl Runner {
             ClientToServerMessage::SetWindow(window) => {
                 SetWindowRequestDealer::new(self.context.clone(), client_id).deal(&window)
             }
-            // FIXME: move into separated module
             ClientToServerMessage::CreateTask(message) => {
                 match self.create_task(message) {
                     Ok(task) => {
