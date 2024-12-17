@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::{
     game::{city::City, physics::Physics, unit::Unit},
     task::{
-        effect::{self, CityEffect, Effect, IntoIndexEffects, StateEffect, TaskEffect, UnitEffect},
+        effect::{CityEffect, Effect, IntoIndexEffects, StateEffect, TaskEffect, UnitEffect},
         Task,
     },
 };
@@ -155,20 +155,16 @@ impl State {
                     CityEffect::New(city) => Some(city.physics().xy()),
                     CityEffect::Remove(uuid) => {
                         // TODO: should be an error if not Ok ?
-                        self.find_city(&uuid)
-                            .ok()
-                            .and_then(|c| Some(c.physics().xy()))
+                        self.find_city(uuid).ok().map(|c| c.physics().xy())
                     }
                 },
                 StateEffect::Unit(_, effect) => match effect {
                     UnitEffect::New(unit) => Some(unit.physics().xy()),
                     UnitEffect::Remove(uuid) => {
                         // TODO: should be an error if not Ok ?
-                        self.find_unit(&uuid)
-                            .ok()
-                            .and_then(|u| Some(u.physics().xy()))
+                        self.find_unit(uuid).ok().map(|u| u.physics().xy())
                     }
-                    UnitEffect::Move(_, to_) => Some(to_.clone()),
+                    UnitEffect::Move(_, to_) => Some(*to_),
                 },
             },
         }
