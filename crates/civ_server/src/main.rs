@@ -14,7 +14,7 @@ use std::{
     thread,
 };
 use task::{
-    context::PhysicalContext,
+    context::GeoContext,
     effect::{Effect, StateEffect, UnitEffect},
 };
 use thiserror::Error;
@@ -60,7 +60,7 @@ fn main() -> Result<(), Error> {
             Unit::builder()
                 .id(uuid)
                 .type_(UnitType::Settlers)
-                .physics(PhysicalContext::builder().x(0).y(0).build())
+                .physics(GeoContext::builder().x(0).y(0).build())
                 .build(),
         ),
     ))]);

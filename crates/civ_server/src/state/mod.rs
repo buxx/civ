@@ -7,7 +7,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    game::{city::City, physics::Physics, unit::Unit},
+    game::{city::City, physics::Geo, unit::Unit},
     task::{
         effect::{CityEffect, Effect, IntoIndexEffects, StateEffect, TaskEffect, UnitEffect},
         Task,

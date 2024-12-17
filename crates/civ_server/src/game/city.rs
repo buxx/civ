@@ -2,15 +2,15 @@ use bon::Builder;
 use common::game::slice::ClientCity;
 use uuid::Uuid;
 
-use crate::task::context::PhysicalContext;
+use crate::task::context::GeoContext;
 
-use super::physics::Physics;
+use super::physics::Geo;
 
 #[derive(Builder, Clone)]
 pub struct City {
     id: Uuid,
     name: String,
-    physics: PhysicalContext,
+    physics: GeoContext,
 }
 
 impl City {
@@ -19,12 +19,12 @@ impl City {
     }
 }
 
-impl Physics for City {
-    fn physics(&self) -> &PhysicalContext {
+impl Geo for City {
+    fn physics(&self) -> &GeoContext {
         &self.physics
     }
 
-    fn physics_mut(&mut self) -> &mut PhysicalContext {
+    fn physics_mut(&mut self) -> &mut GeoContext {
         &mut self.physics
     }
 }

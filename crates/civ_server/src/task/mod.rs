@@ -1,6 +1,6 @@
 pub mod create;
 use common::game::GameFrame;
-use context::{PhysicalContext, TaskContext};
+use context::{GeoContext, TaskContext};
 use effect::{Effect, StateEffect, TaskEffect};
 
 pub mod context;
@@ -38,5 +38,5 @@ pub trait Task {
 }
 
 pub enum TaskType<'a> {
-    Physical(&'a PhysicalContext),
+    Physical(&'a GeoContext),
 }

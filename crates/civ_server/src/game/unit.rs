@@ -5,9 +5,9 @@ use common::game::{
 };
 use uuid::Uuid;
 
-use crate::task::context::PhysicalContext;
+use crate::task::context::GeoContext;
 
-use super::physics::Physics;
+use super::physics::Geo;
 
 #[derive(Builder, Clone)]
 pub struct Unit {
@@ -15,7 +15,7 @@ pub struct Unit {
     type_: UnitType,
     #[builder(default)]
     tasks: UnitTasks,
-    physics: PhysicalContext,
+    physics: GeoContext,
 }
 
 impl Unit {
@@ -28,12 +28,12 @@ impl Unit {
     }
 }
 
-impl Physics for Unit {
-    fn physics(&self) -> &PhysicalContext {
+impl Geo for Unit {
+    fn physics(&self) -> &GeoContext {
         &self.physics
     }
 
-    fn physics_mut(&mut self) -> &mut PhysicalContext {
+    fn physics_mut(&mut self) -> &mut GeoContext {
         &mut self.physics
     }
 }

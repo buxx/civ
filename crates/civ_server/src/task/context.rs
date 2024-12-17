@@ -28,12 +28,12 @@ impl TaskContext {
 }
 
 #[derive(Builder, Clone)]
-pub struct PhysicalContext {
+pub struct GeoContext {
     x: u64,
     y: u64,
 }
 
-impl PhysicalContext {
+impl GeoContext {
     pub fn xy(&self) -> (u64, u64) {
         (self.x, self.y)
     }
@@ -44,7 +44,7 @@ impl PhysicalContext {
     }
 }
 
-impl Into<ClientPhysicalContext> for PhysicalContext {
+impl Into<ClientPhysicalContext> for GeoContext {
     fn into(self) -> ClientPhysicalContext {
         ClientPhysicalContext::new(self.x, self.y)
     }

@@ -9,10 +9,10 @@ use uuid::Uuid;
 
 use crate::{
     context::Context,
-    game::{city::City, physics::Physics},
+    game::{city::City, physics::Geo},
     state::State,
     task::{
-        context::{PhysicalContext, TaskContext},
+        context::{GeoContext, TaskContext},
         effect::{CityEffect, Effect, StateEffect, UnitEffect},
         Task, TaskType,
     },
@@ -21,7 +21,7 @@ use crate::{
 #[derive(Builder)]
 pub struct Settle {
     context: TaskContext,
-    physic: PhysicalContext,
+    physic: GeoContext,
     settler: Uuid,
     city_name: String,
 }

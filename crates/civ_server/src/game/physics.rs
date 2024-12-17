@@ -1,7 +1,7 @@
-use crate::task::context::PhysicalContext;
+use crate::task::context::GeoContext;
 
 // TODO: try Into<Physics> ?
-pub trait Physics {
-    fn physics(&self) -> &PhysicalContext;
-    fn physics_mut(&mut self) -> &mut PhysicalContext;
+pub trait Geo {
+    fn physics(&self) -> &GeoContext;
+    fn physics_mut(&mut self) -> &mut GeoContext;
 }
