@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ClientPhysicalContext {
+pub struct ClientGeoContext {
     x: u64,
     y: u64,
 }
 
-impl ClientPhysicalContext {
+impl ClientGeoContext {
     pub fn new(x: u64, y: u64) -> Self {
         Self { x, y }
     }

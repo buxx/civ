@@ -4,7 +4,7 @@ use bon::Builder;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::space::context::ClientPhysicalContext;
+use crate::space::context::ClientGeoContext;
 
 use super::unit::{UnitTask, UnitType};
 
@@ -32,12 +32,16 @@ impl GameSlice {
 pub struct ClientCity {
     id: Uuid,
     name: String,
-    physics: ClientPhysicalContext,
+    geo: ClientGeoContext,
 }
 
 impl ClientCity {
-    pub fn new(id: Uuid, name: String, physics: ClientPhysicalContext) -> Self {
-        Self { id, name, physics }
+    pub fn new(id: Uuid, name: String, physics: ClientGeoContext) -> Self {
+        Self {
+            id,
+            name,
+            geo: physics,
+        }
     }
 
     pub fn id(&self) -> Uuid {
@@ -48,8 +52,8 @@ impl ClientCity {
         &self.name
     }
 
-    pub fn physics(&self) -> &ClientPhysicalContext {
-        &self.physics
+    pub fn geo(&self) -> &ClientGeoContext {
+        &self.geo
     }
 }
 
@@ -58,7 +62,7 @@ pub struct ClientUnit {
     id: Uuid,
     type_: UnitType,
     tasks: ClientUnitTasks,
-    physics: ClientPhysicalContext,
+    physics: ClientGeoContext,
 }
 
 impl ClientUnit {
@@ -66,11 +70,11 @@ impl ClientUnit {
         self.id
     }
 
-    pub fn physics(&self) -> &ClientPhysicalContext {
+    pub fn physics(&self) -> &ClientGeoContext {
         &self.physics
     }
 
-    pub fn physics_mut(&mut self) -> &mut ClientPhysicalContext {
+    pub fn physics_mut(&mut self) -> &mut ClientGeoContext {
         &mut self.physics
     }
 

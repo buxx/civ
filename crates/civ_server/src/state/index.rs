@@ -25,7 +25,7 @@ impl Index {
 
         for (i, city) in cities.iter().enumerate() {
             self.cities_index.insert(city.id(), i);
-            self.cities_xy.insert(city.id(), city.physics().xy());
+            self.cities_xy.insert(city.id(), city.geo().xy());
         }
     }
 
@@ -35,7 +35,7 @@ impl Index {
 
         for (i, unit) in units.iter().enumerate() {
             self.units_index.insert(unit.id(), i);
-            self.units_xy.insert(unit.id(), unit.physics().xy());
+            self.units_xy.insert(unit.id(), unit.geo().xy());
         }
     }
 
@@ -80,7 +80,7 @@ impl Index {
         for effect in effects {
             match effect {
                 IndexEffect::NewCity(city) => {
-                    self.xy_cities.insert(city.physics().xy(), city.id());
+                    self.xy_cities.insert(city.geo().xy(), city.id());
                     refresh_cities_index = true;
                 }
                 IndexEffect::RemovedCity(uuid) => {
@@ -90,7 +90,7 @@ impl Index {
                 }
                 IndexEffect::NewUnit(unit) => {
                     self.xy_units
-                        .entry(unit.physics().xy())
+                        .entry(unit.geo().xy())
                         .or_default()
                         .push(unit.id());
                     refresh_units_index = true;

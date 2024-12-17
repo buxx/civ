@@ -15,7 +15,7 @@ pub struct Unit {
     type_: UnitType,
     #[builder(default)]
     tasks: UnitTasks,
-    physics: GeoContext,
+    geo: GeoContext,
 }
 
 impl Unit {
@@ -29,12 +29,12 @@ impl Unit {
 }
 
 impl Geo for Unit {
-    fn physics(&self) -> &GeoContext {
-        &self.physics
+    fn geo(&self) -> &GeoContext {
+        &self.geo
     }
 
-    fn physics_mut(&mut self) -> &mut GeoContext {
-        &mut self.physics
+    fn geo_mut(&mut self) -> &mut GeoContext {
+        &mut self.geo
     }
 }
 
@@ -44,7 +44,7 @@ impl Into<ClientUnit> for &Unit {
             .id(self.id)
             .type_(self.type_.clone())
             .tasks(self.tasks.clone().into())
-            .physics(self.physics.clone().into())
+            .physics(self.geo.clone().into())
             .build()
     }
 }

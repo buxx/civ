@@ -1,5 +1,5 @@
 use bon::Builder;
-use common::{game::GameFrame, space::context::ClientPhysicalContext};
+use common::{game::GameFrame, space::context::ClientGeoContext};
 use uuid::Uuid;
 
 #[derive(Builder)]
@@ -44,8 +44,8 @@ impl GeoContext {
     }
 }
 
-impl Into<ClientPhysicalContext> for GeoContext {
-    fn into(self) -> ClientPhysicalContext {
-        ClientPhysicalContext::new(self.x, self.y)
+impl Into<ClientGeoContext> for GeoContext {
+    fn into(self) -> ClientGeoContext {
+        ClientGeoContext::new(self.x, self.y)
     }
 }

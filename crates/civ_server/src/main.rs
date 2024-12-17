@@ -60,7 +60,7 @@ fn main() -> Result<(), Error> {
             Unit::builder()
                 .id(uuid)
                 .type_(UnitType::Settlers)
-                .physics(GeoContext::builder().x(0).y(0).build())
+                .geo(GeoContext::builder().x(0).y(0).build())
                 .build(),
         ),
     ))]);

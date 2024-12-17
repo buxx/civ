@@ -10,7 +10,7 @@ use super::physics::Geo;
 pub struct City {
     id: Uuid,
     name: String,
-    physics: GeoContext,
+    geo: GeoContext,
 }
 
 impl City {
@@ -20,17 +20,17 @@ impl City {
 }
 
 impl Geo for City {
-    fn physics(&self) -> &GeoContext {
-        &self.physics
+    fn geo(&self) -> &GeoContext {
+        &self.geo
     }
 
-    fn physics_mut(&mut self) -> &mut GeoContext {
-        &mut self.physics
+    fn geo_mut(&mut self) -> &mut GeoContext {
+        &mut self.geo
     }
 }
 
 impl Into<ClientCity> for &City {
     fn into(self) -> ClientCity {
-        ClientCity::new(self.id, self.name.clone(), self.physics.clone().into())
+        ClientCity::new(self.id, self.name.clone(), self.geo.clone().into())
     }
 }

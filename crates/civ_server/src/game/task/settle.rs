@@ -51,7 +51,7 @@ impl Settle {
         let task = Settle::builder()
             .settler(*unit_uuid)
             .city_name(city_name)
-            .physic(unit.physics().clone())
+            .physic(unit.geo().clone())
             .context(
                 TaskContext::builder()
                     .id(task_id)
@@ -82,7 +82,7 @@ impl Task for Settle {
         let city = City::builder()
             .id(city_id)
             .name(self.city_name.clone())
-            .physics(self.physic.clone())
+            .geo(self.physic.clone())
             .build();
 
         (

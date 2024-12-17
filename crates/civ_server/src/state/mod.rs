@@ -78,7 +78,7 @@ impl State {
                         }
                         UnitEffect::Move(_, to_) => {
                             if let Some(unit) = self.units.iter_mut().find(|u| u.id() == uuid) {
-                                unit.physics_mut().set_xy(to_)
+                                unit.geo_mut().set_xy(to_)
                             }
                         }
                     },
@@ -152,17 +152,17 @@ impl State {
                 StateEffect::Client(_, _) => None,
                 StateEffect::Task(_, _) => None,
                 StateEffect::City(_, effect) => match effect {
-                    CityEffect::New(city) => Some(city.physics().xy()),
+                    CityEffect::New(city) => Some(city.geo().xy()),
                     CityEffect::Remove(uuid) => {
                         // TODO: should be an error if not Ok ?
-                        self.find_city(uuid).ok().map(|c| c.physics().xy())
+                        self.find_city(uuid).ok().map(|c| c.geo().xy())
                     }
                 },
                 StateEffect::Unit(_, effect) => match effect {
-                    UnitEffect::New(unit) => Some(unit.physics().xy()),
+                    UnitEffect::New(unit) => Some(unit.geo().xy()),
                     UnitEffect::Remove(uuid) => {
                         // TODO: should be an error if not Ok ?
-                        self.find_unit(uuid).ok().map(|u| u.physics().xy())
+                        self.find_unit(uuid).ok().map(|u| u.geo().xy())
                     }
                     UnitEffect::Move(_, to_) => Some(*to_),
                 },
