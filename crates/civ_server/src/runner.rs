@@ -22,7 +22,7 @@ use crate::{
 };
 
 pub struct RunnerContext {
-    pub context: Arc<Mutex<Context>>,
+    pub context: Context,
     pub state: Arc<Mutex<State>>,
     pub from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
     pub to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
@@ -30,7 +30,7 @@ pub struct RunnerContext {
 
 impl RunnerContext {
     pub fn new(
-        context: Arc<Mutex<Context>>,
+        context: Context,
         state: Arc<Mutex<State>>,
         from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
         to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
@@ -43,12 +43,6 @@ impl RunnerContext {
         }
     }
 
-    pub fn context(&self) -> MutexGuard<Context> {
-        self.context
-            .lock()
-            .expect("Assume context is always accessible")
-    }
-
     pub fn state(&self) -> MutexGuard<State> {
         self.state
             .lock()
@@ -59,7 +53,7 @@ impl RunnerContext {
 impl Clone for RunnerContext {
     fn clone(&self) -> Self {
         Self::new(
-            Arc::clone(&self.context),
+            self.context.clone(),
             Arc::clone(&self.state),
             self.from_clients_receiver.clone(),
             self.to_client_sender.clone(),
@@ -82,13 +76,6 @@ pub struct Runner {
 }
 
 impl Runner {
-    fn context(&self) -> MutexGuard<Context> {
-        self.context
-            .context
-            .lock()
-            .expect("Assume context is always accessible")
-    }
-
     pub(super) fn state(&self) -> MutexGuard<State> {
         self.context
             .state
@@ -97,7 +84,7 @@ impl Runner {
     }
 
     pub fn run(&mut self) {
-        while !self.context().stop_is_required() {
+        while !self.context.context.stop_is_required() {
             let tick_start = Instant::now();
 
             // FIXME: do client requests in thread pool to not block task tick

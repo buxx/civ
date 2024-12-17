@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use common::{network::message::CreateTaskMessage, task::CreateTaskError};
 
 use crate::{game::task::settle::Settle, runner::Runner};
@@ -15,7 +13,7 @@ impl Runner {
             CreateTaskMessage::Settle(unit_uuid, city_name) => {
                 //
                 Ok(Box::new(Settle::new(
-                    Arc::clone(&self.context.context),
+                    self.context.context.clone(),
                     self.state(),
                     &unit_uuid,
                     city_name.clone(),

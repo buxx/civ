@@ -65,7 +65,7 @@ pub enum WindowSubCommand {
 }
 
 pub struct CommandContext {
-    pub context: Arc<Mutex<Context>>,
+    pub context: Context,
     pub state: Arc<Mutex<State>>,
     pub from_server_receiver: Receiver<ServerToClientMessage>,
     pub to_server_sender: Sender<ClientToServerMessage>,
@@ -73,7 +73,7 @@ pub struct CommandContext {
 
 impl CommandContext {
     pub fn new(
-        context: Arc<Mutex<Context>>,
+        context: Context,
         state: Arc<Mutex<State>>,
         from_server_receiver: Receiver<ServerToClientMessage>,
         to_server_sender: Sender<ClientToServerMessage>,

@@ -18,7 +18,7 @@ use crate::{
 
 #[derive(Builder)]
 pub struct Runner {
-    context: Arc<Mutex<Context>>,
+    context: Context,
     state: Arc<Mutex<State>>,
     from_server_receiver: Receiver<ServerToClientMessage>,
     to_server_sender: Sender<ClientToServerMessage>,
@@ -116,10 +116,7 @@ impl Runner {
             }
         }
 
-        self.context
-            .lock()
-            .expect("Assume contexte is accessible")
-            .require_stop();
+        self.context.require_stop();
     }
 
     fn print_prompt(&mut self) {
@@ -141,7 +138,7 @@ impl Runner {
 impl Into<CommandContext> for &mut Runner {
     fn into(self) -> CommandContext {
         CommandContext::new(
-            Arc::clone(&self.context),
+            self.context.clone(),
             Arc::clone(&self.state),
             self.from_server_receiver.clone(),
             self.to_server_sender.clone(),

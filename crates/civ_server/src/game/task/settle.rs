@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::MutexGuard;
 
 use bon::Builder;
 use common::{
@@ -28,7 +28,7 @@ pub struct Settle {
 
 impl Settle {
     pub fn new(
-        context: Arc<Mutex<Context>>,
+        context: Context,
         state: MutexGuard<State>,
         unit_uuid: &Uuid,
         city_name: String,
@@ -40,9 +40,6 @@ impl Settle {
             )
         })?;
 
-        let context = context
-            .lock()
-            .expect("Assume contexte is always accessible");
         if !context.rules().can_settle(unit.type_()) {
             return Err(CreateTaskError::GamePlay(GamePlayError::CantSettle(
                 format!("{} cant do this action", unit.type_()),

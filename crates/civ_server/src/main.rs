@@ -65,13 +65,13 @@ fn main() -> Result<(), Error> {
         ),
     ))]);
 
-    let context = Arc::new(Mutex::new(Context::new(Box::new(rules))));
+    let context = Context::new(Box::new(rules));
     let state = Arc::new(Mutex::new(state));
     let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
     let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
 
     let network = Network::new(
-        Arc::clone(&context),
+        context.clone(),
         Arc::clone(&state),
         "127.0.0.1:9876",
         from_clients_sender,
@@ -81,7 +81,7 @@ fn main() -> Result<(), Error> {
     let mut runner = Runner::builder()
         .tick_base_period(TICK_BASE_PERIOD)
         .context(RunnerContext::new(
-            Arc::clone(&context),
+            context.clone(),
             Arc::clone(&state),
             from_clients_receiver,
             to_clients_sender,

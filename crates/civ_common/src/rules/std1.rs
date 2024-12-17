@@ -2,7 +2,9 @@ use crate::game::{unit::UnitType, GameFrame, GAME_FRAMES_PER_SECOND};
 
 use super::RuleSet;
 
+#[derive(Clone)]
 pub struct Std1RuleSet;
+
 impl RuleSet for Std1RuleSet {
     fn settle_duration(&self, unit_type: &UnitType) -> GameFrame {
         GameFrame(match unit_type {

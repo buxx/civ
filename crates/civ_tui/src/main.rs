@@ -3,7 +3,6 @@ use std::{
     thread,
 };
 
-use clap::Parser;
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
@@ -31,7 +30,7 @@ fn main() -> Result<(), Error> {
     env_logger::init_from_env(env);
 
     let client_id = Uuid::new_v4();
-    let context = Arc::new(Mutex::new(Context::new()));
+    let context = Context::new();
     let state = Arc::new(Mutex::new(State::new(client_id)));
     let (to_server_sender, to_server_receiver): (
         Sender<ClientToServerMessage>,
@@ -45,14 +44,14 @@ fn main() -> Result<(), Error> {
     let network = Network::new(
         client_id,
         "127.0.0.1:9876",
-        Arc::clone(&context),
+        context.clone(),
         Arc::clone(&state),
         to_server_receiver,
         from_server_sender,
     )
     .map_err(|e| Error::PrepareNetwork(e.to_string()))?;
     let mut runner = Runner::builder()
-        .context(Arc::clone(&context))
+        .context(context)
         .state(Arc::clone(&state))
         .from_server_receiver(from_server_receiver)
         .to_server_sender(to_server_sender)

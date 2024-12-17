@@ -1,25 +1,33 @@
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+
 use common::rules::RuleSet;
 
-// FIXME: replace Arc Mutex Context by a context with atomic bool, which can be cloned easly
+#[derive(Clone)]
 pub struct Context {
-    rules: Box<dyn RuleSet + Send>,
-    stop: bool,
+    rules: Box<dyn RuleSet + Send + Sync>,
+    stop: Arc<AtomicBool>,
 }
 
 impl Context {
-    pub fn new(rules: Box<dyn RuleSet + Send>) -> Self {
-        Self { rules, stop: false }
+    pub fn new(rules: Box<dyn RuleSet + Send + Sync>) -> Self {
+        Self {
+            rules,
+            stop: Arc::new(AtomicBool::new(false)),
+        }
     }
 
     pub fn stop_is_required(&self) -> bool {
-        self.stop
+        self.stop.load(Ordering::Relaxed)
     }
 
     pub fn require_stop(&mut self) {
-        self.stop = true
+        self.stop.swap(true, Ordering::Relaxed);
     }
 
-    pub fn rules(&self) -> &Box<dyn RuleSet + Send> {
+    pub fn rules(&self) -> &Box<dyn RuleSet + Send + Sync> {
         &self.rules
     }
 }

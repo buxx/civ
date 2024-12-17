@@ -25,7 +25,7 @@ enum Signal {
 }
 
 pub struct Network {
-    context: Arc<Mutex<Context>>,
+    context: Context,
     state: Arc<Mutex<State>>,
     from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
     to_clients_receiver: Receiver<(Uuid, ServerToClientMessage)>,
@@ -38,7 +38,7 @@ pub struct Network {
 // TODO: stop required
 impl Network {
     pub fn new(
-        context: Arc<Mutex<Context>>,
+        context: Context,
         state: Arc<Mutex<State>>,
         listen_addr: &str,
         from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
@@ -126,12 +126,7 @@ impl Network {
                             .send_with_timer(Signal::SendServerToClientsMessages, SEND_INTERVAL);
                     }
                     Signal::CheckStopRequired => {
-                        if self
-                            .context
-                            .lock()
-                            .expect("Assume context is always accessible")
-                            .stop_is_required()
-                        {
+                        if self.context.stop_is_required() {
                             self.handler.stop();
                         }
                         self.handler.signals().send_with_timer(
