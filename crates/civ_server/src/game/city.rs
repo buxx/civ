@@ -1,10 +1,8 @@
 use bon::Builder;
-use common::game::slice::ClientCity;
+use common::{game::slice::ClientCity, geo::Geo};
 use uuid::Uuid;
 
-use crate::task::context::GeoContext;
-
-use super::physics::Geo;
+use common::geo::GeoContext;
 
 #[derive(Builder, Clone)]
 pub struct City {

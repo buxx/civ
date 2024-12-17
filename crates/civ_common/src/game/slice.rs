@@ -4,7 +4,7 @@ use bon::Builder;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::space::context::ClientGeoContext;
+use crate::geo::GeoContext;
 
 use super::unit::{UnitTask, UnitType};
 
@@ -28,15 +28,15 @@ impl GameSlice {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ClientCity {
     id: Uuid,
     name: String,
-    geo: ClientGeoContext,
+    geo: GeoContext,
 }
 
 impl ClientCity {
-    pub fn new(id: Uuid, name: String, physics: ClientGeoContext) -> Self {
+    pub fn new(id: Uuid, name: String, physics: GeoContext) -> Self {
         Self {
             id,
             name,
@@ -52,7 +52,7 @@ impl ClientCity {
         &self.name
     }
 
-    pub fn geo(&self) -> &ClientGeoContext {
+    pub fn geo(&self) -> &GeoContext {
         &self.geo
     }
 }
@@ -62,7 +62,7 @@ pub struct ClientUnit {
     id: Uuid,
     type_: UnitType,
     tasks: ClientUnitTasks,
-    physics: ClientGeoContext,
+    physics: GeoContext,
 }
 
 impl ClientUnit {
@@ -70,11 +70,11 @@ impl ClientUnit {
         self.id
     }
 
-    pub fn physics(&self) -> &ClientGeoContext {
+    pub fn physics(&self) -> &GeoContext {
         &self.physics
     }
 
-    pub fn physics_mut(&mut self) -> &mut ClientGeoContext {
+    pub fn physics_mut(&mut self) -> &mut GeoContext {
         &mut self.physics
     }
 

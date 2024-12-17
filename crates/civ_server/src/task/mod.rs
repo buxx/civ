@@ -1,6 +1,6 @@
 pub mod create;
 use common::game::GameFrame;
-use context::{GeoContext, TaskContext};
+use context::TaskContext;
 use effect::{Effect, StateEffect, TaskEffect};
 
 pub mod context;
@@ -31,12 +31,7 @@ pub trait Task {
     }
     fn tick_(&self, frame: GameFrame) -> Vec<Effect>;
     fn context(&self) -> &TaskContext;
-    fn type_(&self) -> TaskType;
     fn then(&self) -> (Vec<Effect>, Vec<Box<dyn Task + Send>>) {
         (vec![], vec![])
     }
-}
-
-pub enum TaskType<'a> {
-    Physical(&'a GeoContext),
 }

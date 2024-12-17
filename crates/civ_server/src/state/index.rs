@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 
-use common::space::window::{DisplayStep, Window};
+use common::{
+    geo::Geo,
+    space::window::{DisplayStep, Window},
+};
 use uuid::Uuid;
 
 use crate::{
-    game::{city::City, physics::Geo, unit::Unit},
+    game::{city::City, unit::Unit},
     task::effect::IndexEffect,
 };
 

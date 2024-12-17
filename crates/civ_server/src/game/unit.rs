@@ -1,13 +1,14 @@
 use bon::Builder;
-use common::game::{
-    slice::{ClientUnit, ClientUnitTasks},
-    unit::{UnitTask, UnitType},
+use common::{
+    game::{
+        slice::{ClientUnit, ClientUnitTasks},
+        unit::{UnitTask, UnitType},
+    },
+    geo::Geo,
 };
 use uuid::Uuid;
 
-use crate::task::context::GeoContext;
-
-use super::physics::Geo;
+use common::geo::GeoContext;
 
 #[derive(Builder, Clone)]
 pub struct Unit {
@@ -44,7 +45,7 @@ impl Into<ClientUnit> for &Unit {
             .id(self.id)
             .type_(self.type_.clone())
             .tasks(self.tasks.clone().into())
-            .physics(self.geo.clone().into())
+            .physics(self.geo.clone())
             .build()
     }
 }

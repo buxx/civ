@@ -1,13 +1,13 @@
 pub mod clients;
 
 use clients::Clients;
-use common::game::GameFrame;
+use common::{game::GameFrame, geo::Geo};
 use index::Index;
 use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    game::{city::City, physics::Geo, unit::Unit},
+    game::{city::City, unit::Unit},
     task::{
         effect::{CityEffect, Effect, IntoIndexEffects, StateEffect, TaskEffect, UnitEffect},
         Task,

@@ -1,5 +1,6 @@
 use common::{
     game::unit::UnitType,
+    geo::GeoContext,
     network::message::{ClientToServerMessage, ServerToClientMessage},
     rules::std1::Std1RuleSet,
 };
@@ -13,10 +14,7 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-use task::{
-    context::GeoContext,
-    effect::{Effect, StateEffect, UnitEffect},
-};
+use task::effect::{Effect, StateEffect, UnitEffect};
 use thiserror::Error;
 use uuid::Uuid;
 

@@ -3,25 +3,26 @@ use std::sync::MutexGuard;
 use bon::Builder;
 use common::{
     game::GameFrame,
+    geo::{Geo, GeoContext},
     task::{CreateTaskError, GamePlayError},
 };
 use uuid::Uuid;
 
 use crate::{
     context::Context,
-    game::{city::City, physics::Geo},
+    game::city::City,
     state::State,
     task::{
-        context::{GeoContext, TaskContext},
+        context::TaskContext,
         effect::{CityEffect, Effect, StateEffect, UnitEffect},
-        Task, TaskType,
+        Task,
     },
 };
 
 #[derive(Builder)]
 pub struct Settle {
     context: TaskContext,
-    physic: GeoContext,
+    geo: GeoContext,
     settler: Uuid,
     city_name: String,
 }
@@ -51,7 +52,7 @@ impl Settle {
         let task = Settle::builder()
             .settler(*unit_uuid)
             .city_name(city_name)
-            .physic(unit.geo().clone())
+            .geo(unit.geo().clone())
             .context(
                 TaskContext::builder()
                     .id(task_id)
@@ -73,16 +74,12 @@ impl Task for Settle {
         &self.context
     }
 
-    fn type_(&self) -> TaskType {
-        TaskType::Physical(&self.physic)
-    }
-
     fn then(&self) -> (Vec<Effect>, Vec<Box<dyn Task + Send>>) {
         let city_id = Uuid::new_v4();
         let city = City::builder()
             .id(city_id)
             .name(self.city_name.clone())
-            .geo(self.physic.clone())
+            .geo(self.geo.clone())
             .build();
 
         (
