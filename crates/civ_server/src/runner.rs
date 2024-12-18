@@ -288,3 +288,31 @@ impl Runner {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use common::rules::std1::Std1RuleSet;
+
+    use crate::{FromClientsChannels, ToClientsChannels};
+
+    use super::*;
+    use rstest::*;
+
+    #[fixture]
+    pub fn runner() -> Runner {
+        let context = Context::new(Box::new(Std1RuleSet));
+        let state = Arc::new(Mutex::new(State::default()));
+        let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
+        let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
+        let context = RunnerContext::new(context, state, from_clients_receiver, to_clients_sender);
+        Runner::builder()
+            .tick_base_period(9999)
+            .context(context)
+            .build()
+    }
+
+    #[rstest]
+    fn test_runner_one_iteration(mut runner: Runner) {
+        runner.do_one_iteration();
+    }
+}
