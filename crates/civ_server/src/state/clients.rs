@@ -44,6 +44,10 @@ impl Clients {
 
         clients
     }
+
+    pub fn client_ids(&self) -> Vec<Uuid> {
+        self.states.keys().copied().collect()
+    }
 }
 
 #[derive(Default)]

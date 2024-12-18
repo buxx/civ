@@ -2,7 +2,10 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    game::slice::{ClientCity, ClientUnit, GameSlice},
+    game::{
+        slice::{ClientCity, ClientUnit, ClientUnitTask, GameSlice},
+        GameFrame,
+    },
     space::window::{SetWindow, Window},
 };
 
@@ -39,11 +42,14 @@ pub enum ServerToClientMessage {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientStateMessage {
+    SetGameFrame(GameFrame),
     SetWindow(Window),
     SetGameSlice(GameSlice),
     AddCity(ClientCity),
     RemoveCity(Uuid),
     AddUnit(ClientUnit),
+    AddUnitTask(Uuid, ClientUnitTask),
+    RemoveUnitTask(Uuid, Uuid),
     MoveUnit(Uuid, (u64, u64)),
     RemoveUnit(Uuid),
 }

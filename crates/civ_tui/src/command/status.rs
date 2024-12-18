@@ -5,6 +5,7 @@ pub fn status(context: CommandContext) {
         .state
         .lock()
         .expect("Assume state is always accessible");
+
     let window_str = state
         .window()
         .map(|w| w.to_string())
@@ -14,6 +15,20 @@ pub fn status(context: CommandContext) {
     println!("connected: {}", state.connected());
     println!("errors: {}", state.errors().len());
     println!("window: {}", window_str);
-    println!("cities: {}", state.cities().len());
-    println!("units: {}", state.units().len());
+    println!(
+        "cities: {}",
+        state
+            .cities()
+            .as_ref()
+            .and_then(|cities| Some(cities.len().to_string()))
+            .unwrap_or("n/a".to_string())
+    );
+    println!(
+        "units: {}",
+        state
+            .units()
+            .as_ref()
+            .and_then(|units| Some(units.len().to_string()))
+            .unwrap_or("n/a".to_string())
+    );
 }

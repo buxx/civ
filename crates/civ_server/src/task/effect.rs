@@ -1,10 +1,15 @@
+use std::sync::MutexGuard;
+
 use common::{
     network::message::{ClientStateMessage, ServerToClientMessage},
     space::window::Window,
 };
 use uuid::Uuid;
 
-use crate::game::{city::City, unit::Unit};
+use crate::{
+    game::{city::City, extractor::Extractor, unit::Unit},
+    state::State,
+};
 
 use super::Task;
 
@@ -22,7 +27,7 @@ pub enum StateEffect {
 
 pub enum TaskEffect {
     Push(Box<dyn Task + Send>),
-    Finished,
+    Finished(Uuid),
 }
 
 #[derive(Clone)]
@@ -82,11 +87,12 @@ impl IntoIndexEffects for Vec<Effect> {
     }
 }
 
-impl Into<ServerToClientMessage> for &CityEffect {
-    fn into(self) -> ServerToClientMessage {
+impl CityEffect {
+    fn into_client_message(&self, state: &MutexGuard<State>) -> ServerToClientMessage {
         match self {
             CityEffect::New(city) => {
-                ServerToClientMessage::State(ClientStateMessage::AddCity(city.into()))
+                let city = Extractor::new(state).city_into_client(city);
+                ServerToClientMessage::State(ClientStateMessage::AddCity(city))
             }
             CityEffect::Remove(uuid) => {
                 ServerToClientMessage::State(ClientStateMessage::RemoveCity(*uuid))
@@ -95,11 +101,12 @@ impl Into<ServerToClientMessage> for &CityEffect {
     }
 }
 
-impl Into<ServerToClientMessage> for &UnitEffect {
-    fn into(self) -> ServerToClientMessage {
+impl UnitEffect {
+    fn into_client_message(&self, state: &MutexGuard<State>) -> ServerToClientMessage {
         match self {
             UnitEffect::New(unit) => {
-                ServerToClientMessage::State(ClientStateMessage::AddUnit(unit.into()))
+                let unit = Extractor::new(state).unit_into_client(unit);
+                ServerToClientMessage::State(ClientStateMessage::AddUnit(unit))
             }
             UnitEffect::Remove(uuid) => {
                 ServerToClientMessage::State(ClientStateMessage::RemoveUnit(*uuid))
@@ -111,14 +118,38 @@ impl Into<ServerToClientMessage> for &UnitEffect {
     }
 }
 
+impl TaskEffect {
+    fn into_client_message(&self, state: &MutexGuard<State>) -> ServerToClientMessage {
+        match self {
+            TaskEffect::Push(task) => {
+                // FIXME: how to be sure about unit_uuid ?
+                let unit_uuid = task.concerned_unit().unwrap();
+                let task = Extractor::new(state).task_into_client(task);
+                ServerToClientMessage::State(ClientStateMessage::AddUnitTask(unit_uuid, task))
+            }
+            TaskEffect::Finished(uuid) => {
+                // FIXME: not good, hopefully state is modified after ...
+                let task = state
+                    .tasks()
+                    .iter()
+                    .find(|t| t.context().id() == *uuid)
+                    .unwrap();
+                // FIXME: how to be sure about unit_uuid ?
+                let unit_uuid = task.concerned_unit().unwrap();
+                ServerToClientMessage::State(ClientStateMessage::RemoveUnitTask(unit_uuid, *uuid))
+            }
+        }
+    }
+}
+
 impl Effect {
-    pub fn reflect(&self) -> Option<ServerToClientMessage> {
+    pub fn reflect(&self, state: &MutexGuard<State>) -> Option<ServerToClientMessage> {
         match self {
             Effect::State(effect) => match effect {
                 StateEffect::Client(_, _) => None,
-                StateEffect::Task(_, _) => None,
-                StateEffect::City(_, city_effect) => Some(city_effect.into()),
-                StateEffect::Unit(_, unit_effect) => Some(unit_effect.into()),
+                StateEffect::Task(_, effect) => Some(effect.into_client_message(state)),
+                StateEffect::City(_, effect) => Some(effect.into_client_message(state)),
+                StateEffect::Unit(_, effect) => Some(effect.into_client_message(state)),
             },
         }
     }

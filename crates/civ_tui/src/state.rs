@@ -1,5 +1,8 @@
 use common::{
-    game::slice::{ClientCity, ClientUnit},
+    game::{
+        slice::{ClientCity, ClientUnit},
+        GameFrame,
+    },
     network::message::ClientStateMessage,
     space::window::Window,
 };
@@ -12,8 +15,9 @@ pub struct State {
     connected: bool,
     window: Option<Window>,
     errors: Vec<PublicError>,
-    cities: Vec<ClientCity>,
-    units: Vec<ClientUnit>,
+    frame: Option<GameFrame>,
+    cities: Option<Vec<ClientCity>>,
+    units: Option<Vec<ClientUnit>>,
 }
 
 impl State {
@@ -23,8 +27,9 @@ impl State {
             connected: false,
             window: None,
             errors: vec![],
-            cities: vec![],
-            units: vec![],
+            frame: None,
+            cities: None,
+            units: None,
         }
     }
 
@@ -62,30 +67,69 @@ impl State {
 
     pub fn apply(&mut self, message: ClientStateMessage) {
         match message {
+            ClientStateMessage::SetGameFrame(frame) => {
+                self.frame = Some(frame);
+            }
             ClientStateMessage::SetWindow(window) => {
                 self.set_window(Some(window));
             }
             ClientStateMessage::SetGameSlice(slice) => {
-                self.cities = slice.cities().into();
-                self.units = slice.units().into();
+                self.cities = Some(slice.cities().into());
+                self.units = Some(slice.units().into());
             }
-            ClientStateMessage::AddCity(city) => self.cities.push(city),
-            ClientStateMessage::RemoveCity(uuid) => self.cities.retain(|c| c.id() != uuid),
-            ClientStateMessage::AddUnit(unit) => self.units.push(unit),
-            ClientStateMessage::MoveUnit(uuid, to_) => {
-                if let Some(u) = self.units.iter_mut().find(|u| u.id() == uuid) {
-                    u.physics_mut().set_xy(to_)
+            ClientStateMessage::AddCity(city) => {
+                if let Some(cities) = &mut self.cities {
+                    cities.push(city)
                 }
             }
-            ClientStateMessage::RemoveUnit(uuid) => self.units.retain(|u| u.id() != uuid),
+            ClientStateMessage::RemoveCity(uuid) => {
+                if let Some(cities) = &mut self.cities {
+                    cities.retain(|c| c.id() != uuid)
+                }
+            }
+            ClientStateMessage::AddUnit(unit) => {
+                if let Some(units) = &mut self.units {
+                    units.push(unit)
+                }
+            }
+            ClientStateMessage::MoveUnit(uuid, to_) => {
+                if let Some(units) = &mut self.units {
+                    if let Some(unit) = units.iter_mut().find(|u| u.id() == uuid) {
+                        unit.physics_mut().set_xy(to_)
+                    }
+                }
+            }
+            ClientStateMessage::RemoveUnit(uuid) => {
+                if let Some(units) = &mut self.units {
+                    units.retain(|u| u.id() != uuid)
+                }
+            }
+            ClientStateMessage::AddUnitTask(uuid, task) => {
+                if let Some(units) = &mut self.units {
+                    if let Some(unit) = units.iter_mut().find(|u| u.id() == uuid) {
+                        unit.tasks_mut().push(task)
+                    }
+                }
+            }
+            ClientStateMessage::RemoveUnitTask(unit_uuid, task_uuid) => {
+                if let Some(units) = &mut self.units {
+                    if let Some(unit) = units.iter_mut().find(|u| u.id() == unit_uuid) {
+                        unit.tasks_mut().remove(task_uuid)
+                    }
+                }
+            }
         }
     }
 
-    pub fn cities(&self) -> &[ClientCity] {
+    pub fn cities(&self) -> &Option<Vec<ClientCity>> {
         &self.cities
     }
 
-    pub fn units(&self) -> &[ClientUnit] {
+    pub fn units(&self) -> &Option<Vec<ClientUnit>> {
         &self.units
+    }
+
+    pub fn frame(&self) -> Option<GameFrame> {
+        self.frame
     }
 }

@@ -2,7 +2,7 @@ use std::sync::MutexGuard;
 
 use bon::Builder;
 use common::{
-    game::GameFrame,
+    game::{unit::UnitTask, GameFrame},
     geo::{Geo, GeoContext},
     task::{CreateTaskError, GamePlayError},
 };
@@ -66,6 +66,10 @@ impl Settle {
 }
 
 impl Task for Settle {
+    fn type_(&self) -> UnitTask {
+        UnitTask::Settle
+    }
+
     fn tick_(&self, _frame: GameFrame) -> Vec<Effect> {
         vec![]
     }
@@ -92,5 +96,13 @@ impl Task for Settle {
             ],
             vec![],
         )
+    }
+
+    fn concerned_unit(&self) -> Option<Uuid> {
+        Some(self.settler)
+    }
+
+    fn concerned_city(&self) -> Option<Uuid> {
+        None
     }
 }

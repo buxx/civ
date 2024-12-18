@@ -1,7 +1,9 @@
 use bon::Builder;
 use common::{
     game::GAME_FRAMES_PER_SECOND,
-    network::message::{ClientToServerMessage, NotificationLevel, ServerToClientMessage},
+    network::message::{
+        ClientStateMessage, ClientToServerMessage, NotificationLevel, ServerToClientMessage,
+    },
 };
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{error, info};
@@ -94,6 +96,21 @@ impl Runner {
 
             let effects = self.tick();
             self.apply_effects(effects);
+
+            // FIXME: send new GameFrame to all clients
+            // CLEAN
+            // ONLY WHEN CHANGE (reflect)
+            let client_ids = self.state().clients().client_ids();
+            for client_id in client_ids {
+                let frame = *self.state().frame();
+                self.context
+                    .to_client_sender
+                    .send((
+                        client_id,
+                        ServerToClientMessage::State(ClientStateMessage::SetGameFrame(frame)),
+                    ))
+                    .unwrap();
+            }
 
             self.fps_target(tick_start);
             self.game_frame_increment();
@@ -210,10 +227,13 @@ impl Runner {
         self.state().apply(effects);
     }
 
+    // FIXME reflechir a une producteur de Vec<(Uuid, ServerToClientMessage)> depuis un Effect
+    // pour eviter le doublon de concerned/effect_point
     fn reflect(&self, effects: &Vec<Effect>) {
+        let state = &self.state();
         for effect in effects {
-            if let Some(message) = effect.reflect() {
-                for client_id in self.concerned(effect) {
+            if let Some(message) = effect.reflect(state) {
+                for client_id in self.concerned(effect, state) {
                     self.context
                         .to_client_sender
                         .send((client_id, message.clone()))
@@ -223,8 +243,8 @@ impl Runner {
         }
     }
 
-    fn concerned(&self, effect: &Effect) -> Vec<Uuid> {
-        let state = self.state();
+    // FIXME: MutexGuard<State> not in self because mutex lock conflict
+    fn concerned(&self, effect: &Effect, state: &MutexGuard<State>) -> Vec<Uuid> {
         if let Some(point) = state.effect_point(effect) {
             return state.clients().clients_displaying(&point);
         }
@@ -240,7 +260,7 @@ impl Runner {
             ClientToServerMessage::CreateTask(message) => {
                 match self.create_task(message) {
                     Ok(task) => {
-                        //
+                        // FIXME: is task to attach on unit (city, etc) do it here !!!
                         vec![Effect::State(StateEffect::Task(
                             task.context().id(),
                             TaskEffect::Push(task),

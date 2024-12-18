@@ -8,8 +8,13 @@ pub fn units(context: CommandContext) {
         .state
         .lock()
         .expect("Consider state always accessible");
-    for unit in state.units() {
-        println!("{}", unit.id())
+
+    if let Some(units) = state.units() {
+        for unit in units {
+            println!("{}", unit.id())
+        }
+    } else {
+        println!("Game state not ready")
     }
 }
 
@@ -19,11 +24,15 @@ pub fn detail(context: CommandContext, id: Uuid) {
         .lock()
         .expect("Consider state always accessible");
 
-    if let Some(unit) = state.units().iter().find(|c| c.id() == id) {
-        println!("id: {}", unit.id());
-        println!("xy: {:?}", unit.physics().xy());
-        println!("type: {:?}", unit.type_().to_string());
-        println!("tasks: {}", unit.tasks());
+    if let (Some(frame), Some(units)) = (state.frame(), state.units()) {
+        if let Some(unit) = units.iter().find(|c| c.id() == id) {
+            println!("id: {}", unit.id());
+            println!("xy: {:?}", unit.physics().xy());
+            println!("type: {:?}", unit.type_().to_string());
+            println!("tasks: {}", unit.tasks().display(&frame));
+        }
+    } else {
+        println!("Game state not ready")
     }
 }
 

@@ -1,5 +1,5 @@
 use bon::Builder;
-use common::{game::slice::ClientCity, geo::Geo};
+use common::geo::Geo;
 use uuid::Uuid;
 
 use common::geo::GeoContext;
@@ -15,6 +15,10 @@ impl City {
     pub fn id(&self) -> Uuid {
         self.id
     }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 impl Geo for City {
@@ -24,11 +28,5 @@ impl Geo for City {
 
     fn geo_mut(&mut self) -> &mut GeoContext {
         &mut self.geo
-    }
-}
-
-impl Into<ClientCity> for &City {
-    fn into(self) -> ClientCity {
-        ClientCity::new(self.id, self.name.clone(), self.geo.clone().into())
     }
 }

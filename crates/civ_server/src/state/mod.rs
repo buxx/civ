@@ -58,7 +58,7 @@ impl State {
                         self.clients.apply(uuid, effect);
                     }
                     StateEffect::Task(uuid, effect) => match effect {
-                        TaskEffect::Finished => remove_ids.push(uuid),
+                        TaskEffect::Finished(_) => remove_ids.push(uuid),
                         TaskEffect::Push(task) => self.tasks.push(task),
                     },
                     StateEffect::City(uuid, effect) => match effect {
@@ -150,7 +150,26 @@ impl State {
         match effect {
             Effect::State(effect) => match effect {
                 StateEffect::Client(_, _) => None,
-                StateEffect::Task(_, _) => None,
+                StateEffect::Task(_, effect) => match effect {
+                    TaskEffect::Push(task) => {
+                        //
+                        task.concerned_unit()
+                            // TODO: should be an error if not Ok ?
+                            .and_then(|unit_uuid| self.find_unit(&unit_uuid).ok())
+                            .map(|u| u.geo().xy())
+                    }
+                    TaskEffect::Finished(uuid) => {
+                        // TODO: another way to know client is concerned ?
+                        // FIXME: use task index by uuid to avoid performance bottleneck here; REF PERF_TASK
+                        self.tasks()
+                            .iter()
+                            .find(|t| t.context().id() == *uuid)
+                            .and_then(|task| task.concerned_unit())
+                            // TODO: should be an error if not Ok ?
+                            .and_then(|unit_uuid| self.find_unit(&unit_uuid).ok())
+                            .map(|u| u.geo().xy())
+                    }
+                },
                 StateEffect::City(_, effect) => match effect {
                     CityEffect::New(city) => Some(city.geo().xy()),
                     CityEffect::Remove(uuid) => {

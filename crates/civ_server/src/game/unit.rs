@@ -1,9 +1,6 @@
 use bon::Builder;
 use common::{
-    game::{
-        slice::{ClientUnit, ClientUnitTasks},
-        unit::{UnitTask, UnitType},
-    },
+    game::unit::{UnitTask, UnitType},
     geo::Geo,
 };
 use uuid::Uuid;
@@ -27,6 +24,10 @@ impl Unit {
     pub fn type_(&self) -> &UnitType {
         &self.type_
     }
+
+    pub fn tasks(&self) -> &UnitTasks {
+        &self.tasks
+    }
 }
 
 impl Geo for Unit {
@@ -39,24 +40,13 @@ impl Geo for Unit {
     }
 }
 
-impl Into<ClientUnit> for &Unit {
-    fn into(self) -> ClientUnit {
-        ClientUnit::builder()
-            .id(self.id)
-            .type_(self.type_.clone())
-            .tasks(self.tasks.clone().into())
-            .physics(self.geo.clone())
-            .build()
-    }
-}
-
 #[derive(Default, Clone)]
 pub struct UnitTasks {
     stack: Vec<(Uuid, UnitTask)>,
 }
 
-impl Into<ClientUnitTasks> for UnitTasks {
-    fn into(self) -> ClientUnitTasks {
-        ClientUnitTasks::new(self.stack.clone())
+impl UnitTasks {
+    pub fn stack(&self) -> &[(Uuid, UnitTask)] {
+        &self.stack
     }
 }

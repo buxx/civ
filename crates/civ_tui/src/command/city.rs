@@ -8,8 +8,12 @@ pub fn cities(context: CommandContext) {
         .lock()
         .expect("Consider state always accessible");
 
-    for city in state.cities() {
-        println!("{}: {}", city.id(), city.name())
+    if let Some(cities) = state.cities() {
+        for city in cities {
+            println!("{}: {}", city.id(), city.name())
+        }
+    } else {
+        println!("Game state not ready")
     }
 }
 
@@ -19,9 +23,13 @@ pub fn city(context: CommandContext, id: Uuid) {
         .lock()
         .expect("Consider state always accessible");
 
-    if let Some(city) = state.cities().iter().find(|c| c.id() == id) {
-        println!("id: {}", city.id());
-        println!("name: {}", city.name());
-        println!("xy: {:?}", city.geo().xy());
+    if let Some(cities) = state.cities() {
+        if let Some(city) = cities.iter().find(|c| c.id() == id) {
+            println!("id: {}", city.id());
+            println!("name: {}", city.name());
+            println!("xy: {:?}", city.geo().xy());
+        }
+    } else {
+        println!("Game state not ready")
     }
 }
