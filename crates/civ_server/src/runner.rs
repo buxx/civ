@@ -87,35 +87,39 @@ impl Runner {
 
     pub fn run(&mut self) {
         while !self.context.context.stop_is_required() {
-            let tick_start = Instant::now();
-
-            // FIXME: do client requests in thread pool to not block task tick
-            // and solve all effects here by reading channel
-            let effects = self.clients();
-            self.apply_effects(effects);
-
-            let effects = self.tick();
-            self.apply_effects(effects);
-
-            // FIXME: send new GameFrame to all clients
-            // CLEAN
-            // ONLY WHEN CHANGE (reflect)
-            let client_ids = self.state().clients().client_ids();
-            for client_id in client_ids {
-                let frame = *self.state().frame();
-                self.context
-                    .to_client_sender
-                    .send((
-                        client_id,
-                        ServerToClientMessage::State(ClientStateMessage::SetGameFrame(frame)),
-                    ))
-                    .unwrap();
-            }
-
-            self.fps_target(tick_start);
-            self.game_frame_increment();
-            self.stats_log();
+            self.do_one_iteration();
         }
+    }
+
+    fn do_one_iteration(&mut self) {
+        let tick_start = Instant::now();
+
+        // FIXME: do client requests in thread pool to not block task tick
+        // and solve all effects here by reading channel
+        let effects = self.clients();
+        self.apply_effects(effects);
+
+        let effects = self.tick();
+        self.apply_effects(effects);
+
+        // FIXME: send new GameFrame to all clients
+        // CLEAN
+        // ONLY WHEN CHANGE (reflect)
+        let client_ids = self.state().clients().client_ids();
+        for client_id in client_ids {
+            let frame = *self.state().frame();
+            self.context
+                .to_client_sender
+                .send((
+                    client_id,
+                    ServerToClientMessage::State(ClientStateMessage::SetGameFrame(frame)),
+                ))
+                .unwrap();
+        }
+
+        self.fps_target(tick_start);
+        self.game_frame_increment();
+        self.stats_log();
     }
 
     fn clients(&mut self) -> Vec<Effect> {
