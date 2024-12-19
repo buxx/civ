@@ -225,33 +225,8 @@ impl Runner {
     }
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
-        self.reflect(&effects);
+        self.reflects(&effects);
         self.state().apply(effects);
-    }
-
-    // FIXME reflechir a une producteur de Vec<(Uuid, ServerToClientMessage)> depuis un Effect
-    // pour eviter le doublon de concerned/effect_point
-    fn reflect(&self, effects: &Vec<Effect>) {
-        let state = &self.state();
-        for effect in effects {
-            if let Some(message) = effect.reflect(state) {
-                for client_id in self.concerned(effect, state) {
-                    self.context
-                        .to_client_sender
-                        .send((client_id, message.clone()))
-                        .unwrap()
-                }
-            }
-        }
-    }
-
-    // FIXME: MutexGuard<State> not in self because mutex lock conflict
-    fn concerned(&self, effect: &Effect, state: &MutexGuard<State>) -> Vec<Uuid> {
-        if let Some(point) = state.effect_point(effect) {
-            return state.clients().clients_displaying(&point);
-        }
-
-        vec![]
     }
 
     fn client(&self, client_id: Uuid, message: ClientToServerMessage) -> Vec<Effect> {

@@ -144,50 +144,6 @@ impl State {
     pub fn index(&self) -> &Index {
         &self.index
     }
-
-    // TODO: with this method, unit which go out a client window will not be untracked
-    pub fn effect_point(&self, effect: &Effect) -> Option<(u64, u64)> {
-        match effect {
-            Effect::State(effect) => match effect {
-                StateEffect::Client(_, _) => None,
-                StateEffect::Task(_, effect) => match effect {
-                    TaskEffect::Push(task) => {
-                        //
-                        task.concerned_unit()
-                            // TODO: should be an error if not Ok ?
-                            .and_then(|unit_uuid| self.find_unit(&unit_uuid).ok())
-                            .map(|u| u.geo().xy())
-                    }
-                    TaskEffect::Finished(uuid) => {
-                        // TODO: another way to know client is concerned ?
-                        // FIXME: use task index by uuid to avoid performance bottleneck here; REF PERF_TASK
-                        self.tasks()
-                            .iter()
-                            .find(|t| t.context().id() == *uuid)
-                            .and_then(|task| task.concerned_unit())
-                            // TODO: should be an error if not Ok ?
-                            .and_then(|unit_uuid| self.find_unit(&unit_uuid).ok())
-                            .map(|u| u.geo().xy())
-                    }
-                },
-                StateEffect::City(_, effect) => match effect {
-                    CityEffect::New(city) => Some(city.geo().xy()),
-                    CityEffect::Remove(uuid) => {
-                        // TODO: should be an error if not Ok ?
-                        self.find_city(uuid).ok().map(|c| c.geo().xy())
-                    }
-                },
-                StateEffect::Unit(_, effect) => match effect {
-                    UnitEffect::New(unit) => Some(unit.geo().xy()),
-                    UnitEffect::Remove(uuid) => {
-                        // TODO: should be an error if not Ok ?
-                        self.find_unit(uuid).ok().map(|u| u.geo().xy())
-                    }
-                    UnitEffect::Move(_, to_) => Some(*to_),
-                },
-            },
-        }
-    }
 }
 
 #[derive(Error, Debug)]
