@@ -9,7 +9,7 @@ use crate::{
     space::window::{SetWindow, Window},
 };
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum NotificationLevel {
     Error,
     Warning,
@@ -26,7 +26,7 @@ pub enum ClientToServerEnveloppe {
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerMessage {
     SetWindow(SetWindow),
-    CreateTask(CreateTaskMessage),
+    CreateTask(Uuid, CreateTaskMessage),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -34,13 +34,13 @@ pub enum CreateTaskMessage {
     Settle(Uuid, String),
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum ServerToClientMessage {
     State(ClientStateMessage),
     Notification(NotificationLevel, String),
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum ClientStateMessage {
     SetGameFrame(GameFrame),
     SetWindow(Window),

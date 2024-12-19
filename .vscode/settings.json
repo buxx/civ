@@ -2,8 +2,10 @@
     "cSpell.words": [
         "bincode",
         "nanos",
+        "rstest",
         "serde",
         "shellwords",
         "uuids"
-    ]
+    ],
+    "editor.formatOnSaveMode": "file"
 }

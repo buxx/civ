@@ -27,7 +27,7 @@ pub fn detail(context: CommandContext, id: Uuid) {
     if let (Some(frame), Some(units)) = (state.frame(), state.units()) {
         if let Some(unit) = units.iter().find(|c| c.id() == id) {
             println!("id: {}", unit.id());
-            println!("xy: {:?}", unit.physics().xy());
+            println!("xy: {:?}", unit.geo().xy());
             println!("type: {:?}", unit.type_().to_string());
             println!("tasks: {}", unit.tasks().display(&frame));
         }
@@ -36,11 +36,12 @@ pub fn detail(context: CommandContext, id: Uuid) {
     }
 }
 
-pub fn settle(context: CommandContext, id: Uuid) {
+pub fn settle(context: CommandContext, unit_id: Uuid) {
     context
         .to_server_sender
         .send(ClientToServerMessage::CreateTask(
-            CreateTaskMessage::Settle(id, "City name".to_string()),
+            Uuid::new_v4(),
+            CreateTaskMessage::Settle(unit_id, "City name".to_string()),
         ))
         .unwrap()
 }

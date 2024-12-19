@@ -9,7 +9,7 @@ use super::{
     GameFrame,
 };
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct GameSlice {
     cities: Vec<ClientCity>,
     units: Vec<ClientUnit>,
@@ -29,7 +29,7 @@ impl GameSlice {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientCity {
     id: Uuid,
     name: String,
@@ -58,12 +58,12 @@ impl ClientCity {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Builder)]
+#[derive(Serialize, Deserialize, Clone, Builder, Debug, PartialEq)]
 pub struct ClientUnit {
     id: Uuid,
     type_: UnitType,
     tasks: ClientUnitTasks,
-    physics: GeoContext,
+    geo: GeoContext,
 }
 
 impl ClientUnit {
@@ -71,12 +71,12 @@ impl ClientUnit {
         self.id
     }
 
-    pub fn physics(&self) -> &GeoContext {
-        &self.physics
+    pub fn geo(&self) -> &GeoContext {
+        &self.geo
     }
 
-    pub fn physics_mut(&mut self) -> &mut GeoContext {
-        &mut self.physics
+    pub fn geo_mut(&mut self) -> &mut GeoContext {
+        &mut self.geo
     }
 
     pub fn type_(&self) -> &UnitType {
@@ -92,7 +92,7 @@ impl ClientUnit {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientUnitTasks {
     stack: Vec<ClientUnitTask>,
 }
@@ -123,7 +123,7 @@ impl ClientUnitTasks {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientUnitTask {
     id: Uuid,
     task: UnitTask,

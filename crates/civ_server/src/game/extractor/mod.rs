@@ -76,7 +76,7 @@ impl<'a> Extractor<'a> {
             .id(unit.id())
             .type_(unit.type_().clone())
             .tasks(tasks)
-            .physics(unit.geo().clone())
+            .geo(unit.geo().clone())
             .build()
     }
 

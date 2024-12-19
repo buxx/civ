@@ -29,6 +29,7 @@ pub struct Settle {
 
 impl Settle {
     pub fn new(
+        task_id: Uuid,
         context: Context,
         state: MutexGuard<State>,
         unit_uuid: &Uuid,
@@ -47,7 +48,6 @@ impl Settle {
             )));
         }
 
-        let task_id = Uuid::new_v4();
         let end = *state.frame() + context.rules().settle_duration(unit.type_()).0;
         let task = Settle::builder()
             .settler(*unit_uuid)

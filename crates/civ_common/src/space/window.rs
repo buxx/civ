@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Window {
     start_x: u64,
     start_y: u64,
@@ -104,7 +104,7 @@ impl SetWindow {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq)]
 pub enum DisplayStep {
     Close,
     High,

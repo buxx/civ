@@ -102,21 +102,6 @@ impl Runner {
         let effects = self.tick();
         self.apply_effects(effects);
 
-        // FIXME: send new GameFrame to all clients
-        // CLEAN
-        // ONLY WHEN CHANGE (reflect)
-        let client_ids = self.state().clients().client_ids();
-        for client_id in client_ids {
-            let frame = *self.state().frame();
-            self.context
-                .to_client_sender
-                .send((
-                    client_id,
-                    ServerToClientMessage::State(ClientStateMessage::SetGameFrame(frame)),
-                ))
-                .unwrap();
-        }
-
         self.fps_target(tick_start);
         self.game_frame_increment();
         self.stats_log();
@@ -137,6 +122,19 @@ impl Runner {
         if self.ticks_since_last_increment >= increment_each {
             self.ticks_since_last_increment = 0;
             self.state().increment();
+
+            // FIXME: By message reflect instead this algo
+            let client_ids = self.state().clients().client_ids();
+            let frame = *self.state().frame();
+            for client_id in client_ids {
+                self.context
+                    .to_client_sender
+                    .send((
+                        client_id,
+                        ServerToClientMessage::State(ClientStateMessage::SetGameFrame(frame)),
+                    ))
+                    .unwrap();
+            }
         }
         self.ticks_since_last_increment += 1;
     }
@@ -261,8 +259,8 @@ impl Runner {
             ClientToServerMessage::SetWindow(window) => {
                 SetWindowRequestDealer::new(self.context.clone(), client_id).deal(&window)
             }
-            ClientToServerMessage::CreateTask(message) => {
-                match self.create_task(message) {
+            ClientToServerMessage::CreateTask(uuid, message) => {
+                match self.create_task(uuid, message) {
                     Ok(task) => {
                         // FIXME: is task to attach on unit (city, etc) do it here !!!
                         vec![Effect::State(StateEffect::Task(
@@ -291,28 +289,151 @@ impl Runner {
 
 #[cfg(test)]
 mod test {
-    use common::rules::std1::Std1RuleSet;
+    use common::{
+        game::{
+            slice::{ClientUnit, ClientUnitTask, ClientUnitTasks, GameSlice},
+            unit::{UnitTask, UnitType},
+            GameFrame,
+        },
+        geo::{Geo, GeoContext},
+        network::message::CreateTaskMessage,
+        rules::{std1::Std1RuleSet, RuleSet},
+        space::window::{DisplayStep, SetWindow, Window},
+    };
 
-    use crate::{FromClientsChannels, ToClientsChannels};
+    use crate::{
+        game::unit::Unit, task::effect::UnitEffect, FromClientsChannels, ToClientsChannels,
+    };
 
     use super::*;
     use rstest::*;
 
+    struct TestingRunnerContext {
+        from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
+        from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
+        to_clients_sender: Sender<(Uuid, ServerToClientMessage)>,
+        to_clients_receiver: Receiver<(Uuid, ServerToClientMessage)>,
+        units: Vec<Unit>,
+        rule_set: Std1RuleSet,
+    }
+
+    impl TestingRunnerContext {
+        fn new() -> Self {
+            let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
+            let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
+
+            Self {
+                from_clients_sender,
+                from_clients_receiver,
+                to_clients_sender,
+                to_clients_receiver,
+                units: vec![],
+                rule_set: Std1RuleSet,
+            }
+        }
+
+        fn units(mut self, value: Vec<Unit>) -> Self {
+            self.units = value;
+            self
+        }
+
+        fn build(&mut self) -> Runner {
+            let mut state = State::default();
+
+            while let Some(unit) = self.units.pop() {
+                state.apply(vec![Effect::State(StateEffect::Unit(
+                    unit.id(),
+                    UnitEffect::New(unit),
+                ))]);
+            }
+
+            let context = Context::new(Box::new(self.rule_set.clone()));
+            let state = Arc::new(Mutex::new(state));
+
+            let context = RunnerContext::new(
+                context,
+                state,
+                self.from_clients_receiver.clone(),
+                self.to_clients_sender.clone(),
+            );
+
+            Runner::builder()
+                .tick_base_period(9999)
+                .context(context)
+                .build()
+        }
+    }
+
     #[fixture]
-    pub fn runner() -> Runner {
-        let context = Context::new(Box::new(Std1RuleSet));
-        let state = Arc::new(Mutex::new(State::default()));
-        let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
-        let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
-        let context = RunnerContext::new(context, state, from_clients_receiver, to_clients_sender);
-        Runner::builder()
-            .tick_base_period(9999)
-            .context(context)
+    fn settler() -> Unit {
+        Unit::builder()
+            .geo(GeoContext::builder().x(0).y(0).build())
+            .id(Uuid::new_v4())
+            .type_(UnitType::Settlers)
             .build()
     }
 
     #[rstest]
-    fn test_runner_one_iteration(mut runner: Runner) {
+    fn test_settle(settler: Unit) {
+        // GIVEN
+        let mut testing = TestingRunnerContext::new().units(vec![settler.clone()]);
+        let client_id = Uuid::new_v4();
+        let settler_id = settler.id();
+        let city_name = "CityName".to_string();
+        let client_settler = ClientUnit::builder()
+            .id(settler_id)
+            .geo(settler.geo().clone())
+            .type_(settler.type_().clone())
+            .tasks(ClientUnitTasks::new(vec![]))
+            .build();
+        let create_task_id = Uuid::new_v4();
+        let client_unit_task = ClientUnitTask::new(
+            create_task_id,
+            UnitTask::Settle,
+            GameFrame(0),
+            testing.rule_set.settle_duration(settler.type_()),
+        );
+        let mut runner = testing.build();
+
+        let set_window = ClientToServerMessage::SetWindow(SetWindow::new(0, 0, 1, 1));
+        let create_task = ClientToServerMessage::CreateTask(
+            create_task_id,
+            CreateTaskMessage::Settle(settler_id, city_name),
+        );
+
+        let expected_set_window = ServerToClientMessage::State(ClientStateMessage::SetWindow(
+            Window::new(0, 0, 1, 1, DisplayStep::Close),
+        ));
+        let expected_game_set_slice = ServerToClientMessage::State(
+            ClientStateMessage::SetGameSlice(GameSlice::new(vec![], vec![client_settler])),
+        );
+        let expected_set_unit_task = ServerToClientMessage::State(ClientStateMessage::AddUnitTask(
+            settler_id,
+            client_unit_task,
+        ));
+
+        // WHEN
+        testing
+            .from_clients_sender
+            .send((client_id, set_window))
+            .unwrap();
         runner.do_one_iteration();
+        testing
+            .from_clients_sender
+            .send((client_id, create_task))
+            .unwrap();
+        runner.do_one_iteration();
+
+        // THEN
+        assert_eq!(testing.to_clients_receiver.len(), 3);
+
+        let message1 = testing.to_clients_receiver.try_recv();
+        assert_eq!(message1, Ok((client_id, expected_set_window)));
+
+        let message2 = testing.to_clients_receiver.try_recv();
+        assert_eq!(message2, Ok((client_id, expected_game_set_slice)));
+
+        let message3 = testing.to_clients_receiver.try_recv();
+        assert_eq!(message3, Ok((client_id, expected_set_unit_task)));
     }
 }
