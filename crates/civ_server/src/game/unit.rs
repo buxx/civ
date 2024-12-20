@@ -1,4 +1,4 @@
-use std::sync::MutexGuard;
+use std::sync::RwLockReadGuard;
 
 use bon::Builder;
 use common::{
@@ -59,11 +59,11 @@ impl UnitTasks {
 }
 
 pub trait IntoClientUnit {
-    fn into_client(&self, state: &MutexGuard<State>) -> ClientUnit;
+    fn into_client(&self, state: &RwLockReadGuard<State>) -> ClientUnit;
 }
 
 impl IntoClientUnit for Unit {
-    fn into_client(&self, state: &MutexGuard<State>) -> ClientUnit {
+    fn into_client(&self, state: &RwLockReadGuard<State>) -> ClientUnit {
         let stack = self
             .tasks()
             .stack()

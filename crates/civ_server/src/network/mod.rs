@@ -7,7 +7,7 @@ use log::info;
 use message_io::network::{NetEvent, Transport};
 use message_io::node::{self, NodeHandler, NodeListener};
 use std::io;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use uuid::Uuid;
 
@@ -26,7 +26,7 @@ enum Signal {
 
 pub struct Network {
     context: Context,
-    state: Arc<Mutex<State>>,
+    state: Arc<RwLock<State>>,
     from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
     to_clients_receiver: Receiver<(Uuid, ServerToClientMessage)>,
     handler: NodeHandler<Signal>,
@@ -39,7 +39,7 @@ pub struct Network {
 impl Network {
     pub fn new(
         context: Context,
-        state: Arc<Mutex<State>>,
+        state: Arc<RwLock<State>>,
         listen_addr: &str,
         from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
         to_clients_receiver: Receiver<(Uuid, ServerToClientMessage)>,
@@ -82,7 +82,7 @@ impl Network {
                         ClientToServerEnveloppe::Hello(client_id) => {
                             self.clients.insert(client_id, endpoint);
                             self.state
-                                .lock()
+                                .write()
                                 .expect("Assume state is always accessible")
                                 .clients_mut()
                                 .set_count(self.clients.length());
@@ -90,7 +90,7 @@ impl Network {
                         ClientToServerEnveloppe::Goodbye => {
                             self.clients.remove(&endpoint);
                             self.state
-                                .lock()
+                                .write()
                                 .expect("Assume state is always accessible")
                                 .clients_mut()
                                 .set_count(self.clients.length());
@@ -106,7 +106,7 @@ impl Network {
                 NetEvent::Disconnected(endpoint) => {
                     self.clients.remove(&endpoint);
                     self.state
-                        .lock()
+                        .write()
                         .expect("Assume state is always accessible")
                         .clients_mut()
                         .set_count(self.clients.length());

@@ -1,4 +1,4 @@
-use std::sync::MutexGuard;
+use std::sync::RwLockReadGuard;
 
 use bon::Builder;
 use common::{
@@ -34,7 +34,7 @@ impl Settle {
     pub fn new(
         task_id: Uuid,
         context: Context,
-        state: MutexGuard<State>,
+        state: RwLockReadGuard<State>,
         unit_uuid: &Uuid,
         city_name: String,
     ) -> Result<Self, CreateTaskError> {

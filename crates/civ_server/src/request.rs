@@ -29,8 +29,8 @@ impl SetWindowRequestDealer {
             DisplayStep::from_shape(set_window.shape()),
         );
 
-        let state = self.context.state();
-        let new_game_slice = Extractor::new(&state).game_slice(&self.client_id, &window);
+        let new_game_slice =
+            Extractor::new(&self.context.state()).game_slice(&self.client_id, &window);
 
         for message in [
             ServerToClientMessage::State(ClientStateMessage::SetWindow(window.clone())),

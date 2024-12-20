@@ -1,5 +1,3 @@
-use std::sync::MutexGuard;
-
 use common::{
     geo::{Geo, GeoContext, WorldPoint},
     network::message::{ClientStateMessage, ServerToClientMessage},
@@ -14,7 +12,7 @@ use crate::{
         unit::{IntoClientUnit, Unit},
     },
     runner::Runner,
-    state::{State, StateError},
+    state::StateError,
     task::{
         effect::{CityEffect, Effect, StateEffect, TaskEffect, UnitEffect},
         Concern, IntoClientTask, TaskBox,
@@ -45,33 +43,29 @@ impl Runner {
         &self,
         effect: &Effect,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
-        let state = &self.state();
         match effect {
             Effect::State(effect) => match effect {
                 StateEffect::Client(_, _) => Ok(None),
                 StateEffect::Task(_, effect) => match effect {
-                    TaskEffect::Push(task) => self.new_task_reflects(task, state),
-                    TaskEffect::Finished(uuid) => self.finished_task_reflects(uuid, state),
+                    TaskEffect::Push(task) => self.new_task_reflects(task),
+                    TaskEffect::Finished(uuid) => self.finished_task_reflects(uuid),
                 },
                 StateEffect::City(_, effect) => match effect {
-                    CityEffect::New(city) => self.new_city_reflects(city, state),
-                    CityEffect::Remove(uuid) => self.removed_city_reflects(uuid, state),
+                    CityEffect::New(city) => self.new_city_reflects(city),
+                    CityEffect::Remove(uuid) => self.removed_city_reflects(uuid),
                 },
                 StateEffect::Unit(_, effect) => match effect {
-                    UnitEffect::New(unit) => self.new_unit_reflects(unit, state),
-                    UnitEffect::Remove(uuid) => self.removed_unit_reflects(uuid, state),
-                    UnitEffect::Move(uuid, to_) => self.moved_unit_reflects(uuid, to_, state),
+                    UnitEffect::New(unit) => self.new_unit_reflects(unit),
+                    UnitEffect::Remove(uuid) => self.removed_unit_reflects(uuid),
+                    UnitEffect::Move(uuid, to_) => self.moved_unit_reflects(uuid, to_),
                 },
             },
         }
     }
 
-    fn task_point(
-        &self,
-        task: &TaskBox,
-        // TODO: State into RwLock instead
-        state: &MutexGuard<State>,
-    ) -> Result<Option<GeoContext>, ReflectError> {
+    fn task_point(&self, task: &TaskBox) -> Result<Option<GeoContext>, ReflectError> {
+        let state = self.state();
+
         match task.concern() {
             Concern::Nothing => Ok(None),
             Concern::Unit(uuid) => Ok(Some(*state.find_unit(&uuid)?.geo())),
@@ -82,9 +76,10 @@ impl Runner {
     fn new_task_reflects(
         &self,
         task: &TaskBox,
-        state: &MutexGuard<State>,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
-        if let Some(geo) = self.task_point(task, state)? {
+        let state = self.state();
+
+        if let Some(geo) = self.task_point(task)? {
             let clients = state.clients().concerned(&geo);
             if !clients.is_empty() {
                 match task.concern() {
@@ -109,8 +104,9 @@ impl Runner {
     fn finished_task_reflects(
         &self,
         task_id: &Uuid,
-        state: &MutexGuard<State>,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+        let state = self.state();
+
         // FIXME: not good, hopefully state is modified after ... Transport task in TaskEffect::Finished
         let task = state
             .tasks()
@@ -118,7 +114,7 @@ impl Runner {
             .find(|t| t.context().id() == *task_id)
             .unwrap();
 
-        if let Some(geo) = self.task_point(task, state)? {
+        if let Some(geo) = self.task_point(task)? {
             let clients = state.clients().concerned(&geo);
             if !clients.is_empty() {
                 match task.concern() {
@@ -142,8 +138,8 @@ impl Runner {
     fn new_city_reflects(
         &self,
         city: &City,
-        state: &MutexGuard<State>,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+        let state = self.state();
         let clients = state.clients().concerned(city.geo());
         if !clients.is_empty() {
             return Ok(Some((
@@ -158,8 +154,8 @@ impl Runner {
     fn removed_city_reflects(
         &self,
         city_id: &Uuid,
-        state: &MutexGuard<State>,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+        let state = self.state();
         if let Ok(city) = state.find_city(city_id) {
             let clients = state.clients().concerned(city.geo());
             if !clients.is_empty() {
@@ -176,12 +172,12 @@ impl Runner {
     fn new_unit_reflects(
         &self,
         unit: &Unit,
-        state: &MutexGuard<State>,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+        let state = self.state();
         let clients = state.clients().concerned(&unit.geo());
         if !clients.is_empty() {
             return Ok(Some((
-                ServerToClientMessage::State(ClientStateMessage::AddUnit(unit.into_client(state))),
+                ServerToClientMessage::State(ClientStateMessage::AddUnit(unit.into_client(&state))),
                 clients,
             )));
         }
@@ -192,8 +188,8 @@ impl Runner {
     fn removed_unit_reflects(
         &self,
         unit_id: &Uuid,
-        state: &MutexGuard<State>,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+        let state = self.state();
         if let Some(unit) = state.find_unit(unit_id).ok() {
             let clients = state.clients().concerned(&unit.geo());
             if !clients.is_empty() {
@@ -211,8 +207,8 @@ impl Runner {
         &self,
         unit_id: &Uuid,
         to_: &WorldPoint,
-        state: &MutexGuard<State>,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+        let state = self.state();
         if let Some(unit) = state.find_unit(unit_id).ok() {
             let clients = state.clients().concerned(unit.geo());
             if !clients.is_empty() {

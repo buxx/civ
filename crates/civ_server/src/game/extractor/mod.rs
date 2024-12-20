@@ -1,4 +1,4 @@
-use std::sync::MutexGuard;
+use std::sync::RwLockReadGuard;
 
 use common::{
     game::slice::{ClientCity, ClientUnit, GameSlice},
@@ -11,11 +11,11 @@ use crate::state::State;
 use super::{city::IntoClientCity, unit::IntoClientUnit};
 
 pub struct Extractor<'a> {
-    state: &'a MutexGuard<'a, State>,
+    state: &'a RwLockReadGuard<'a, State>,
 }
 
 impl<'a> Extractor<'a> {
-    pub fn new(state: &'a MutexGuard<'a, State>) -> Self {
+    pub fn new(state: &'a RwLockReadGuard<'a, State>) -> Self {
         Self { state }
     }
 

@@ -9,7 +9,7 @@ use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{error, info};
 use rayon::{Scope, ThreadPoolBuilder};
 use std::{
-    sync::{Arc, Mutex, MutexGuard},
+    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
     thread,
     time::{Duration, Instant},
 };
@@ -25,7 +25,7 @@ use crate::{
 
 pub struct RunnerContext {
     pub context: Context,
-    pub state: Arc<Mutex<State>>,
+    pub state: Arc<RwLock<State>>,
     pub from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
     pub to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
 }
@@ -33,7 +33,7 @@ pub struct RunnerContext {
 impl RunnerContext {
     pub fn new(
         context: Context,
-        state: Arc<Mutex<State>>,
+        state: Arc<RwLock<State>>,
         from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
         to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
     ) -> Self {
@@ -45,9 +45,9 @@ impl RunnerContext {
         }
     }
 
-    pub fn state(&self) -> MutexGuard<State> {
+    pub fn state(&self) -> RwLockReadGuard<State> {
         self.state
-            .lock()
+            .read()
             .expect("Assume state is always accessible")
     }
 }
@@ -78,10 +78,17 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub(super) fn state(&self) -> MutexGuard<State> {
+    pub(super) fn state(&self) -> RwLockReadGuard<State> {
         self.context
             .state
-            .lock()
+            .read()
+            .expect("Assume state is always accessible")
+    }
+
+    pub fn state_mut(&self) -> RwLockWriteGuard<State> {
+        self.context
+            .state
+            .write()
             .expect("Assume state is always accessible")
     }
 
@@ -121,7 +128,7 @@ impl Runner {
         let increment_each = self.tick_base_period / GAME_FRAMES_PER_SECOND;
         if self.ticks_since_last_increment >= increment_each {
             self.ticks_since_last_increment = 0;
-            self.state().increment();
+            self.state_mut().increment();
 
             // FIXME: By message reflect instead this algo
             let client_ids = self.state().clients().client_ids();
@@ -211,7 +218,7 @@ impl Runner {
             let tx = tx.clone();
 
             scope.spawn(move |_| {
-                let state = state.lock().expect("Assume state is always accessible");
+                let state = state.read().expect("Assume state is always accessible");
                 let tasks = state.tasks();
                 for task in &tasks[start..end] {
                     let effects_ = task.tick(frame);
@@ -226,7 +233,7 @@ impl Runner {
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
         self.reflects(&effects);
-        self.state().apply(effects);
+        self.state_mut().apply(effects);
     }
 
     fn client(&self, client_id: Uuid, message: ClientToServerMessage) -> Vec<Effect> {
@@ -323,7 +330,7 @@ mod test {
             }
 
             let context = Context::new(Box::new(self.rule_set.clone()));
-            let state = Arc::new(Mutex::new(state));
+            let state = Arc::new(RwLock::new(state));
 
             let context = RunnerContext::new(
                 context,

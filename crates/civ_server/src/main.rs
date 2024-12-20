@@ -11,7 +11,7 @@ use network::Network;
 use runner::{Runner, RunnerContext};
 use state::State;
 use std::{
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
     thread,
 };
 use task::effect::{Effect, StateEffect, UnitEffect};
@@ -65,7 +65,7 @@ fn main() -> Result<(), Error> {
     ))]);
 
     let context = Context::new(Box::new(rules));
-    let state = Arc::new(Mutex::new(state));
+    let state = Arc::new(RwLock::new(state));
     let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
     let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
 

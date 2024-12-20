@@ -9,7 +9,7 @@ use uuid::Uuid;
 pub mod context;
 pub mod effect;
 
-pub type TaskBox = Box<dyn Task + Send>;
+pub type TaskBox = Box<dyn Task + Send + Sync>;
 
 pub trait Task {
     fn type_(&self) -> TaskType;
