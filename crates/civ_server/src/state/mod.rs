@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::{
     game::{city::City, unit::Unit},
     task::{
-        effect::{CityEffect, Effect, IntoIndexEffects, StateEffect, TaskEffect, UnitEffect},
+        effect::{CityEffect, Effect, StateEffect, TaskEffect, UnitEffect},
         TaskBox,
     },
 };
@@ -49,36 +49,35 @@ impl State {
 
     pub fn apply(&mut self, effects: Vec<Effect>) {
         let mut remove_ids = vec![];
-        let index_effects = effects.index_effects();
 
-        for effect in effects {
+        for effect in &effects {
             match effect {
                 Effect::State(effect) => match effect {
                     StateEffect::Client(uuid, effect) => {
-                        self.clients.apply(uuid, effect);
+                        self.clients.apply(*uuid, effect);
                     }
                     StateEffect::Task(uuid, effect) => match effect {
                         TaskEffect::Finished(_) => remove_ids.push(uuid),
-                        TaskEffect::Push(task) => self.tasks.push(task),
+                        TaskEffect::Push(task) => self.tasks.push(task.clone()),
                     },
                     StateEffect::City(uuid, effect) => match effect {
                         CityEffect::New(city) => {
-                            self.cities.push(city);
+                            self.cities.push(city.clone());
                         }
                         CityEffect::Remove(_) => {
-                            self.cities.retain(|city| city.id() != uuid);
+                            self.cities.retain(|city| city.id() != *uuid);
                         }
                     },
                     StateEffect::Unit(uuid, effect) => match effect {
                         UnitEffect::New(unit) => {
-                            self.units.push(unit);
+                            self.units.push(unit.clone());
                         }
                         UnitEffect::Remove(_) => {
-                            self.units.retain(|unit| unit.id() != uuid);
+                            self.units.retain(|unit| unit.id() != *uuid);
                         }
                         UnitEffect::Move(_, to_) => {
-                            if let Some(unit) = self.units.iter_mut().find(|u| u.id() == uuid) {
-                                unit.geo_mut().set_point(to_)
+                            if let Some(unit) = self.units.iter_mut().find(|u| u.id() == *uuid) {
+                                unit.geo_mut().set_point(*to_)
                             }
                         }
                     },
@@ -89,10 +88,11 @@ impl State {
         if !remove_ids.is_empty() {
             // TODO: this is not a good performance way (idea: transport tasks index in tick)
             self.tasks
-                .retain(|task| !remove_ids.contains(&task.context().id()));
+                .retain(|task| !remove_ids.contains(&&task.context().id()));
         }
 
-        self.index.apply(index_effects, &self.cities, &self.units);
+        // Update index must be after because based on &self.cities and &self.units
+        self.index.apply(&effects, &self.cities, &self.units);
     }
 
     pub fn cities(&self) -> &[City] {

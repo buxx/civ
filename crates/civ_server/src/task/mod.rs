@@ -3,6 +3,7 @@ pub mod create;
 use common::game::{slice::ClientTask, unit::TaskType, GameFrame};
 use context::TaskContext;
 use core::fmt::Debug;
+use dyn_clone::DynClone;
 use effect::{Effect, StateEffect, TaskEffect};
 use uuid::Uuid;
 
@@ -11,7 +12,7 @@ pub mod effect;
 
 pub type TaskBox = Box<dyn Task + Send + Sync>;
 
-pub trait Task {
+pub trait Task: DynClone {
     fn type_(&self) -> TaskType;
     fn tick(&self, frame: GameFrame) -> Vec<Effect> {
         let mut effects = self.tick_(frame);
@@ -42,6 +43,7 @@ pub trait Task {
         (vec![], vec![])
     }
 }
+dyn_clone::clone_trait_object!(Task);
 
 pub enum Concern {
     Nothing,

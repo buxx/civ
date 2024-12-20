@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     game::{city::City, unit::Unit},
-    task::effect::IndexEffect,
+    task::effect::{CityEffect, Effect, StateEffect, UnitEffect},
 };
 
 #[derive(Default)]
@@ -83,29 +83,35 @@ impl Index {
         units
     }
 
-    // FIXME: direct use StateEffect and call it react
-    pub fn apply(&mut self, effects: Vec<IndexEffect>, cities: &Vec<City>, units: &Vec<Unit>) {
+    pub fn apply(&mut self, effects: &Vec<Effect>, cities: &Vec<City>, units: &Vec<Unit>) {
         let mut reindex_cities = false;
         let mut reindex_units = false;
 
         for effect in effects {
             match effect {
-                // Add or remove a City/Unit imply index change
-                IndexEffect::NewCity(_) | IndexEffect::RemovedCity(_) => {
-                    reindex_cities = true;
-                }
-                IndexEffect::NewUnit(_) | IndexEffect::RemovedUnit(_) => {
-                    reindex_units = true;
-                }
-                IndexEffect::MovedUnit(uuid, _) => {
-                    if let Some(point) = self.units_xy.get(&uuid) {
-                        self.xy_units
-                            .entry(*point)
-                            .or_default()
-                            .retain(|id| id != &uuid);
-                    }
-                    self.units_xy.remove(&uuid);
-                }
+                Effect::State(effect) => match effect {
+                    StateEffect::Client(_, _) => {}
+                    StateEffect::Task(_, _) => {}
+                    StateEffect::City(_, effect) => match effect {
+                        CityEffect::New(_) | CityEffect::Remove(_) => {
+                            reindex_cities = true;
+                        }
+                    },
+                    StateEffect::Unit(_, effect) => match effect {
+                        UnitEffect::New(_) | UnitEffect::Remove(_) => {
+                            reindex_units = true;
+                        }
+                        UnitEffect::Move(uuid, _) => {
+                            if let Some(point) = self.units_xy.get(uuid) {
+                                self.xy_units
+                                    .entry(*point)
+                                    .or_default()
+                                    .retain(|id| id != uuid);
+                            }
+                            self.units_xy.remove(uuid);
+                        }
+                    },
+                },
             }
         }
 

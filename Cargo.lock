@@ -176,6 +176,7 @@ dependencies = [
  "bon",
  "civ_common",
  "crossbeam",
+ "dyn-clone",
  "env_logger",
  "log",
  "message-io",

@@ -20,13 +20,13 @@ impl Clients {
         self.count = value;
     }
 
-    pub fn apply(&mut self, client_id: Uuid, effect: ClientEffect) {
+    pub fn apply(&mut self, client_id: Uuid, effect: &ClientEffect) {
         match effect {
             ClientEffect::SetWindow(window) => {
                 self.states
                     .entry(client_id)
                     .or_default()
-                    .set_window(Some(window));
+                    .set_window(Some(window.clone()));
             }
         }
     }

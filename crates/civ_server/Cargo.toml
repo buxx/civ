@@ -20,6 +20,7 @@ zmq.workspace = true
 bincode.workspace = true
 message-io.workspace = true
 thiserror.workspace = true
+dyn-clone.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true

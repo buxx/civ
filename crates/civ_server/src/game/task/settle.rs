@@ -22,7 +22,7 @@ use crate::{
     },
 };
 
-#[derive(Builder)]
+#[derive(Builder, Clone)]
 pub struct Settle {
     context: TaskContext,
     geo: GeoContext,
