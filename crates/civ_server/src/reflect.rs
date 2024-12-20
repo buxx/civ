@@ -48,7 +48,7 @@ impl Runner {
                 StateEffect::Client(_, _) => Ok(None),
                 StateEffect::Task(_, effect) => match effect {
                     TaskEffect::Push(task) => self.new_task_reflects(task),
-                    TaskEffect::Finished(uuid) => self.finished_task_reflects(uuid),
+                    TaskEffect::Finished(task) => self.finished_task_reflects(task),
                 },
                 StateEffect::City(_, effect) => match effect {
                     CityEffect::New(city) => self.new_city_reflects(city),
@@ -103,16 +103,9 @@ impl Runner {
 
     fn finished_task_reflects(
         &self,
-        task_id: &Uuid,
+        task: &TaskBox,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
         let state = self.state();
-
-        // FIXME: not good, hopefully state is modified after ... Transport task in TaskEffect::Finished
-        let task = state
-            .tasks()
-            .iter()
-            .find(|t| t.context().id() == *task_id)
-            .unwrap();
 
         if let Some(geo) = self.task_point(task)? {
             let clients = state.clients().concerned(&geo);
@@ -121,7 +114,8 @@ impl Runner {
                     Concern::Unit(uuid) => {
                         return Ok(Some((
                             ServerToClientMessage::State(ClientStateMessage::RemoveUnitTask(
-                                uuid, *task_id,
+                                uuid,
+                                task.context().id(),
                             )),
                             clients,
                         )));

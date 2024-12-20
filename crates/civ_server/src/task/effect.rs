@@ -22,7 +22,7 @@ pub enum StateEffect {
 #[derive(Debug, Clone)]
 pub enum TaskEffect {
     Push(TaskBox),
-    Finished(Uuid),
+    Finished(TaskBox),
 }
 
 #[derive(Debug, Clone)]

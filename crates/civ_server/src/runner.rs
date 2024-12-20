@@ -1,6 +1,6 @@
 use bon::Builder;
 use common::{
-    game::GAME_FRAMES_PER_SECOND,
+    game::{GameFrame, GAME_FRAMES_PER_SECOND},
     network::message::{
         ClientStateMessage, ClientToServerMessage, NotificationLevel, ServerToClientMessage,
     },
@@ -15,13 +15,13 @@ use std::{
 };
 use uuid::Uuid;
 
-use crate::utils::collection::slices;
 use crate::{
     context::Context,
     request::SetWindowRequestDealer,
     state::State,
     task::effect::{Effect, StateEffect, TaskEffect},
 };
+use crate::{task::TaskBox, utils::collection::slices};
 
 pub struct RunnerContext {
     pub context: Context,
@@ -221,7 +221,7 @@ impl Runner {
                 let state = state.read().expect("Assume state is always accessible");
                 let tasks = state.tasks();
                 for task in &tasks[start..end] {
-                    let effects_ = task.tick(frame);
+                    let effects_ = self.tick_task(task, &frame);
                     if tx.send(effects_).is_err() {
                         error!("Channel closed in tasks scope: abort");
                         return;
@@ -229,6 +229,28 @@ impl Runner {
                 }
             })
         }
+    }
+
+    fn tick_task(&self, task: &TaskBox, frame: &GameFrame) -> Vec<Effect> {
+        let mut effects = task.tick(*frame);
+        if task.context().is_finished(*frame) {
+            effects.push(Effect::State(StateEffect::Task(
+                task.context().id(),
+                TaskEffect::Finished(task.clone()),
+            )));
+
+            let (then_effects, then_tasks) = task.then();
+            effects.extend(then_effects);
+
+            for task in then_tasks {
+                effects.push(Effect::State(StateEffect::Task(
+                    task.context().id(),
+                    TaskEffect::Push(task),
+                )));
+            }
+        }
+
+        effects
     }
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {

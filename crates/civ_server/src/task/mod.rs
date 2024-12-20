@@ -14,30 +14,8 @@ pub type TaskBox = Box<dyn Task + Send + Sync>;
 
 pub trait Task: DynClone {
     fn type_(&self) -> TaskType;
-    fn tick(&self, frame: GameFrame) -> Vec<Effect> {
-        let mut effects = self.tick_(frame);
-
-        if self.context().is_finished(frame) {
-            effects.push(Effect::State(StateEffect::Task(
-                self.context().id(),
-                TaskEffect::Finished(self.context().id()),
-            )));
-
-            let (then_effects, then_tasks) = self.then();
-            effects.extend(then_effects);
-
-            for task in then_tasks {
-                effects.push(Effect::State(StateEffect::Task(
-                    task.context().id(),
-                    TaskEffect::Push(task),
-                )));
-            }
-        }
-
-        effects
-    }
     fn concern(&self) -> Concern;
-    fn tick_(&self, frame: GameFrame) -> Vec<Effect>;
+    fn tick(&self, frame: GameFrame) -> Vec<Effect>;
     fn context(&self) -> &TaskContext;
     fn then(&self) -> (Vec<Effect>, Vec<TaskBox>) {
         (vec![], vec![])

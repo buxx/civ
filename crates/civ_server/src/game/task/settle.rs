@@ -73,7 +73,7 @@ impl Task for Settle {
         TaskType::Unit(UnitTaskType::Settle)
     }
 
-    fn tick_(&self, _frame: GameFrame) -> Vec<Effect> {
+    fn tick(&self, _frame: GameFrame) -> Vec<Effect> {
         vec![]
     }
 
