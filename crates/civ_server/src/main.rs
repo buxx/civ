@@ -1,6 +1,6 @@
 use common::{
     game::unit::UnitType,
-    geo::GeoContext,
+    geo::{GeoContext, WorldPoint},
     network::message::{ClientToServerMessage, ServerToClientMessage},
     rules::std1::Std1RuleSet,
 };
@@ -59,7 +59,7 @@ fn main() -> Result<(), Error> {
             Unit::builder()
                 .id(uuid)
                 .type_(UnitType::Settlers)
-                .geo(GeoContext::builder().x(0).y(0).build())
+                .geo(GeoContext::builder().point(WorldPoint::new(0, 0)).build())
                 .build(),
         ),
     ))]);

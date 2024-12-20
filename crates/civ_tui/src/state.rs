@@ -95,7 +95,7 @@ impl State {
             ClientStateMessage::MoveUnit(uuid, to_) => {
                 if let Some(units) = &mut self.units {
                     if let Some(unit) = units.iter_mut().find(|u| u.id() == uuid) {
-                        unit.geo_mut().set_xy(to_)
+                        unit.geo_mut().set_point(to_)
                     }
                 }
             }

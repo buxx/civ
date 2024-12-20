@@ -1,7 +1,7 @@
 use std::sync::MutexGuard;
 
 use common::{
-    geo::{Geo, GeoContext},
+    geo::{Geo, GeoContext, WorldPoint},
     network::message::{ClientStateMessage, ServerToClientMessage},
 };
 use log::error;
@@ -144,7 +144,7 @@ impl Runner {
         city: &City,
         state: &MutexGuard<State>,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
-        let clients = state.clients().concerned(&city.geo());
+        let clients = state.clients().concerned(city.geo());
         if !clients.is_empty() {
             return Ok(Some((
                 ServerToClientMessage::State(ClientStateMessage::AddCity(city.into_client())),
@@ -160,8 +160,8 @@ impl Runner {
         city_id: &Uuid,
         state: &MutexGuard<State>,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
-        if let Some(city) = state.find_city(city_id).ok() {
-            let clients = state.clients().concerned(&city.geo());
+        if let Ok(city) = state.find_city(city_id) {
+            let clients = state.clients().concerned(city.geo());
             if !clients.is_empty() {
                 return Ok(Some((
                     ServerToClientMessage::State(ClientStateMessage::RemoveCity(*city_id)),
@@ -210,7 +210,7 @@ impl Runner {
     fn moved_unit_reflects(
         &self,
         unit_id: &Uuid,
-        to_: &(u64, u64),
+        to_: &WorldPoint,
         state: &MutexGuard<State>,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
         if let Some(unit) = state.find_unit(unit_id).ok() {

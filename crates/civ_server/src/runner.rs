@@ -270,7 +270,7 @@ mod test {
             unit::{TaskType, UnitTaskType, UnitType},
             GameFrame,
         },
-        geo::{Geo, GeoContext},
+        geo::{Geo, GeoContext, WorldPoint},
         network::message::CreateTaskMessage,
         rules::{std1::Std1RuleSet, RuleSet},
         space::window::{DisplayStep, SetWindow, Window},
@@ -342,7 +342,7 @@ mod test {
     #[fixture]
     fn settler() -> Unit {
         Unit::builder()
-            .geo(GeoContext::builder().x(0).y(0).build())
+            .geo(GeoContext::builder().point(WorldPoint::new(0, 0)).build())
             .id(Uuid::new_v4())
             .type_(UnitType::Settlers)
             .build()

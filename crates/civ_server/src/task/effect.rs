@@ -1,4 +1,4 @@
-use common::space::window::Window;
+use common::{geo::WorldPoint, space::window::Window};
 use uuid::Uuid;
 
 use crate::game::{city::City, unit::Unit};
@@ -40,7 +40,7 @@ pub enum CityEffect {
 pub enum UnitEffect {
     New(Unit),
     Remove(Uuid),
-    Move(Uuid, (u64, u64)),
+    Move(Uuid, WorldPoint),
 }
 
 #[derive(Clone)]
@@ -49,7 +49,7 @@ pub enum IndexEffect {
     RemovedCity(Uuid),
     NewUnit(Unit),
     RemovedUnit(Uuid),
-    MovedUnit(Uuid, (u64, u64)),
+    MovedUnit(Uuid, WorldPoint),
 }
 
 impl Effect {

@@ -48,12 +48,12 @@ impl Window {
     }
 
     pub fn contains(&self, geo: &GeoContext) -> bool {
-        let point = geo.xy();
+        let point = geo.point();
 
-        point.0 >= self.start_x
-            && point.0 <= self.end_x
-            && point.1 >= self.start_y
-            && point.1 <= self.end_y
+        point.x >= self.start_x
+            && point.x <= self.end_x
+            && point.y >= self.start_y
+            && point.y <= self.end_y
     }
 }
 

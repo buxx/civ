@@ -27,7 +27,7 @@ pub fn detail(context: CommandContext, id: Uuid) {
     if let (Some(frame), Some(units)) = (state.frame(), state.units()) {
         if let Some(unit) = units.iter().find(|c| c.id() == id) {
             println!("id: {}", unit.id());
-            println!("xy: {:?}", unit.geo().xy());
+            println!("xy: {:?}", unit.geo().point());
             println!("type: {:?}", unit.type_().to_string());
             println!("tasks: {}", unit.tasks().display(&frame));
         }

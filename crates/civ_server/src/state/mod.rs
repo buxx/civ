@@ -10,7 +10,7 @@ use crate::{
     game::{city::City, unit::Unit},
     task::{
         effect::{CityEffect, Effect, IntoIndexEffects, StateEffect, TaskEffect, UnitEffect},
-        Task, TaskBox,
+        TaskBox,
     },
 };
 
@@ -78,7 +78,7 @@ impl State {
                         }
                         UnitEffect::Move(_, to_) => {
                             if let Some(unit) = self.units.iter_mut().find(|u| u.id() == uuid) {
-                                unit.geo_mut().set_xy(to_)
+                                unit.geo_mut().set_point(to_)
                             }
                         }
                     },

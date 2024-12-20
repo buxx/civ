@@ -27,7 +27,7 @@ pub fn city(context: CommandContext, id: Uuid) {
         if let Some(city) = cities.iter().find(|c| c.id() == id) {
             println!("id: {}", city.id());
             println!("name: {}", city.name());
-            println!("xy: {:?}", city.geo().xy());
+            println!("xy: {:?}", city.geo().point());
         }
     } else {
         println!("Game state not ready")

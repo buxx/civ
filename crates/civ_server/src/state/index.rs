@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use common::{
-    geo::Geo,
+    geo::{Geo, WorldPoint},
     space::window::{DisplayStep, Window},
 };
 use uuid::Uuid;
@@ -15,10 +15,10 @@ use crate::{
 pub struct Index {
     cities_index: HashMap<Uuid, usize>,
     units_index: HashMap<Uuid, usize>,
-    cities_xy: HashMap<Uuid, (u64, u64)>,
-    units_xy: HashMap<Uuid, (u64, u64)>,
-    xy_cities: HashMap<(u64, u64), Uuid>,
-    xy_units: HashMap<(u64, u64), Vec<Uuid>>,
+    cities_xy: HashMap<Uuid, WorldPoint>,
+    units_xy: HashMap<Uuid, WorldPoint>,
+    xy_cities: HashMap<WorldPoint, Uuid>,
+    xy_units: HashMap<WorldPoint, Vec<Uuid>>,
 }
 
 impl Index {
@@ -28,7 +28,7 @@ impl Index {
 
         for (i, city) in cities.iter().enumerate() {
             self.cities_index.insert(city.id(), i);
-            self.cities_xy.insert(city.id(), city.geo().xy());
+            self.cities_xy.insert(city.id(), *city.geo().point());
         }
     }
 
@@ -38,7 +38,7 @@ impl Index {
 
         for (i, unit) in units.iter().enumerate() {
             self.units_index.insert(unit.id(), i);
-            self.units_xy.insert(unit.id(), unit.geo().xy());
+            self.units_xy.insert(unit.id(), *unit.geo().point());
         }
     }
 
@@ -50,7 +50,7 @@ impl Index {
         let mut cities = vec![];
         for x in window.start_x()..window.end_x() {
             for y in window.start_y()..window.end_y() {
-                if let Some(uuid) = self.xy_cities.get(&(x, y)) {
+                if let Some(uuid) = self.xy_cities.get(&WorldPoint::new(x, y)) {
                     cities.push(*uuid);
                 }
             }
@@ -67,7 +67,7 @@ impl Index {
         let mut units = vec![];
         for x in window.start_x()..window.end_x() {
             for y in window.start_y()..window.end_y() {
-                if let Some(uuids) = self.xy_units.get(&(x, y)) {
+                if let Some(uuids) = self.xy_units.get(&WorldPoint::new(x, y)) {
                     units.extend(uuids);
                 }
             }
@@ -83,7 +83,7 @@ impl Index {
         for effect in effects {
             match effect {
                 IndexEffect::NewCity(city) => {
-                    self.xy_cities.insert(city.geo().xy(), city.id());
+                    self.xy_cities.insert(*city.geo().point(), city.id());
                     refresh_cities_index = true;
                 }
                 IndexEffect::RemovedCity(uuid) => {
@@ -93,7 +93,7 @@ impl Index {
                 }
                 IndexEffect::NewUnit(unit) => {
                     self.xy_units
-                        .entry(unit.geo().xy())
+                        .entry(*unit.geo().point())
                         .or_default()
                         .push(unit.id());
                     refresh_units_index = true;

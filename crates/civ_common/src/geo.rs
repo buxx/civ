@@ -1,7 +1,18 @@
 use bon::Builder;
 use serde::{Deserialize, Serialize};
 
-// TODO: try Into<Physics> ?
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq, Eq, Hash)]
+pub struct WorldPoint {
+    pub x: u64,
+    pub y: u64,
+}
+
+impl WorldPoint {
+    pub fn new(x: u64, y: u64) -> Self {
+        Self { x, y }
+    }
+}
+
 pub trait Geo {
     fn geo(&self) -> &GeoContext;
     fn geo_mut(&mut self) -> &mut GeoContext;
@@ -9,17 +20,15 @@ pub trait Geo {
 
 #[derive(Builder, Clone, Copy, Serialize, Deserialize, Debug, PartialEq)]
 pub struct GeoContext {
-    x: u64,
-    y: u64,
+    point: WorldPoint,
 }
 
 impl GeoContext {
-    pub fn xy(&self) -> (u64, u64) {
-        (self.x, self.y)
+    pub fn point(&self) -> &WorldPoint {
+        &self.point
     }
 
-    pub fn set_xy(&mut self, value: (u64, u64)) {
-        self.x = value.0;
-        self.y = value.1;
+    pub fn set_point(&mut self, value: WorldPoint) {
+        self.point = value
     }
 }
