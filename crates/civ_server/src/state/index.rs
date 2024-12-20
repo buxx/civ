@@ -15,30 +15,37 @@ use crate::{
 pub struct Index {
     cities_index: HashMap<Uuid, usize>,
     units_index: HashMap<Uuid, usize>,
-    cities_xy: HashMap<Uuid, WorldPoint>,
-    units_xy: HashMap<Uuid, WorldPoint>,
+    cities_xy: HashMap<Uuid, WorldPoint>, // TODO: not used, no ?
+    units_xy: HashMap<Uuid, WorldPoint>,  // TODO: not used, no ?
     xy_cities: HashMap<WorldPoint, Uuid>,
     xy_units: HashMap<WorldPoint, Vec<Uuid>>,
 }
 
 impl Index {
-    pub fn refresh_all_cities(&mut self, cities: &Vec<City>) {
+    pub fn reindex_cities(&mut self, cities: &Vec<City>) {
         self.cities_index.clear();
         self.cities_xy.clear();
+        self.xy_cities.clear();
 
         for (i, city) in cities.iter().enumerate() {
             self.cities_index.insert(city.id(), i);
             self.cities_xy.insert(city.id(), *city.geo().point());
+            self.xy_cities.insert(*city.geo().point(), city.id());
         }
     }
 
-    pub fn refresh_all_units(&mut self, units: &Vec<Unit>) {
+    pub fn reindex_units(&mut self, units: &Vec<Unit>) {
         self.units_index.clear();
         self.units_xy.clear();
+        self.xy_units.clear();
 
         for (i, unit) in units.iter().enumerate() {
             self.units_index.insert(unit.id(), i);
             self.units_xy.insert(unit.id(), *unit.geo().point());
+            self.xy_units
+                .entry(*unit.geo().point())
+                .or_default()
+                .push(unit.id());
         }
     }
 
@@ -76,53 +83,38 @@ impl Index {
         units
     }
 
+    // FIXME: direct use StateEffect and call it react
     pub fn apply(&mut self, effects: Vec<IndexEffect>, cities: &Vec<City>, units: &Vec<Unit>) {
-        let mut refresh_cities_index = false;
-        let mut refresh_units_index = false;
+        let mut reindex_cities = false;
+        let mut reindex_units = false;
 
         for effect in effects {
             match effect {
-                IndexEffect::NewCity(city) => {
-                    self.xy_cities.insert(*city.geo().point(), city.id());
-                    refresh_cities_index = true;
+                // Add or remove a City/Unit imply index change
+                IndexEffect::NewCity(_) | IndexEffect::RemovedCity(_) => {
+                    reindex_cities = true;
                 }
-                IndexEffect::RemovedCity(uuid) => {
-                    let city_xy = self.cities_xy.get(&uuid).expect("Index integrity");
-                    self.xy_cities.remove(&city_xy).expect("Index integrity");
-                    refresh_cities_index = true;
+                IndexEffect::NewUnit(_) | IndexEffect::RemovedUnit(_) => {
+                    reindex_units = true;
                 }
-                IndexEffect::NewUnit(unit) => {
-                    self.xy_units
-                        .entry(*unit.geo().point())
-                        .or_default()
-                        .push(unit.id());
-                    refresh_units_index = true;
-                }
-                IndexEffect::RemovedUnit(uuid) => {
-                    let unit_xy = self.units_xy.get(&uuid).expect("Index integrity");
-                    self.xy_units
-                        .entry(*unit_xy)
-                        .or_default()
-                        .retain(|id| id != &uuid);
-                    refresh_cities_index = true;
-                }
-                IndexEffect::MovedUnit(uuid, to_) => {
-                    let old_unit_xy = self.units_xy.get(&uuid).expect("Index integrity");
-                    self.xy_units
-                        .entry(*old_unit_xy)
-                        .or_default()
-                        .retain(|id| id != &uuid);
-                    self.xy_units.entry(to_).or_default().push(uuid);
+                IndexEffect::MovedUnit(uuid, _) => {
+                    if let Some(point) = self.units_xy.get(&uuid) {
+                        self.xy_units
+                            .entry(*point)
+                            .or_default()
+                            .retain(|id| id != &uuid);
+                    }
+                    self.units_xy.remove(&uuid);
                 }
             }
         }
 
-        if refresh_cities_index {
-            self.refresh_all_cities(cities);
+        if reindex_cities {
+            self.reindex_cities(cities);
         }
 
-        if refresh_units_index {
-            self.refresh_all_units(units);
+        if reindex_units {
+            self.reindex_units(units);
         }
     }
 
