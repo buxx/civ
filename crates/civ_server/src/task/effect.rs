@@ -53,6 +53,7 @@ pub enum IndexEffect {
 }
 
 impl Effect {
+    // FIXME: think about work only with StateEffect in Index
     pub fn index_effect(&self) -> Option<IndexEffect> {
         match self {
             Effect::State(effect) => match effect {

@@ -6,7 +6,6 @@ use crate::{
         slice::{ClientCity, ClientTask, ClientUnit, GameSlice},
         GameFrame,
     },
-    geo::WorldPoint,
     space::window::{SetWindow, Window},
 };
 
@@ -46,11 +45,10 @@ pub enum ClientStateMessage {
     SetGameFrame(GameFrame),
     SetWindow(Window),
     SetGameSlice(GameSlice),
-    AddCity(ClientCity),
+    SetCity(ClientCity),
     RemoveCity(Uuid),
-    AddUnit(ClientUnit),
+    SetUnit(ClientUnit),
     AddUnitTask(Uuid, ClientTask),
     RemoveUnitTask(Uuid, Uuid),
-    MoveUnit(Uuid, WorldPoint), // FIXME resend whole unit when small change
     RemoveUnit(Uuid),
 }

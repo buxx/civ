@@ -77,7 +77,7 @@ impl State {
                 self.cities = Some(slice.cities().into());
                 self.units = Some(slice.units().into());
             }
-            ClientStateMessage::AddCity(city) => {
+            ClientStateMessage::SetCity(city) => {
                 if let Some(cities) = &mut self.cities {
                     cities.push(city)
                 }
@@ -87,15 +87,12 @@ impl State {
                     cities.retain(|c| c.id() != uuid)
                 }
             }
-            ClientStateMessage::AddUnit(unit) => {
+            ClientStateMessage::SetUnit(unit) => {
                 if let Some(units) = &mut self.units {
-                    units.push(unit)
-                }
-            }
-            ClientStateMessage::MoveUnit(uuid, to_) => {
-                if let Some(units) = &mut self.units {
-                    if let Some(unit) = units.iter_mut().find(|u| u.id() == uuid) {
-                        unit.geo_mut().set_point(to_)
+                    if let Some(unit_) = units.iter_mut().find(|u| u.id() == unit.id()) {
+                        *unit_ = unit
+                    } else {
+                        units.push(unit)
                     }
                 }
             }
