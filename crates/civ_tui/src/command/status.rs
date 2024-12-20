@@ -20,7 +20,7 @@ pub fn status(context: CommandContext) {
         state
             .cities()
             .as_ref()
-            .and_then(|cities| Some(cities.len().to_string()))
+            .map(|cities| cities.len().to_string())
             .unwrap_or("n/a".to_string())
     );
     println!(
@@ -28,7 +28,7 @@ pub fn status(context: CommandContext) {
         state
             .units()
             .as_ref()
-            .and_then(|units| Some(units.len().to_string()))
+            .map(|units| units.len().to_string())
             .unwrap_or("n/a".to_string())
     );
 }
