@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::geo::GeoContext;
 
 use super::{
-    unit::{UnitTask, UnitType},
+    unit::{TaskType, UnitType},
     GameFrame,
 };
 
@@ -94,15 +94,15 @@ impl ClientUnit {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientUnitTasks {
-    stack: Vec<ClientUnitTask>,
+    stack: Vec<ClientTask>,
 }
 
 impl ClientUnitTasks {
-    pub fn new(stack: Vec<ClientUnitTask>) -> Self {
+    pub fn new(stack: Vec<ClientTask>) -> Self {
         Self { stack }
     }
 
-    pub fn push(&mut self, task: ClientUnitTask) {
+    pub fn push(&mut self, task: ClientTask) {
         self.stack.push(task);
     }
 
@@ -124,15 +124,15 @@ impl ClientUnitTasks {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ClientUnitTask {
+pub struct ClientTask {
     id: Uuid,
-    task: UnitTask,
+    task: TaskType,
     start: GameFrame,
     end: GameFrame,
 }
 
-impl ClientUnitTask {
-    pub fn new(id: Uuid, task: UnitTask, start: GameFrame, end: GameFrame) -> Self {
+impl ClientTask {
+    pub fn new(id: Uuid, task: TaskType, start: GameFrame, end: GameFrame) -> Self {
         Self {
             id,
             task,

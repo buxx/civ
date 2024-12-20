@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
+use crate::geo::GeoContext;
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Window {
     start_x: u64,
@@ -45,7 +47,9 @@ impl Window {
         width * height
     }
 
-    pub fn contains(&self, point: &(u64, u64)) -> bool {
+    pub fn contains(&self, geo: &GeoContext) -> bool {
+        let point = geo.xy();
+
         point.0 >= self.start_x
             && point.0 <= self.end_x
             && point.1 >= self.start_y

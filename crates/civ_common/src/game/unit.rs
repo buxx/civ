@@ -16,14 +16,19 @@ impl Display for UnitType {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub enum UnitTask {
+pub enum TaskType {
+    Unit(UnitTaskType),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum UnitTaskType {
     Settle,
 }
 
-impl Display for UnitTask {
+impl Display for TaskType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            UnitTask::Settle => f.write_str("Settle"),
+            TaskType::Unit(UnitTaskType::Settle) => f.write_str("Settle"),
         }
     }
 }

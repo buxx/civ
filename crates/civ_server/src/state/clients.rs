@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use common::space::window::Window;
+use common::{geo::GeoContext, space::window::Window};
 use uuid::Uuid;
 
 use crate::task::effect::ClientEffect;
@@ -31,18 +31,18 @@ impl Clients {
         }
     }
 
-    pub fn clients_displaying(&self, point: &(u64, u64)) -> Vec<Uuid> {
-        let mut clients = vec![];
-
-        for (uuid, state) in self.states.iter() {
-            if let Some(window) = &state.window {
-                if window.contains(point) {
-                    clients.push(*uuid)
-                }
-            }
-        }
-
-        clients
+    pub fn concerned(&self, geo: &GeoContext) -> Vec<Uuid> {
+        self.states
+            .iter()
+            .filter(|(_, state)| {
+                state
+                    .window
+                    .as_ref()
+                    .and_then(|w| Some(w.contains(geo)))
+                    .unwrap_or(false)
+            })
+            .map(|(uuid, _)| *uuid)
+            .collect()
     }
 
     pub fn client_ids(&self) -> Vec<Uuid> {

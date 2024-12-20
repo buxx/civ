@@ -3,13 +3,15 @@ use uuid::Uuid;
 
 use crate::game::{city::City, unit::Unit};
 
-use super::Task;
+use super::TaskBox;
 
 // FIXME: Move this mod into state
+#[derive(Debug)]
 pub enum Effect {
     State(StateEffect),
 }
 
+#[derive(Debug)]
 pub enum StateEffect {
     Client(Uuid, ClientEffect),
     Task(Uuid, TaskEffect),
@@ -17,23 +19,24 @@ pub enum StateEffect {
     Unit(Uuid, UnitEffect),
 }
 
+#[derive(Debug)]
 pub enum TaskEffect {
-    Push(Box<dyn Task + Send>),
+    Push(TaskBox),
     Finished(Uuid),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum ClientEffect {
     SetWindow(Window),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum CityEffect {
     New(City),
     Remove(Uuid),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum UnitEffect {
     New(Unit),
     Remove(Uuid),

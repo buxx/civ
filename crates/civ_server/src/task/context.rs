@@ -2,7 +2,7 @@ use bon::Builder;
 use common::game::GameFrame;
 use uuid::Uuid;
 
-#[derive(Builder)]
+#[derive(Debug, Builder)]
 pub struct TaskContext {
     id: Uuid,
     start: GameFrame,

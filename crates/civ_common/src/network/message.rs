@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     game::{
-        slice::{ClientCity, ClientUnit, ClientUnitTask, GameSlice},
+        slice::{ClientCity, ClientTask, ClientUnit, GameSlice},
         GameFrame,
     },
     space::window::{SetWindow, Window},
@@ -48,8 +48,8 @@ pub enum ClientStateMessage {
     AddCity(ClientCity),
     RemoveCity(Uuid),
     AddUnit(ClientUnit),
-    AddUnitTask(Uuid, ClientUnitTask),
+    AddUnitTask(Uuid, ClientTask),
     RemoveUnitTask(Uuid, Uuid),
-    MoveUnit(Uuid, (u64, u64)),
+    MoveUnit(Uuid, (u64, u64)), // FIXME resend whole unit when small change
     RemoveUnit(Uuid),
 }

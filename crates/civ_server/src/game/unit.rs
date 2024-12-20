@@ -1,13 +1,20 @@
+use std::sync::MutexGuard;
+
 use bon::Builder;
 use common::{
-    game::unit::{UnitTask, UnitType},
+    game::{
+        slice::{ClientUnit, ClientUnitTasks},
+        unit::{TaskType, UnitType},
+    },
     geo::Geo,
 };
 use uuid::Uuid;
 
 use common::geo::GeoContext;
 
-#[derive(Builder, Clone)]
+use crate::{state::State, task::IntoClientTask};
+
+#[derive(Debug, Builder, Clone)]
 pub struct Unit {
     id: Uuid,
     type_: UnitType,
@@ -40,13 +47,43 @@ impl Geo for Unit {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct UnitTasks {
-    stack: Vec<(Uuid, UnitTask)>,
+    stack: Vec<(Uuid, TaskType)>,
 }
 
 impl UnitTasks {
-    pub fn stack(&self) -> &[(Uuid, UnitTask)] {
+    pub fn stack(&self) -> &[(Uuid, TaskType)] {
         &self.stack
+    }
+}
+
+pub trait IntoClientUnit {
+    fn into_client(&self, state: &MutexGuard<State>) -> ClientUnit;
+}
+
+impl IntoClientUnit for Unit {
+    fn into_client(&self, state: &MutexGuard<State>) -> ClientUnit {
+        let stack = self
+            .tasks()
+            .stack()
+            .iter()
+            .filter_map(|(uuid, _)| {
+                // FIXME: use task index by uuid to avoid performance bottleneck here; REF PERF_TASK
+                state
+                    .tasks()
+                    .iter()
+                    .find(|t| t.context().id() == *uuid)
+                    .map(|task| task.into_client())
+            })
+            .collect();
+        let tasks = ClientUnitTasks::new(stack);
+
+        ClientUnit::builder()
+            .id(self.id())
+            .type_(self.type_().clone())
+            .tasks(tasks)
+            .geo(self.geo().clone())
+            .build()
     }
 }

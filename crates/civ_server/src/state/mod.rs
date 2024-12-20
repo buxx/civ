@@ -10,7 +10,7 @@ use crate::{
     game::{city::City, unit::Unit},
     task::{
         effect::{CityEffect, Effect, IntoIndexEffects, StateEffect, TaskEffect, UnitEffect},
-        Task,
+        Task, TaskBox,
     },
 };
 
@@ -21,7 +21,7 @@ pub struct State {
     frame_i: GameFrame,
     clients: Clients,
     index: Index,
-    tasks: Vec<Box<dyn Task + Send>>,
+    tasks: Vec<TaskBox>,
     cities: Vec<City>,
     units: Vec<Unit>,
 }
@@ -31,7 +31,7 @@ impl State {
         &self.frame_i
     }
 
-    pub fn tasks(&self) -> &Vec<Box<dyn Task + Send>> {
+    pub fn tasks(&self) -> &Vec<TaskBox> {
         &self.tasks
     }
 

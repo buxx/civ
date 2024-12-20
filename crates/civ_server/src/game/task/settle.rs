@@ -2,7 +2,10 @@ use std::sync::MutexGuard;
 
 use bon::Builder;
 use common::{
-    game::{unit::UnitTask, GameFrame},
+    game::{
+        unit::{TaskType, UnitTaskType},
+        GameFrame,
+    },
     geo::{Geo, GeoContext},
     task::{CreateTaskError, GamePlayError},
 };
@@ -15,7 +18,7 @@ use crate::{
     task::{
         context::TaskContext,
         effect::{CityEffect, Effect, StateEffect, UnitEffect},
-        Task,
+        Concern, Task, TaskBox,
     },
 };
 
@@ -52,7 +55,7 @@ impl Settle {
         let task = Settle::builder()
             .settler(*unit_uuid)
             .city_name(city_name)
-            .geo(unit.geo().clone())
+            .geo(*unit.geo())
             .context(
                 TaskContext::builder()
                     .id(task_id)
@@ -66,8 +69,8 @@ impl Settle {
 }
 
 impl Task for Settle {
-    fn type_(&self) -> UnitTask {
-        UnitTask::Settle
+    fn type_(&self) -> TaskType {
+        TaskType::Unit(UnitTaskType::Settle)
     }
 
     fn tick_(&self, _frame: GameFrame) -> Vec<Effect> {
@@ -78,12 +81,12 @@ impl Task for Settle {
         &self.context
     }
 
-    fn then(&self) -> (Vec<Effect>, Vec<Box<dyn Task + Send>>) {
+    fn then(&self) -> (Vec<Effect>, Vec<TaskBox>) {
         let city_id = Uuid::new_v4();
         let city = City::builder()
             .id(city_id)
             .name(self.city_name.clone())
-            .geo(self.geo.clone())
+            .geo(self.geo)
             .build();
 
         (
@@ -98,11 +101,7 @@ impl Task for Settle {
         )
     }
 
-    fn concerned_unit(&self) -> Option<Uuid> {
-        Some(self.settler)
-    }
-
-    fn concerned_city(&self) -> Option<Uuid> {
-        None
+    fn concern(&self) -> Concern {
+        Concern::Unit(self.settler)
     }
 }

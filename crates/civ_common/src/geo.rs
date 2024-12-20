@@ -7,7 +7,7 @@ pub trait Geo {
     fn geo_mut(&mut self) -> &mut GeoContext;
 }
 
-#[derive(Builder, Clone, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Builder, Clone, Copy, Serialize, Deserialize, Debug, PartialEq)]
 pub struct GeoContext {
     x: u64,
     y: u64,

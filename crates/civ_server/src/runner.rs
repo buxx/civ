@@ -266,8 +266,8 @@ impl Runner {
 mod test {
     use common::{
         game::{
-            slice::{ClientUnit, ClientUnitTask, ClientUnitTasks, GameSlice},
-            unit::{UnitTask, UnitType},
+            slice::{ClientTask, ClientUnit, ClientUnitTasks, GameSlice},
+            unit::{TaskType, UnitTaskType, UnitType},
             GameFrame,
         },
         geo::{Geo, GeoContext},
@@ -357,14 +357,14 @@ mod test {
         let city_name = "CityName".to_string();
         let client_settler = ClientUnit::builder()
             .id(settler_id)
-            .geo(settler.geo().clone())
+            .geo(*settler.geo())
             .type_(settler.type_().clone())
             .tasks(ClientUnitTasks::new(vec![]))
             .build();
         let create_task_id = Uuid::new_v4();
-        let client_unit_task = ClientUnitTask::new(
+        let client_unit_task = ClientTask::new(
             create_task_id,
-            UnitTask::Settle,
+            TaskType::Unit(UnitTaskType::Settle),
             GameFrame(0),
             testing.rule_set.settle_duration(settler.type_()),
         );

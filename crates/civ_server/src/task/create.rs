@@ -3,14 +3,14 @@ use uuid::Uuid;
 
 use crate::{game::task::settle::Settle, runner::Runner};
 
-use super::Task;
+use super::TaskBox;
 
 impl Runner {
     pub(crate) fn create_task(
         &self,
         task_id: Uuid,
         message: CreateTaskMessage,
-    ) -> Result<Box<dyn Task + Send>, CreateTaskError> {
+    ) -> Result<TaskBox, CreateTaskError> {
         match message {
             CreateTaskMessage::Settle(unit_uuid, city_name) => {
                 //
