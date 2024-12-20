@@ -7,7 +7,7 @@ use super::CommandContext;
 pub fn set(context: CommandContext, start_x: u64, start_y: u64, end_x: u64, end_y: u64) {
     let state = context
         .state
-        .lock()
+        .read()
         .expect("Assume state is always accessible");
 
     if !state.connected() {

@@ -3,7 +3,7 @@ use super::CommandContext;
 pub fn status(context: CommandContext) {
     let state = context
         .state
-        .lock()
+        .read()
         .expect("Assume state is always accessible");
 
     let window_str = state

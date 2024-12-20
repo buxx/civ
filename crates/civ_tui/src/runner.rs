@@ -1,6 +1,6 @@
 use std::{
     io::{self, Write},
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
     thread,
 };
 
@@ -19,7 +19,7 @@ use crate::{
 #[derive(Builder)]
 pub struct Runner {
     context: Context,
-    state: Arc<Mutex<State>>,
+    state: Arc<RwLock<State>>,
     from_server_receiver: Receiver<ServerToClientMessage>,
     to_server_sender: Sender<ClientToServerMessage>,
 }
@@ -31,7 +31,7 @@ impl Runner {
         let state = Arc::clone(&self.state);
         thread::spawn(move || {
             while let Ok(message) = from_server_receiver.recv() {
-                let mut state = state.lock().expect("Assume state is always accessible");
+                let mut state = state.write().expect("Assume state is always accessible");
                 match message {
                     ServerToClientMessage::State(message) => {
                         state.apply(message);
@@ -122,7 +122,7 @@ impl Runner {
     fn print_prompt(&mut self) {
         let state = self
             .state
-            .lock()
+            .read()
             .expect("Assume state is always accessible");
         if state.errors().is_empty() {
             print!("---> ");

@@ -1,6 +1,6 @@
 use std::{
     io,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
     time::Duration,
 };
 
@@ -27,7 +27,7 @@ enum Signal {
 pub struct Network {
     client_id: Uuid,
     context: Context,
-    state: Arc<Mutex<State>>,
+    state: Arc<RwLock<State>>,
     to_server_receiver: Receiver<ClientToServerMessage>,
     from_server_sender: Sender<ServerToClientMessage>,
     handler: NodeHandler<Signal>,
@@ -41,7 +41,7 @@ impl Network {
         client_id: Uuid,
         server_address: &str,
         context: Context,
-        state: Arc<Mutex<State>>,
+        state: Arc<RwLock<State>>,
         to_server_receiver: Receiver<ClientToServerMessage>,
         from_server_sender: Sender<ServerToClientMessage>,
     ) -> io::Result<Self> {
@@ -78,7 +78,7 @@ impl Network {
                 NetEvent::Connected(endpoint, established) => {
                     let mut state = self
                         .state
-                        .lock()
+                        .write()
                         .expect("Assume state is always accessible");
                     state.set_connected(established);
 
@@ -96,7 +96,7 @@ impl Network {
                 NetEvent::Disconnected(_) => {
                     let mut state = self
                         .state
-                        .lock()
+                        .write()
                         .expect("Assume state is always accessible");
                     state.set_connected(false);
                     self.handler.stop();

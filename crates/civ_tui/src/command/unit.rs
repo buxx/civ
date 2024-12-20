@@ -6,7 +6,7 @@ use super::CommandContext;
 pub fn units(context: CommandContext) {
     let state = context
         .state
-        .lock()
+        .read()
         .expect("Consider state always accessible");
 
     if let Some(units) = state.units() {
@@ -21,7 +21,7 @@ pub fn units(context: CommandContext) {
 pub fn detail(context: CommandContext, id: Uuid) {
     let state = context
         .state
-        .lock()
+        .read()
         .expect("Consider state always accessible");
 
     if let (Some(frame), Some(units)) = (state.frame(), state.units()) {

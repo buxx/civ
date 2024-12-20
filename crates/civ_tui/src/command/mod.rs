@@ -2,7 +2,7 @@ use crate::{context::Context, state::State};
 use clap::{Args, Parser, Subcommand};
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use crossbeam::channel::{Receiver, Sender};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
 pub mod city;
@@ -66,7 +66,7 @@ pub enum WindowSubCommand {
 
 pub struct CommandContext {
     pub context: Context,
-    pub state: Arc<Mutex<State>>,
+    pub state: Arc<RwLock<State>>,
     pub from_server_receiver: Receiver<ServerToClientMessage>,
     pub to_server_sender: Sender<ClientToServerMessage>,
 }
@@ -74,7 +74,7 @@ pub struct CommandContext {
 impl CommandContext {
     pub fn new(
         context: Context,
-        state: Arc<Mutex<State>>,
+        state: Arc<RwLock<State>>,
         from_server_receiver: Receiver<ServerToClientMessage>,
         to_server_sender: Sender<ClientToServerMessage>,
     ) -> Self {

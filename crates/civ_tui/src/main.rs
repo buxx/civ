@@ -1,5 +1,5 @@
 use std::{
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
     thread,
 };
 
@@ -31,7 +31,7 @@ fn main() -> Result<(), Error> {
 
     let client_id = Uuid::new_v4();
     let context = Context::new();
-    let state = Arc::new(Mutex::new(State::new(client_id)));
+    let state = Arc::new(RwLock::new(State::new(client_id)));
     let (to_server_sender, to_server_receiver): (
         Sender<ClientToServerMessage>,
         Receiver<ClientToServerMessage>,

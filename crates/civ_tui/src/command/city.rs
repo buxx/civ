@@ -5,7 +5,7 @@ use super::CommandContext;
 pub fn cities(context: CommandContext) {
     let state = context
         .state
-        .lock()
+        .read()
         .expect("Consider state always accessible");
 
     if let Some(cities) = state.cities() {
@@ -20,7 +20,7 @@ pub fn cities(context: CommandContext) {
 pub fn city(context: CommandContext, id: Uuid) {
     let state = context
         .state
-        .lock()
+        .read()
         .expect("Consider state always accessible");
 
     if let Some(cities) = state.cities() {
