@@ -13,14 +13,20 @@ impl Runner {
     ) -> Result<TaskBox, CreateTaskError> {
         match message {
             CreateTaskMessage::Settle(unit_uuid, city_name) => {
-                //
-                Ok(Box::new(Settle::new(
-                    task_id,
-                    self.context.context.clone(),
-                    self.state(),
-                    &unit_uuid,
-                    city_name.clone(),
-                )?))
+                if let Ok(unit) = self.state().find_unit(&unit_uuid) {
+                    return Ok(Box::new(Settle::new(
+                        task_id,
+                        self.context.context.clone(),
+                        self.state(),
+                        unit.clone(),
+                        city_name.clone(),
+                    )?));
+                }
+
+                Err(CreateTaskError::IncoherentContext(
+                    "Unit is not longer available".to_string(),
+                    None,
+                ))
             }
         }
     }

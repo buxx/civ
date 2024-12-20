@@ -75,8 +75,9 @@ impl State {
                         UnitEffect::Remove(_) => {
                             self.units.retain(|unit| unit.id() != *uuid);
                         }
-                        UnitEffect::Move(_, to_) => {
-                            if let Some(unit) = self.units.iter_mut().find(|u| u.id() == *uuid) {
+                        UnitEffect::Move(unit_, to_) => {
+                            if let Some(unit) = self.units.iter_mut().find(|u| u.id() == unit_.id())
+                            {
                                 unit.geo_mut().set_point(*to_)
                             }
                         }

@@ -101,14 +101,13 @@ impl Index {
                         UnitEffect::New(_) | UnitEffect::Remove(_) => {
                             reindex_units = true;
                         }
-                        UnitEffect::Move(uuid, _) => {
-                            if let Some(point) = self.units_xy.get(uuid) {
-                                self.xy_units
-                                    .entry(*point)
-                                    .or_default()
-                                    .retain(|id| id != uuid);
-                            }
-                            self.units_xy.remove(uuid);
+                        UnitEffect::Move(unit, _) => {
+                            self.xy_units
+                                .entry(*unit.geo().point())
+                                .or_default()
+                                .retain(|id| id != &unit.id());
+
+                            self.units_xy.remove(&unit.id());
                         }
                     },
                 },

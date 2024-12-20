@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::{
     context::Context,
-    game::city::City,
+    game::{city::City, unit::Unit},
     state::State,
     task::{
         context::TaskContext,
@@ -26,7 +26,7 @@ use crate::{
 pub struct Settle {
     context: TaskContext,
     geo: GeoContext,
-    settler: Uuid,
+    settler: Unit,
     city_name: String,
 }
 
@@ -35,27 +35,20 @@ impl Settle {
         task_id: Uuid,
         context: Context,
         state: RwLockReadGuard<State>,
-        unit_uuid: &Uuid,
+        settler: Unit,
         city_name: String,
     ) -> Result<Self, CreateTaskError> {
-        let unit = state.find_unit(unit_uuid).map_err(|e| {
-            CreateTaskError::IncoherentContext(
-                "Unit not available anymore".to_string(),
-                Some(Box::new(e)),
-            )
-        })?;
-
-        if !context.rules().can_settle(unit.type_()) {
+        if !context.rules().can_settle(settler.type_()) {
             return Err(CreateTaskError::GamePlay(GamePlayError::CantSettle(
-                format!("{} cant do this action", unit.type_()),
+                format!("{} cant do this action", settler.type_()),
             )));
         }
 
-        let end = *state.frame() + context.rules().settle_duration(unit.type_()).0;
+        let end = *state.frame() + context.rules().settle_duration(settler.type_()).0;
         let task = Settle::builder()
-            .settler(*unit_uuid)
+            .geo(*settler.geo())
+            .settler(settler)
             .city_name(city_name)
-            .geo(*unit.geo())
             .context(
                 TaskContext::builder()
                     .id(task_id)
@@ -92,16 +85,16 @@ impl Task for Settle {
         (
             vec![
                 Effect::State(StateEffect::Unit(
-                    self.settler,
-                    UnitEffect::Remove(self.settler),
+                    self.settler.id(),
+                    UnitEffect::Remove(self.settler.clone()),
                 )),
-                Effect::State(StateEffect::City(self.settler, CityEffect::New(city))),
+                Effect::State(StateEffect::City(city_id, CityEffect::New(city))),
             ],
             vec![],
         )
     }
 
     fn concern(&self) -> Concern {
-        Concern::Unit(self.settler)
+        Concern::Unit(self.settler.id())
     }
 }

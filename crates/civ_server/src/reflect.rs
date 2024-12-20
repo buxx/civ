@@ -52,12 +52,12 @@ impl Runner {
                 },
                 StateEffect::City(_, effect) => match effect {
                     CityEffect::New(city) => self.new_city_reflects(city),
-                    CityEffect::Remove(uuid) => self.removed_city_reflects(uuid),
+                    CityEffect::Remove(city) => self.removed_city_reflects(city),
                 },
                 StateEffect::Unit(_, effect) => match effect {
                     UnitEffect::New(unit) => self.new_unit_reflects(unit),
-                    UnitEffect::Remove(uuid) => self.removed_unit_reflects(uuid),
-                    UnitEffect::Move(uuid, _) => self.moved_unit_reflects(uuid),
+                    UnitEffect::Remove(unit) => self.removed_unit_reflects(unit),
+                    UnitEffect::Move(unit, _) => self.moved_unit_reflects(unit),
                 },
             },
         }
@@ -147,17 +147,15 @@ impl Runner {
 
     fn removed_city_reflects(
         &self,
-        city_id: &Uuid,
+        city: &City,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
         let state = self.state();
-        if let Ok(city) = state.find_city(city_id) {
-            let clients = state.clients().concerned(city.geo());
-            if !clients.is_empty() {
-                return Ok(Some((
-                    ServerToClientMessage::State(ClientStateMessage::RemoveCity(*city_id)),
-                    clients,
-                )));
-            }
+        let clients = state.clients().concerned(city.geo());
+        if !clients.is_empty() {
+            return Ok(Some((
+                ServerToClientMessage::State(ClientStateMessage::RemoveCity(city.id())),
+                clients,
+            )));
         }
 
         Ok(None)
@@ -181,17 +179,15 @@ impl Runner {
 
     fn removed_unit_reflects(
         &self,
-        unit_id: &Uuid,
+        unit: &Unit,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
         let state = self.state();
-        if let Ok(unit) = state.find_unit(unit_id) {
-            let clients = state.clients().concerned(unit.geo());
-            if !clients.is_empty() {
-                return Ok(Some((
-                    ServerToClientMessage::State(ClientStateMessage::RemoveUnit(*unit_id)),
-                    clients,
-                )));
-            }
+        let clients = state.clients().concerned(unit.geo());
+        if !clients.is_empty() {
+            return Ok(Some((
+                ServerToClientMessage::State(ClientStateMessage::RemoveUnit(unit.id())),
+                clients,
+            )));
         }
 
         Ok(None)
@@ -199,19 +195,15 @@ impl Runner {
 
     fn moved_unit_reflects(
         &self,
-        unit_id: &Uuid,
+        unit: &Unit,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
         let state = self.state();
-        if let Ok(unit) = state.find_unit(unit_id) {
-            let clients = state.clients().concerned(unit.geo());
-            if !clients.is_empty() {
-                return Ok(Some((
-                    ServerToClientMessage::State(ClientStateMessage::SetUnit(
-                        unit.into_client(&state),
-                    )),
-                    clients,
-                )));
-            }
+        let clients = state.clients().concerned(unit.geo());
+        if !clients.is_empty() {
+            return Ok(Some((
+                ServerToClientMessage::State(ClientStateMessage::SetUnit(unit.into_client(&state))),
+                clients,
+            )));
         }
 
         Ok(None)

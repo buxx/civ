@@ -33,12 +33,12 @@ pub enum ClientEffect {
 #[derive(Debug, Clone)]
 pub enum CityEffect {
     New(City),
-    Remove(Uuid),
+    Remove(City),
 }
 
 #[derive(Debug, Clone)]
 pub enum UnitEffect {
     New(Unit),
-    Remove(Uuid),
-    Move(Uuid, WorldPoint),
+    Remove(Unit),
+    Move(Unit, WorldPoint),
 }
