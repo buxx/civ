@@ -2,10 +2,7 @@ use std::sync::RwLockReadGuard;
 
 use bon::Builder;
 use common::{
-    game::{
-        unit::{TaskType, UnitTaskType},
-        GameFrame,
-    },
+    game::unit::{TaskType, UnitTaskType},
     geo::{Geo, GeoContext},
     task::{CreateTaskError, GamePlayError},
 };
@@ -13,12 +10,11 @@ use uuid::Uuid;
 
 use crate::{
     context::Context,
-    game::{city::City, unit::Unit},
+    game::unit::Unit,
     state::State,
     task::{
-        context::TaskContext,
-        effect::{CityEffect, Effect, StateEffect, UnitEffect},
-        Concern, Task, TaskBox,
+        context::TaskContext, effect::Effect, CityName, Concern, Task, TaskBox, Then,
+        ThenTransformUnitIntoCity, WithUnit,
     },
 };
 
@@ -61,37 +57,43 @@ impl Settle {
     }
 }
 
+impl Geo for Settle {
+    fn geo(&self) -> &GeoContext {
+        &self.geo
+    }
+
+    fn geo_mut(&mut self) -> &mut GeoContext {
+        &mut self.geo
+    }
+}
+
+impl WithUnit for Settle {
+    fn unit(&self) -> &Unit {
+        &self.settler
+    }
+}
+
+impl CityName for Settle {
+    fn city_name(&self) -> &str {
+        &self.city_name
+    }
+}
+
+impl ThenTransformUnitIntoCity for Settle {}
+
+impl Then for Settle {
+    fn then(&self) -> (Vec<Effect>, Vec<TaskBox>) {
+        self.transform_unit_into_city()
+    }
+}
+
 impl Task for Settle {
     fn type_(&self) -> TaskType {
         TaskType::Unit(UnitTaskType::Settle)
     }
 
-    fn tick(&self, _frame: GameFrame) -> Vec<Effect> {
-        vec![]
-    }
-
     fn context(&self) -> &TaskContext {
         &self.context
-    }
-
-    fn then(&self) -> (Vec<Effect>, Vec<TaskBox>) {
-        let city_id = Uuid::new_v4();
-        let city = City::builder()
-            .id(city_id)
-            .name(self.city_name.clone())
-            .geo(self.geo)
-            .build();
-
-        (
-            vec![
-                Effect::State(StateEffect::Unit(
-                    self.settler.id(),
-                    UnitEffect::Remove(self.settler.clone()),
-                )),
-                Effect::State(StateEffect::City(city_id, CityEffect::New(city))),
-            ],
-            vec![],
-        )
     }
 
     fn concern(&self) -> Concern {

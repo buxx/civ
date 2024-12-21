@@ -233,6 +233,7 @@ impl Runner {
 
     fn tick_task(&self, task: &TaskBox, frame: &GameFrame) -> Vec<Effect> {
         let mut effects = task.tick(*frame);
+
         if task.context().is_finished(*frame) {
             effects.push(Effect::State(StateEffect::Task(
                 task.context().id(),
