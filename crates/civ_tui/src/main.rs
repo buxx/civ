@@ -3,7 +3,10 @@ use std::{
     thread,
 };
 
-use common::network::message::{ClientToServerMessage, ServerToClientMessage};
+use common::{
+    network::message::{ClientToServerMessage, ServerToClientMessage},
+    rules::std1::Std1RuleSet,
+};
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use network::Network;
@@ -30,7 +33,7 @@ fn main() -> Result<(), Error> {
     env_logger::init_from_env(env);
 
     let client_id = Uuid::new_v4();
-    let context = Context::new();
+    let context = Context::new(Box::new(Std1RuleSet));
     let state = Arc::new(RwLock::new(State::new(client_id)));
     let (to_server_sender, to_server_receiver): (
         Sender<ClientToServerMessage>,

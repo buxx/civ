@@ -100,8 +100,8 @@ impl Runner {
                                         UnitSubCommand::Detail => {
                                             command::unit::detail(self.into(), id)
                                         }
-                                        UnitSubCommand::Settle => {
-                                            command::unit::settle(self.into(), id);
+                                        UnitSubCommand::Settle { city_name } => {
+                                            command::unit::settle(self.into(), id, &city_name);
                                         }
                                     },
                                     None => command::unit::detail(self.into(), id),

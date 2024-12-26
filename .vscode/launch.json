@@ -25,6 +25,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug executable 'tui'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=tui",
+                    "--package=civ_tui"
+                ],
+                "filter": {
+                    "name": "tui",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in executable 'server'",
             "cargo": {
                 "args": [

@@ -51,7 +51,7 @@ pub enum SubCommand {
 #[derive(Debug, Subcommand)]
 pub enum UnitSubCommand {
     Detail,
-    Settle,
+    Settle { city_name: String },
 }
 
 #[derive(Debug, Subcommand)]

@@ -15,7 +15,7 @@ use crate::{
     state::StateError,
     task::{
         effect::{CityEffect, Effect, StateEffect, TaskEffect, UnitEffect},
-        Concern, IntoClientTask, TaskBox,
+        Concern, IntoClientTask, Task, TaskBox,
     },
 };
 
