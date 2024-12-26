@@ -1,10 +1,12 @@
+use std::thread;
+
 use common::{
     game::unit::{TaskType, UnitTaskType},
     network::message::{ClientToServerMessage, CreateTaskMessage},
 };
 use uuid::Uuid;
 
-use super::{CommandContext, CommandError};
+use super::{CommandContext, CommandError, FOLLOW_INTERVAL};
 
 pub fn units(context: CommandContext) -> Result<(), CommandError> {
     let state = context
@@ -19,18 +21,26 @@ pub fn units(context: CommandContext) -> Result<(), CommandError> {
     Ok(())
 }
 
-pub fn detail(context: CommandContext, id: Uuid) -> Result<(), CommandError> {
+pub fn detail(context: CommandContext, id: Uuid, follow: bool) -> Result<(), CommandError> {
     let state = context
         .state
         .read()
         .expect("Consider state always accessible");
 
-    if let Some(unit) = state.units()?.iter().find(|c| c.id() == id) {
-        let frame = state.frame()?;
-        println!("id: {}", unit.id());
-        println!("xy: {:?}", unit.geo().point());
-        println!("type: {:?}", unit.type_().to_string());
-        println!("tasks: {}", unit.tasks().display(&frame));
+    let mut follow_ = true;
+    while follow_ && !context.context.stop_is_required() {
+        if let Some(unit) = state.units()?.iter().find(|c| c.id() == id) {
+            let frame = state.frame()?;
+            println!("id: {}", unit.id());
+            println!("xy: {:?}", unit.geo().point());
+            println!("type: {:?}", unit.type_().to_string());
+            println!("tasks: {}", unit.tasks().display(&frame));
+        }
+        follow_ = follow;
+
+        if follow_ {
+            thread::sleep(FOLLOW_INTERVAL);
+        }
     }
 
     Ok(())

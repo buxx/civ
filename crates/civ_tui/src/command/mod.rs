@@ -5,7 +5,10 @@ use crate::{
 use clap::{Args, Parser, Subcommand};
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use crossbeam::channel::{Receiver, SendError, Sender};
-use std::sync::{Arc, RwLock};
+use std::{
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -14,6 +17,8 @@ pub mod errors;
 pub mod status;
 pub mod unit;
 pub mod window;
+
+pub const FOLLOW_INTERVAL: Duration = Duration::from_millis(250);
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -43,6 +48,8 @@ pub enum SubCommand {
     Cities,
     City {
         id: Uuid,
+        #[clap(long, short, action)]
+        follow: bool,
     },
     Units,
     Unit {
@@ -54,8 +61,13 @@ pub enum SubCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum UnitSubCommand {
-    Detail,
-    Settle { city_name: String },
+    Detail {
+        #[clap(long, short, action)]
+        follow: bool,
+    },
+    Settle {
+        city_name: String,
+    },
 }
 
 #[derive(Debug, Subcommand)]

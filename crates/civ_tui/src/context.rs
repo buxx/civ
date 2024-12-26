@@ -23,7 +23,7 @@ impl Context {
         self.stop.load(Ordering::Relaxed)
     }
 
-    pub fn require_stop(&mut self) {
+    pub fn require_stop(&self) {
         self.stop.swap(true, Ordering::Relaxed);
     }
 

@@ -70,7 +70,6 @@ impl Runner {
                     }
                     Err(error) => println!("{}", error),
                 }
-                break;
             }
         }
 
@@ -103,18 +102,22 @@ impl Runner {
                             }
                         };
                     }
-                    SubCommand::Cities => command::city::cities(self.into()),
-                    SubCommand::City { id } => command::city::city(self.into(), id),
+                    SubCommand::Cities => command::city::cities(self.into())?,
+                    SubCommand::City { id, follow } => {
+                        command::city::city(self.into(), id, follow)?
+                    }
                     SubCommand::Units => command::unit::units(self.into())?,
                     SubCommand::Unit { id, subcommand } => {
                         match subcommand {
                             Some(command) => match command {
-                                UnitSubCommand::Detail => command::unit::detail(self.into(), id)?,
+                                UnitSubCommand::Detail { follow } => {
+                                    command::unit::detail(self.into(), id, follow)?
+                                }
                                 UnitSubCommand::Settle { city_name } => {
                                     command::unit::settle(self.into(), id, &city_name)?;
                                 }
                             },
-                            None => command::unit::detail(self.into(), id)?,
+                            None => command::unit::detail(self.into(), id, false)?,
                         };
                     }
                 };
