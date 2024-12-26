@@ -1,8 +1,12 @@
-use crate::{context::Context, state::State};
+use crate::{
+    context::Context,
+    state::{State, StateError},
+};
 use clap::{Args, Parser, Subcommand};
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
-use crossbeam::channel::{Receiver, Sender};
+use crossbeam::channel::{Receiver, SendError, Sender};
 use std::sync::{Arc, RwLock};
+use thiserror::Error;
 use uuid::Uuid;
 
 pub mod city;
@@ -83,6 +87,24 @@ impl CommandContext {
             state,
             from_server_receiver,
             to_server_sender,
+        }
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum CommandError {
+    #[error("Game state not ready")]
+    GameStateNotReady,
+    #[error("Unit no more available")]
+    UnitNoMoreAvailable,
+    #[error("Unexpected closed channel: {0}")]
+    Unexpected(#[from] SendError<ClientToServerMessage>),
+}
+
+impl From<StateError> for CommandError {
+    fn from(value: StateError) -> Self {
+        match value {
+            StateError::NotReady => Self::GameStateNotReady,
         }
     }
 }

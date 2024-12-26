@@ -10,7 +10,9 @@ use common::network::message::{ClientToServerMessage, NotificationLevel, ServerT
 use crossbeam::channel::{Receiver, Sender};
 
 use crate::{
-    command::{self, Command, CommandContext, SubCommand, UnitSubCommand, WindowSubCommand},
+    command::{
+        self, Command, CommandContext, CommandError, SubCommand, UnitSubCommand, WindowSubCommand,
+    },
     context::Context,
     error::PublicError,
     state::State,
@@ -60,63 +62,69 @@ impl Runner {
                 .expect("error: unable to read user input");
 
             if !input.trim().is_empty() {
-                let mut args = vec!["tui".to_string()];
-                args.extend(shellwords::split(&input).unwrap());
-
-                match Command::try_parse_from(args) {
-                    Ok(command) => {
-                        match command.subcommand {
-                            SubCommand::Exit => break,
-                            SubCommand::Status => {
-                                command::status::status(self.into());
-                            }
-                            SubCommand::Errors => {
-                                command::errors::errors(self.into());
-                            }
-                            SubCommand::Window { subcommand } => {
-                                match subcommand {
-                                    WindowSubCommand::Set {
-                                        start_x,
-                                        start_y,
-                                        end_x,
-                                        end_y,
-                                    } => {
-                                        command::window::set(
-                                            self.into(),
-                                            start_x,
-                                            start_y,
-                                            end_x,
-                                            end_y,
-                                        );
-                                    }
-                                };
-                            }
-                            SubCommand::Cities => command::city::cities(self.into()),
-                            SubCommand::City { id } => command::city::city(self.into(), id),
-                            SubCommand::Units => command::unit::units(self.into()),
-                            SubCommand::Unit { id, subcommand } => {
-                                match subcommand {
-                                    Some(command) => match command {
-                                        UnitSubCommand::Detail => {
-                                            command::unit::detail(self.into(), id)
-                                        }
-                                        UnitSubCommand::Settle { city_name } => {
-                                            command::unit::settle(self.into(), id, &city_name);
-                                        }
-                                    },
-                                    None => command::unit::detail(self.into(), id),
-                                };
-                            }
-                        };
+                match self.execute(input) {
+                    Ok(stop) => {
+                        if stop {
+                            break;
+                        }
                     }
-                    Err(error) => {
-                        println!("{}", error)
-                    }
+                    Err(error) => println!("{}", error),
                 }
+                break;
             }
         }
 
         self.context.require_stop();
+    }
+
+    fn execute(&mut self, input: String) -> Result<bool, CommandError> {
+        let mut args = vec!["tui".to_string()];
+        args.extend(shellwords::split(&input).unwrap());
+
+        match Command::try_parse_from(args) {
+            Ok(command) => {
+                match command.subcommand {
+                    SubCommand::Exit => return Ok(true),
+                    SubCommand::Status => {
+                        command::status::status(self.into());
+                    }
+                    SubCommand::Errors => {
+                        command::errors::errors(self.into());
+                    }
+                    SubCommand::Window { subcommand } => {
+                        match subcommand {
+                            WindowSubCommand::Set {
+                                start_x,
+                                start_y,
+                                end_x,
+                                end_y,
+                            } => {
+                                command::window::set(self.into(), start_x, start_y, end_x, end_y);
+                            }
+                        };
+                    }
+                    SubCommand::Cities => command::city::cities(self.into()),
+                    SubCommand::City { id } => command::city::city(self.into(), id),
+                    SubCommand::Units => command::unit::units(self.into())?,
+                    SubCommand::Unit { id, subcommand } => {
+                        match subcommand {
+                            Some(command) => match command {
+                                UnitSubCommand::Detail => command::unit::detail(self.into(), id)?,
+                                UnitSubCommand::Settle { city_name } => {
+                                    command::unit::settle(self.into(), id, &city_name)?;
+                                }
+                            },
+                            None => command::unit::detail(self.into(), id)?,
+                        };
+                    }
+                };
+            }
+            Err(error) => {
+                println!("{}", error)
+            }
+        }
+
+        Ok(false)
     }
 
     fn print_prompt(&mut self) {

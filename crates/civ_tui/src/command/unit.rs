@@ -4,70 +4,65 @@ use common::{
 };
 use uuid::Uuid;
 
-use super::CommandContext;
+use super::{CommandContext, CommandError};
 
-pub fn units(context: CommandContext) {
+pub fn units(context: CommandContext) -> Result<(), CommandError> {
     let state = context
         .state
         .read()
         .expect("Consider state always accessible");
 
-    if let Some(units) = state.units() {
-        for unit in units {
-            println!("{}", unit.id())
-        }
-    } else {
-        println!("Game state not ready")
+    for unit in state.units()? {
+        println!("{}", unit.id())
     }
+
+    Ok(())
 }
 
-pub fn detail(context: CommandContext, id: Uuid) {
+pub fn detail(context: CommandContext, id: Uuid) -> Result<(), CommandError> {
     let state = context
         .state
         .read()
         .expect("Consider state always accessible");
 
-    if let (Some(frame), Some(units)) = (state.frame(), state.units()) {
-        if let Some(unit) = units.iter().find(|c| c.id() == id) {
-            println!("id: {}", unit.id());
-            println!("xy: {:?}", unit.geo().point());
-            println!("type: {:?}", unit.type_().to_string());
-            println!("tasks: {}", unit.tasks().display(&frame));
-        }
-    } else {
-        println!("Game state not ready")
+    if let Some(unit) = state.units()?.iter().find(|c| c.id() == id) {
+        let frame = state.frame()?;
+        println!("id: {}", unit.id());
+        println!("xy: {:?}", unit.geo().point());
+        println!("type: {:?}", unit.type_().to_string());
+        println!("tasks: {}", unit.tasks().display(&frame));
     }
+
+    Ok(())
 }
 
-pub fn settle(context: CommandContext, unit_id: Uuid, city_name: &str) {
+pub fn settle(context: CommandContext, unit_id: Uuid, city_name: &str) -> Result<(), CommandError> {
     let state = context
         .state
         .read()
         .expect("Assume state always accessible");
 
-    if let Some(units) = state.units() {
-        if let Some(unit) = units.iter().find(|c| c.id() == unit_id) {
-            if !context
-                .context
-                .rule_set()
-                .unit_can(unit.type_())
-                .contains(&TaskType::Unit(UnitTaskType::Settle))
-            {
-                println!("Action not available for this unit type");
-                return;
-            }
-
-            context
-                .to_server_sender
-                .send(ClientToServerMessage::CreateTask(
-                    unit.id(),
-                    CreateTaskMessage::Settle(unit_id, city_name.to_string()),
-                ))
-                .unwrap()
-        } else {
-            println!("Unit no more available")
-        }
-    } else {
-        println!("Game state not ready")
+    let unit = state
+        .units()?
+        .iter()
+        .find(|c| c.id() == unit_id)
+        .ok_or(CommandError::UnitNoMoreAvailable)?;
+    if !context
+        .context
+        .rule_set()
+        .unit_can(unit.type_())
+        .contains(&TaskType::Unit(UnitTaskType::Settle))
+    {
+        println!("Action not available for this unit type");
+        return Ok(());
     }
+
+    context
+        .to_server_sender
+        .send(ClientToServerMessage::CreateTask(
+            unit.id(),
+            CreateTaskMessage::Settle(unit_id, city_name.to_string()),
+        ))?;
+
+    Ok(())
 }

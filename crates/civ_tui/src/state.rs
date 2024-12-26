@@ -6,6 +6,7 @@ use common::{
     network::message::ClientStateMessage,
     space::window::Window,
 };
+use thiserror::Error;
 use uuid::Uuid;
 
 use crate::error::PublicError;
@@ -118,15 +119,21 @@ impl State {
         }
     }
 
-    pub fn cities(&self) -> &Option<Vec<ClientCity>> {
-        &self.cities
+    pub fn cities(&self) -> Result<&Vec<ClientCity>, StateError> {
+        self.cities.as_ref().ok_or(StateError::NotReady)
     }
 
-    pub fn units(&self) -> &Option<Vec<ClientUnit>> {
-        &self.units
+    pub fn units(&self) -> Result<&Vec<ClientUnit>, StateError> {
+        self.units.as_ref().ok_or(StateError::NotReady)
     }
 
-    pub fn frame(&self) -> Option<GameFrame> {
-        self.frame
+    pub fn frame(&self) -> Result<GameFrame, StateError> {
+        self.frame.ok_or(StateError::NotReady)
     }
+}
+
+#[derive(Error, Debug)]
+pub enum StateError {
+    #[error("Game state not ready")]
+    NotReady,
 }
