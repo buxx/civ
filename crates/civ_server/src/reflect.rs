@@ -57,7 +57,7 @@ impl Runner {
                 StateEffect::Unit(_, effect) => match effect {
                     UnitEffect::New(unit) => self.new_unit_reflects(unit),
                     UnitEffect::Remove(unit) => self.removed_unit_reflects(unit),
-                    UnitEffect::Move(unit, _) => self.moved_unit_reflects(unit),
+                    UnitEffect::Move(unit, _) => self.updated_unit_reflects(unit),
                 },
             },
         }
@@ -193,7 +193,7 @@ impl Runner {
         Ok(None)
     }
 
-    fn moved_unit_reflects(
+    fn updated_unit_reflects(
         &self,
         unit: &Unit,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
