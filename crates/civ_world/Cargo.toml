@@ -1,0 +1,17 @@
+[package]
+name = "civ_world"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "world"
+path = "src/main.rs"
+
+[dependencies]
+civ_common = { path = "../civ_common" }
+bon.workspace = true
+bincode.workspace = true
+thiserror.workspace = true
+clap = { version = "4.5.23", features = ["derive"] }
+serde.workspace = true
+ron.workspace = true
