@@ -5,9 +5,11 @@ use clap::Parser;
 use generator::Generator;
 use thiserror::Error;
 use world::World;
+use writer::FilesWriter;
 
 mod generator;
 mod world;
+mod writer;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -35,7 +37,7 @@ pub fn main() -> Result<(), WorldGeneratorError> {
         .width(args.width)
         .height(args.height)
         .build();
-    Generator::new(world, args.target).generate()?;
+    Generator::new(world, Box::new(FilesWriter::new(args.target))).generate()?;
 
     Ok(())
 }
