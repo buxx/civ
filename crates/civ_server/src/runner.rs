@@ -309,7 +309,7 @@ mod test {
         network::message::CreateTaskMessage,
         rules::{std1::Std1RuleSet, RuleSet},
         space::window::{DisplayStep, SetWindow, Window},
-        world::Tile,
+        world::{partial::PartialWorld, Tile},
     };
 
     use crate::{
@@ -321,8 +321,26 @@ mod test {
 
     struct EmptyWorld;
     impl WorldReader for EmptyWorld {
+        type Error_ = ();
+
         fn tile(&self, _x: u64, _y: u64) -> Option<&Tile> {
             None
+        }
+
+        fn shape(&self) -> u64 {
+            0
+        }
+
+        fn width(&self) -> u64 {
+            0
+        }
+
+        fn height(&self) -> u64 {
+            0
+        }
+
+        fn window_tiles(&self, _window: &Window) -> Vec<&Tile> {
+            vec![]
         }
     }
 
@@ -423,9 +441,12 @@ mod test {
         let expected_set_window = ServerToClientMessage::State(ClientStateMessage::SetWindow(
             Window::new(0, 0, 1, 1, DisplayStep::Close),
         ));
-        let expected_game_set_slice = ServerToClientMessage::State(
-            ClientStateMessage::SetGameSlice(GameSlice::new(vec![], vec![client_settler])),
-        );
+        let expected_game_set_slice =
+            ServerToClientMessage::State(ClientStateMessage::SetGameSlice(GameSlice::new(
+                PartialWorld::new(WorldPoint::new(0, 0), 1, 1, vec![]),
+                vec![],
+                vec![client_settler],
+            )));
         let expected_set_unit_task = ServerToClientMessage::State(ClientStateMessage::AddUnitTask(
             settler_id,
             client_unit_task,

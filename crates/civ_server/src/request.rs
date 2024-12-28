@@ -30,8 +30,15 @@ impl<W: WorldReader + Sync + Send> SetWindowRequestDealer<W> {
             DisplayStep::from_shape(set_window.shape()),
         );
 
-        let new_game_slice =
-            Extractor::new(&self.context.state()).game_slice(&self.client_id, &window);
+        let new_game_slice = Extractor::new(
+            &self.context.state(),
+            &self
+                .context
+                .world
+                .read()
+                .expect("Consider world as always readable"),
+        )
+        .game_slice(&self.client_id, &window);
 
         for message in [
             ServerToClientMessage::State(ClientStateMessage::SetWindow(window.clone())),

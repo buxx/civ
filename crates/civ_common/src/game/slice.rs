@@ -2,7 +2,7 @@ use bon::Builder;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::geo::GeoContext;
+use crate::{geo::GeoContext, world::partial::PartialWorld};
 
 use super::{
     unit::{TaskType, UnitType},
@@ -11,13 +11,22 @@ use super::{
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct GameSlice {
+    world: PartialWorld,
     cities: Vec<ClientCity>,
     units: Vec<ClientUnit>,
 }
 
 impl GameSlice {
-    pub fn new(cities: Vec<ClientCity>, units: Vec<ClientUnit>) -> Self {
-        Self { cities, units }
+    pub fn new(world: PartialWorld, cities: Vec<ClientCity>, units: Vec<ClientUnit>) -> Self {
+        Self {
+            world,
+            cities,
+            units,
+        }
+    }
+
+    pub fn world(&self) -> &PartialWorld {
+        &self.world
     }
 
     pub fn cities(&self) -> &[ClientCity] {

@@ -10,11 +10,15 @@ pub fn status(context: CommandContext) {
         .window()
         .map(|w| w.to_string())
         .unwrap_or("n/a".to_string());
+    let tiles_str = state
+        .world()
+        .map(|w| w.tiles().len().to_string())
+        .unwrap_or("n/a".to_string());
 
     println!("client_id: {}", state.client_id());
     println!("connected: {}", state.connected());
     println!("errors: {}", state.errors().len());
-    println!("window: {}", window_str);
+    println!("window: {} ({}t)", window_str, tiles_str);
     println!(
         "cities: {}",
         state

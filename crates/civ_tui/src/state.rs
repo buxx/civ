@@ -5,6 +5,7 @@ use common::{
     },
     network::message::ClientStateMessage,
     space::window::Window,
+    world::partial::PartialWorld,
 };
 use thiserror::Error;
 use uuid::Uuid;
@@ -17,6 +18,7 @@ pub struct State {
     window: Option<Window>,
     errors: Vec<PublicError>,
     frame: Option<GameFrame>,
+    world: Option<PartialWorld>,
     cities: Option<Vec<ClientCity>>,
     units: Option<Vec<ClientUnit>>,
 }
@@ -29,6 +31,7 @@ impl State {
             window: None,
             errors: vec![],
             frame: None,
+            world: None,
             cities: None,
             units: None,
         }
@@ -75,6 +78,7 @@ impl State {
                 self.set_window(Some(window));
             }
             ClientStateMessage::SetGameSlice(slice) => {
+                self.world = Some(slice.world().clone());
                 self.cities = Some(slice.cities().into());
                 self.units = Some(slice.units().into());
             }
@@ -129,6 +133,10 @@ impl State {
 
     pub fn frame(&self) -> Result<GameFrame, StateError> {
         self.frame.ok_or(StateError::NotReady)
+    }
+
+    pub fn world(&self) -> Option<&PartialWorld> {
+        self.world.as_ref()
     }
 }
 

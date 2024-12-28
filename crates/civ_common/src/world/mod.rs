@@ -1,13 +1,15 @@
-pub mod reader;
 use bon::Builder;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+pub mod partial;
+pub mod reader;
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum TerrainType {
     GrassLand,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Tile {
     pub type_: TerrainType,
 }
@@ -21,7 +23,7 @@ pub struct Chunk {
 
 #[derive(Debug, Deserialize, Serialize, Builder)]
 pub struct World {
-    pub chunk_size: usize,
-    pub width: usize,
-    pub height: usize,
+    pub chunk_size: u64,
+    pub width: u64,
+    pub height: u64,
 }

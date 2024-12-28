@@ -6,6 +6,7 @@ use crate::geo::GeoContext;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Window {
+    // TODO: WorldPoint instead x, y ...
     start_x: u64,
     start_y: u64,
     end_x: u64,

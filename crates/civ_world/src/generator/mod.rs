@@ -10,7 +10,6 @@ pub struct Generator {
     target: PathBuf,
 }
 
-// FIXME: reader server (-> RAM); chunks client (by index)
 impl Generator {
     pub fn new(world: World, writer: Box<dyn Writer>, target: PathBuf) -> Self {
         Self {
