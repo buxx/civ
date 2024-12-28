@@ -10,6 +10,7 @@ pub trait WorldReader {
     fn init(&mut self) -> Result<(), WorldReaderError<Self::Error_>> {
         Ok(())
     }
+    fn shape(&self) -> usize;
     fn tile(&self, x: u64, y: u64) -> Option<&Tile>;
 }
 
@@ -80,5 +81,9 @@ impl WorldReader for FullMemoryWorldReader {
 
     fn tile(&self, _x: u64, _y: u64) -> Option<&Tile> {
         todo!()
+    }
+
+    fn shape(&self) -> usize {
+        self.tiles.len()
     }
 }

@@ -74,8 +74,8 @@ fn main() -> Result<(), Error> {
 
     info!("Read world ...");
     let mut world = FullMemoryWorldReader::new(world_source);
-    // world.init()?;
-    info!("Read world ... OK");
+    world.init()?;
+    info!("Read world ... OK ({} tiles)", world.shape());
 
     let context = Context::new(Box::new(rules));
     let state = Arc::new(RwLock::new(state));
