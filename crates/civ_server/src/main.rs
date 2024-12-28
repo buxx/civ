@@ -3,14 +3,19 @@ use common::{
     geo::{GeoContext, WorldPoint},
     network::message::{ClientToServerMessage, ServerToClientMessage},
     rules::std1::Std1RuleSet,
+    world::reader::{
+        FullMemoryWorldReader, FullMemoryWorldReaderError, WorldReader, WorldReaderError,
+    },
 };
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use game::unit::Unit;
+use log::info;
 use network::Network;
 use runner::{Runner, RunnerContext};
 use state::State;
 use std::{
+    path::PathBuf,
     sync::{Arc, RwLock},
     thread,
 };
@@ -34,6 +39,8 @@ pub const TICK_BASE_PERIOD: u64 = 60;
 enum Error {
     #[error("Network prepare error: {0}")]
     PrepareNetwork(String),
+    #[error("World error: {0}")]
+    World(#[from] WorldReaderError<FullMemoryWorldReaderError>),
 }
 
 type FromClientsChannels = (
@@ -52,6 +59,7 @@ fn main() -> Result<(), Error> {
     let rules = Std1RuleSet;
     let mut state = State::default();
     // HACK
+    let world_source = PathBuf::from("./world");
     let uuid = Uuid::new_v4();
     state.apply(vec![Effect::State(StateEffect::Unit(
         uuid,
@@ -64,8 +72,14 @@ fn main() -> Result<(), Error> {
         ),
     ))]);
 
+    info!("Read world ...");
+    let mut world = FullMemoryWorldReader::new(world_source);
+    // world.init()?;
+    info!("Read world ... OK");
+
     let context = Context::new(Box::new(rules));
     let state = Arc::new(RwLock::new(state));
+    let world = Arc::new(RwLock::new(world));
     let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
     let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
 
@@ -82,6 +96,7 @@ fn main() -> Result<(), Error> {
         .context(RunnerContext::new(
             context.clone(),
             Arc::clone(&state),
+            world,
             from_clients_receiver,
             to_clients_sender,
         ))

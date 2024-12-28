@@ -4,6 +4,7 @@ use common::{
     network::message::{
         ClientStateMessage, ClientToServerMessage, NotificationLevel, ServerToClientMessage,
     },
+    world::reader::WorldReader,
 };
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{error, info};
@@ -23,23 +24,26 @@ use crate::{
 };
 use crate::{task::TaskBox, utils::collection::slices};
 
-pub struct RunnerContext {
+pub struct RunnerContext<W: WorldReader + Sync + Send> {
     pub context: Context,
     pub state: Arc<RwLock<State>>,
+    pub world: Arc<RwLock<W>>,
     pub from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
     pub to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
 }
 
-impl RunnerContext {
+impl<W: WorldReader + Sync + Send> RunnerContext<W> {
     pub fn new(
         context: Context,
         state: Arc<RwLock<State>>,
+        world: Arc<RwLock<W>>,
         from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
         to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
     ) -> Self {
         Self {
             context,
             state,
+            world,
             from_clients_receiver,
             to_client_sender,
         }
@@ -52,11 +56,12 @@ impl RunnerContext {
     }
 }
 
-impl Clone for RunnerContext {
+impl<W: WorldReader + Sync + Send> Clone for RunnerContext<W> {
     fn clone(&self) -> Self {
         Self::new(
             self.context.clone(),
             Arc::clone(&self.state),
+            Arc::clone(&self.world),
             self.from_clients_receiver.clone(),
             self.to_client_sender.clone(),
         )
@@ -64,8 +69,8 @@ impl Clone for RunnerContext {
 }
 
 #[derive(Builder)]
-pub struct Runner {
-    pub(super) context: RunnerContext,
+pub struct Runner<W: WorldReader + Sync + Send> {
+    pub(super) context: RunnerContext<W>,
     tick_base_period: u64,
     #[builder(default = Duration::ZERO)]
     lag: Duration,
@@ -77,7 +82,7 @@ pub struct Runner {
     last_stat: Instant,
 }
 
-impl Runner {
+impl<W: WorldReader + Sync + Send> Runner<W> {
     pub(super) fn state(&self) -> RwLockReadGuard<State> {
         self.context
             .state
@@ -304,6 +309,7 @@ mod test {
         network::message::CreateTaskMessage,
         rules::{std1::Std1RuleSet, RuleSet},
         space::window::{DisplayStep, SetWindow, Window},
+        world::Tile,
     };
 
     use crate::{
@@ -312,6 +318,13 @@ mod test {
 
     use super::*;
     use rstest::*;
+
+    struct EmptyWorld;
+    impl WorldReader for EmptyWorld {
+        fn tile(&self, _x: u64, _y: u64) -> Option<&Tile> {
+            None
+        }
+    }
 
     struct TestingRunnerContext {
         from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
@@ -342,7 +355,7 @@ mod test {
             self
         }
 
-        fn build(&mut self) -> Runner {
+        fn build(&mut self) -> Runner<EmptyWorld> {
             let mut state = State::default();
 
             while let Some(unit) = self.units.pop() {
@@ -358,6 +371,7 @@ mod test {
             let context = RunnerContext::new(
                 context,
                 state,
+                Arc::new(RwLock::new(EmptyWorld)),
                 self.from_clients_receiver.clone(),
                 self.to_clients_sender.clone(),
             );

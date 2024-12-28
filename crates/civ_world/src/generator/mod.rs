@@ -1,20 +1,31 @@
-use common::world::{Chunk, TerrainType, Tile};
+use std::{fs, path::PathBuf};
 
-use crate::{world::World, writer::Writer, WorldGeneratorError};
+use common::world::{Chunk, TerrainType, Tile, World};
+
+use crate::{writer::Writer, WorldGeneratorError};
 
 pub struct Generator {
     world: World,
     writer: Box<dyn Writer>,
+    target: PathBuf,
 }
 
-// FIXME: writer trait (!= generator); reader server (-> RAM); chunks client (by index)
+// FIXME: reader server (-> RAM); chunks client (by index)
 impl Generator {
-    pub fn new(world: World, writer: Box<dyn Writer>) -> Self {
-        Self { world, writer }
+    pub fn new(world: World, writer: Box<dyn Writer>, target: PathBuf) -> Self {
+        Self {
+            world,
+            writer,
+            target,
+        }
     }
 
     pub fn generate(&self) -> Result<(), WorldGeneratorError> {
-        ron::ser::to_string_pretty(&self.world, ron::ser::PrettyConfig::default())?;
+        std::fs::create_dir_all(&self.target)?;
+        fs::write(
+            self.target.join("world.ron"),
+            ron::ser::to_string_pretty(&self.world, ron::ser::PrettyConfig::default())?,
+        )?;
 
         let chunked_width = self.world.width / self.world.chunk_size;
         let chunked_height = self.world.height / self.world.chunk_size;

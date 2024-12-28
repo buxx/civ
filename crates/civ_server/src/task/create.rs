@@ -1,11 +1,13 @@
-use common::{network::message::CreateTaskMessage, task::CreateTaskError};
+use common::{
+    network::message::CreateTaskMessage, task::CreateTaskError, world::reader::WorldReader,
+};
 use uuid::Uuid;
 
 use crate::{game::task::settle::Settle, runner::Runner};
 
 use super::TaskBox;
 
-impl Runner {
+impl<W: WorldReader + Sync + Send> Runner<W> {
     pub(crate) fn create_task(
         &self,
         task_id: Uuid,

@@ -1,6 +1,7 @@
 use common::{
     geo::{Geo, GeoContext},
     network::message::{ClientStateMessage, ServerToClientMessage},
+    world::reader::WorldReader,
 };
 use log::error;
 use thiserror::Error;
@@ -15,11 +16,11 @@ use crate::{
     state::StateError,
     task::{
         effect::{CityEffect, Effect, StateEffect, TaskEffect, UnitEffect},
-        Concern, IntoClientTask, Task, TaskBox,
+        Concern, IntoClientTask, TaskBox,
     },
 };
 
-impl Runner {
+impl<W: WorldReader + Sync + Send> Runner<W> {
     pub(crate) fn reflects(&self, effects: &Vec<Effect>) {
         for effect in effects {
             match self.reflect(effect) {

@@ -16,3 +16,5 @@ serde_json.workspace = true
 bon.workspace = true
 thiserror.workspace = true
 dyn-clone.workspace = true
+ron.workspace = true
+bincode.workspace = true

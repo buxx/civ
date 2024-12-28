@@ -2,13 +2,12 @@ use std::{io, path::PathBuf};
 
 use bincode::ErrorKind;
 use clap::Parser;
+use common::world::World;
 use generator::Generator;
 use thiserror::Error;
-use world::World;
 use writer::FilesWriter;
 
 mod generator;
-mod world;
 mod writer;
 
 #[derive(Parser, Debug)]
@@ -37,7 +36,12 @@ pub fn main() -> Result<(), WorldGeneratorError> {
         .width(args.width)
         .height(args.height)
         .build();
-    Generator::new(world, Box::new(FilesWriter::new(args.target))).generate()?;
+    Generator::new(
+        world,
+        Box::new(FilesWriter::new(args.target.clone())),
+        args.target,
+    )
+    .generate()?;
 
     Ok(())
 }
