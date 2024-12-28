@@ -102,19 +102,8 @@ impl WorldReader for FullMemoryWorldReader {
         self.tiles.len() as u64
     }
 
-    // FIXME: write tests
     fn window_tiles(&self, window: &Window) -> Vec<&Tile> {
-        let mut tiles = vec![];
-
-        for y in window.start_y()..window.end_y() {
-            let line_start_index = y * self.width + window.start_x();
-            let line_end_index = y * self.width + window.end_x();
-            // FIXME: manage window outside world
-            let line_tiles = &self.tiles[line_start_index as usize..line_end_index as usize];
-            tiles.extend(line_tiles);
-        }
-
-        tiles
+        tiles_from_window(&self.tiles, window, self.width)
     }
 
     fn width(&self) -> u64 {
@@ -123,5 +112,136 @@ impl WorldReader for FullMemoryWorldReader {
 
     fn height(&self) -> u64 {
         self.height
+    }
+}
+
+pub fn tiles_from_window<'a>(
+    world_tiles: &'a Vec<Tile>,
+    window: &Window,
+    world_width: u64,
+) -> Vec<&'a Tile> {
+    let mut tiles = vec![];
+
+    for y in window.start_y()..window.end_y() + 1 {
+        let line_start_index = y * world_width + window.start_x();
+        let line_end_index = y * world_width + window.end_x();
+        // FIXME: manage window outside world
+        let line_tiles = &world_tiles[line_start_index as usize..(line_end_index + 1) as usize];
+        tiles.extend(line_tiles);
+    }
+
+    tiles
+}
+
+#[cfg(test)]
+mod test {
+    use rstest::rstest;
+
+    use crate::{space::window::DisplayStep, world::TerrainType};
+
+    use super::*;
+
+    #[rstest]
+    fn test_tiles_from_window() {
+        // GIVEN
+        let world_tiles = vec![
+            // line 0
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            // line 1
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            Tile {
+                type_: TerrainType::Plain,
+            },
+            Tile {
+                type_: TerrainType::Plain,
+            },
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            // line 2
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            Tile {
+                type_: TerrainType::Plain,
+            },
+            Tile {
+                type_: TerrainType::Plain,
+            },
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            // line 3
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+        ];
+        let world_width = 4;
+        let window = Window::new(1, 1, 3, 3, DisplayStep::Close);
+
+        // WHEN
+        let window_tiles: Vec<Tile> = tiles_from_window(&world_tiles, &window, world_width)
+            .into_iter()
+            .cloned()
+            .collect();
+
+        // THEN
+        assert_eq!(
+            window_tiles,
+            vec![
+                //
+                Tile {
+                    type_: TerrainType::Plain,
+                },
+                Tile {
+                    type_: TerrainType::Plain,
+                },
+                Tile {
+                    type_: TerrainType::GrassLand,
+                },
+                //
+                Tile {
+                    type_: TerrainType::Plain,
+                },
+                Tile {
+                    type_: TerrainType::Plain,
+                },
+                Tile {
+                    type_: TerrainType::GrassLand,
+                },
+                //
+                Tile {
+                    type_: TerrainType::GrassLand,
+                },
+                Tile {
+                    type_: TerrainType::GrassLand,
+                },
+                Tile {
+                    type_: TerrainType::GrassLand,
+                },
+            ]
+        );
     }
 }

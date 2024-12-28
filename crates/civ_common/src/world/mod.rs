@@ -4,12 +4,13 @@ use serde::{Deserialize, Serialize};
 pub mod partial;
 pub mod reader;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum TerrainType {
     GrassLand,
+    Plain,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Tile {
     pub type_: TerrainType,
 }
