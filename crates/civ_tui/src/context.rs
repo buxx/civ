@@ -3,7 +3,7 @@ use std::sync::{
     Arc,
 };
 
-use common::rules::{RuleSet, RuleSetBox};
+use common::rules::RuleSetBox;
 
 #[derive(Clone)]
 pub struct Context {
@@ -27,7 +27,7 @@ impl Context {
         self.stop.swap(true, Ordering::Relaxed);
     }
 
-    pub fn rule_set(&self) -> &Box<dyn RuleSet + Send> {
+    pub fn rule_set(&self) -> &RuleSetBox {
         &self.rule_set
     }
 }

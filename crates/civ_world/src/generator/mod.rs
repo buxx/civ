@@ -39,7 +39,7 @@ impl Generator {
         Ok(())
     }
 
-    fn generate_chunk(&self, chunk_x: usize, chunk_y: usize) -> Result<Chunk, WorldGeneratorError> {
+    fn generate_chunk(&self, chunk_x: u64, chunk_y: u64) -> Result<Chunk, WorldGeneratorError> {
         // TODO: write a real terrain generator ...
         let mut tiles = vec![];
 

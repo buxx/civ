@@ -1,7 +1,6 @@
 use common::{
     geo::{Geo, GeoContext},
     network::message::{ClientStateMessage, ServerToClientMessage},
-    world::reader::WorldReader,
 };
 use log::error;
 use thiserror::Error;
@@ -20,7 +19,7 @@ use crate::{
     },
 };
 
-impl<W: WorldReader + Sync + Send> Runner<W> {
+impl Runner {
     pub(crate) fn reflects(&self, effects: &Vec<Effect>) {
         for effect in effects {
             match self.reflect(effect) {
@@ -68,7 +67,6 @@ impl<W: WorldReader + Sync + Send> Runner<W> {
         let state = self.state();
 
         match task.concern() {
-            Concern::Nothing => Ok(None),
             Concern::Unit(uuid) => Ok(Some(*state.find_unit(&uuid)?.geo())),
             Concern::City(uuid) => Ok(Some(*state.find_city(&uuid)?.geo())),
         }
@@ -94,7 +92,6 @@ impl<W: WorldReader + Sync + Send> Runner<W> {
                         )));
                     }
                     Concern::City(_uuid) => todo!(),
-                    Concern::Nothing => {}
                 }
             }
         }
@@ -122,7 +119,6 @@ impl<W: WorldReader + Sync + Send> Runner<W> {
                         )));
                     }
                     Concern::City(_uuid) => todo!(),
-                    Concern::Nothing => {}
                 }
             }
         }

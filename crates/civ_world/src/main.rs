@@ -32,9 +32,9 @@ pub fn main() -> Result<(), WorldGeneratorError> {
     }
 
     let world = World::builder()
-        .chunk_size(args.chunk_size)
-        .width(args.width)
-        .height(args.height)
+        .chunk_size(args.chunk_size as u64)
+        .width(args.width as u64)
+        .height(args.height as u64)
         .build();
     Generator::new(
         world,

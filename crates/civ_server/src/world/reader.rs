@@ -2,51 +2,20 @@ use std::{fs, io, path::PathBuf};
 
 use thiserror::Error;
 
-use crate::space::window::Window;
+use common::space::window::Window;
 
-use super::{Chunk, Tile, World};
-
-pub trait WorldReader {
-    type Error_;
-
-    fn init(&mut self) -> Result<(), WorldReaderError<Self::Error_>> {
-        Ok(())
-    }
-    fn shape(&self) -> u64;
-    fn width(&self) -> u64;
-    fn height(&self) -> u64;
-    fn tile(&self, x: u64, y: u64) -> Option<&Tile>;
-    fn window_tiles(&self, window: &Window) -> Vec<&Tile>;
-}
+use common::world::{Chunk, Tile, World};
 
 #[derive(Error, Debug)]
-pub enum WorldReaderError<T> {
+pub enum WorldReaderError {
     #[error("Failed to init world: {0}")]
-    InitWorldError(T),
+    InitWorldError(InitWorldError),
     #[error("World not initialized")]
     NotInitialized,
 }
 
-pub struct FullMemoryWorldReader {
-    source: PathBuf,
-    width: u64,
-    height: u64,
-    tiles: Vec<Tile>,
-}
-
-impl FullMemoryWorldReader {
-    pub fn new(source: PathBuf) -> Self {
-        Self {
-            source,
-            width: 0,
-            height: 0,
-            tiles: vec![],
-        }
-    }
-}
-
 #[derive(Error, Debug)]
-pub enum FullMemoryWorldReaderError {
+pub enum InitWorldError {
     #[error("Disk access error : {0}")]
     Io(#[from] io::Error),
     #[error("World.ron load error : {0}")]
@@ -55,62 +24,77 @@ pub enum FullMemoryWorldReaderError {
     InvalidChunk(#[from] Box<bincode::ErrorKind>),
 }
 
-impl WorldReader for FullMemoryWorldReader {
-    type Error_ = FullMemoryWorldReaderError;
+pub struct WorldReader {
+    source: PathBuf,
+    width: u64,
+    height: u64,
+    tiles: Vec<Tile>,
+}
 
-    fn init(&mut self) -> Result<(), WorldReaderError<Self::Error_>> {
+impl WorldReader {
+    pub fn new(source: PathBuf, width: u64, height: u64, tiles: Vec<Tile>) -> Self {
+        Self {
+            source,
+            width,
+            height,
+            tiles,
+        }
+    }
+
+    pub fn from(source: PathBuf) -> Result<Self, WorldReaderError> {
+        let mut self_ = Self {
+            source,
+            width: 0,
+            height: 0,
+            tiles: vec![],
+        };
+
         let world: World = ron::from_str(
-            &fs::read_to_string(self.source.join("world.ron"))
-                .map_err(|e| WorldReaderError::InitWorldError(FullMemoryWorldReaderError::Io(e)))?,
+            &fs::read_to_string(self_.source.join("world.ron"))
+                .map_err(|e| WorldReaderError::InitWorldError(InitWorldError::Io(e)))?,
         )
-        .map_err(|e| {
-            WorldReaderError::InitWorldError(FullMemoryWorldReaderError::InvalidWorld(e))
-        })?;
+        .map_err(|e| WorldReaderError::InitWorldError(InitWorldError::InvalidWorld(e)))?;
 
         let chunked_width = world.width / world.chunk_size;
         let chunked_height = world.height / world.chunk_size;
 
-        self.tiles.clear();
-        self.width = world.width;
-        self.height = world.height;
+        self_.tiles.clear();
+        self_.width = world.width;
+        self_.height = world.height;
 
         for chunk_x in 0..chunked_width {
             for chunk_y in 0..chunked_height {
                 let file_name = format!("{}_{}.ct", chunk_x, chunk_y);
-                let chunk: Chunk =
-                    bincode::deserialize(&fs::read(self.source.join(file_name)).map_err(|e| {
-                        WorldReaderError::InitWorldError(FullMemoryWorldReaderError::Io(e))
-                    })?)
-                    .map_err(|e| {
-                        WorldReaderError::InitWorldError(FullMemoryWorldReaderError::InvalidChunk(
-                            e,
-                        ))
-                    })?;
-                self.tiles.extend(chunk.tiles);
+                let chunk: Chunk = bincode::deserialize(
+                    &fs::read(self_.source.join(file_name))
+                        .map_err(|e| WorldReaderError::InitWorldError(InitWorldError::Io(e)))?,
+                )
+                .map_err(|e| WorldReaderError::InitWorldError(InitWorldError::InvalidChunk(e)))?;
+                self_.tiles.extend(chunk.tiles);
             }
         }
 
-        Ok(())
+        Ok(self_)
     }
 
-    fn tile(&self, x: u64, y: u64) -> Option<&Tile> {
+    pub fn tile(&self, x: u64, y: u64) -> Option<&Tile> {
         let index = y * self.width + x;
         self.tiles.get(index as usize)
     }
 
-    fn shape(&self) -> u64 {
+    pub fn shape(&self) -> u64 {
         self.tiles.len() as u64
     }
 
-    fn window_tiles(&self, window: &Window) -> Vec<&Tile> {
+    pub fn window_tiles(&self, window: &Window) -> Vec<&Tile> {
         tiles_from_window(&self.tiles, window, self.width)
     }
 
-    fn width(&self) -> u64 {
+    pub fn width(&self) -> u64 {
         self.width
     }
 
-    fn height(&self) -> u64 {
+    pub fn height(&self) -> u64 {
         self.height
     }
 }
@@ -126,7 +110,7 @@ pub fn tiles_from_window<'a>(
         let line_start_index = y * world_width + window.start_x();
         let line_end_index = y * world_width + window.end_x();
         // FIXME: manage window outside world
-        let line_tiles = &world_tiles[line_start_index as usize..(line_end_index + 1) as usize];
+        let line_tiles = &world_tiles[line_start_index as usize..=line_end_index as usize];
         tiles.extend(line_tiles);
     }
 
@@ -135,9 +119,8 @@ pub fn tiles_from_window<'a>(
 
 #[cfg(test)]
 mod test {
+    use common::{space::window::DisplayStep, world::TerrainType};
     use rstest::rstest;
-
-    use crate::{space::window::DisplayStep, world::TerrainType};
 
     use super::*;
 

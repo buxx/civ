@@ -4,22 +4,25 @@ use common::{
     game::slice::{ClientCity, ClientUnit, GameSlice},
     geo::WorldPoint,
     space::window::Window,
-    world::{partial::PartialWorld, reader::WorldReader, Tile},
+    world::{partial::PartialWorld, Tile},
 };
 use uuid::Uuid;
 
-use crate::state::State;
+use crate::{state::State, world::reader::WorldReader};
 
 use super::{city::IntoClientCity, unit::IntoClientUnit};
 
 // FIXME: lifetime not required ?
-pub struct Extractor<'a, 'b, W: WorldReader + Sync + Send> {
+pub struct Extractor<'a, 'b> {
     state: &'a RwLockReadGuard<'a, State>,
-    world: &'b RwLockReadGuard<'b, W>,
+    world: &'b RwLockReadGuard<'b, WorldReader>,
 }
 
-impl<'a, 'b, W: WorldReader + Sync + Send> Extractor<'a, 'b, W> {
-    pub fn new(state: &'a RwLockReadGuard<'a, State>, world: &'b RwLockReadGuard<'b, W>) -> Self {
+impl<'a, 'b> Extractor<'a, 'b> {
+    pub fn new(
+        state: &'a RwLockReadGuard<'a, State>,
+        world: &'b RwLockReadGuard<'b, WorldReader>,
+    ) -> Self {
         Self { state, world }
     }
 

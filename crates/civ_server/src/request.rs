@@ -1,7 +1,6 @@
 use common::{
     network::message::{ClientStateMessage, ServerToClientMessage},
     space::window::{DisplayStep, SetWindow, Window},
-    world::reader::WorldReader,
 };
 use uuid::Uuid;
 
@@ -11,13 +10,13 @@ use crate::{
     task::effect::{ClientEffect, Effect, StateEffect},
 };
 
-pub struct SetWindowRequestDealer<W: WorldReader + Sync + Send> {
-    context: RunnerContext<W>,
+pub struct SetWindowRequestDealer {
+    context: RunnerContext,
     client_id: Uuid,
 }
 
-impl<W: WorldReader + Sync + Send> SetWindowRequestDealer<W> {
-    pub fn new(context: RunnerContext<W>, client_id: Uuid) -> Self {
+impl SetWindowRequestDealer {
+    pub fn new(context: RunnerContext, client_id: Uuid) -> Self {
         Self { context, client_id }
     }
 

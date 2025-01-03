@@ -4,7 +4,6 @@ use common::{
     network::message::{
         ClientStateMessage, ClientToServerMessage, NotificationLevel, ServerToClientMessage,
     },
-    world::reader::WorldReader,
 };
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{error, info};
@@ -20,23 +19,27 @@ use crate::{
     context::Context,
     request::SetWindowRequestDealer,
     state::State,
-    task::effect::{Effect, StateEffect, TaskEffect},
+    task::{
+        effect::{Effect, StateEffect, TaskEffect},
+        TaskError,
+    },
+    world::reader::WorldReader,
 };
 use crate::{task::TaskBox, utils::collection::slices};
 
-pub struct RunnerContext<W: WorldReader + Sync + Send> {
+pub struct RunnerContext {
     pub context: Context,
     pub state: Arc<RwLock<State>>,
-    pub world: Arc<RwLock<W>>,
+    pub world: Arc<RwLock<WorldReader>>,
     pub from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
     pub to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
 }
 
-impl<W: WorldReader + Sync + Send> RunnerContext<W> {
+impl RunnerContext {
     pub fn new(
         context: Context,
         state: Arc<RwLock<State>>,
-        world: Arc<RwLock<W>>,
+        world: Arc<RwLock<WorldReader>>,
         from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
         to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
     ) -> Self {
@@ -56,7 +59,7 @@ impl<W: WorldReader + Sync + Send> RunnerContext<W> {
     }
 }
 
-impl<W: WorldReader + Sync + Send> Clone for RunnerContext<W> {
+impl Clone for RunnerContext {
     fn clone(&self) -> Self {
         Self::new(
             self.context.clone(),
@@ -69,8 +72,8 @@ impl<W: WorldReader + Sync + Send> Clone for RunnerContext<W> {
 }
 
 #[derive(Builder)]
-pub struct Runner<W: WorldReader + Sync + Send> {
-    pub(super) context: RunnerContext<W>,
+pub struct Runner {
+    pub(super) context: RunnerContext,
     tick_base_period: u64,
     #[builder(default = Duration::ZERO)]
     lag: Duration,
@@ -82,7 +85,7 @@ pub struct Runner<W: WorldReader + Sync + Send> {
     last_stat: Instant,
 }
 
-impl<W: WorldReader + Sync + Send> Runner<W> {
+impl Runner {
     pub(super) fn state(&self) -> RwLockReadGuard<State> {
         self.context
             .state
@@ -222,11 +225,19 @@ impl<W: WorldReader + Sync + Send> Runner<W> {
             let state = Arc::clone(&state);
             let tx = tx.clone();
 
+            let context = self.context.context.clone();
             scope.spawn(move |_| {
                 let state = state.read().expect("Assume state is always accessible");
                 let tasks = state.tasks();
                 for task in &tasks[start..end] {
-                    let effects_ = self.tick_task(task, &frame);
+                    let effects_ = match self.tick_task(task, &frame) {
+                        Ok(effects_) => effects_,
+                        Err(e) => {
+                            eprintln!("Error when tasks execution: {}. Abort.", e);
+                            context.require_stop();
+                            return;
+                        }
+                    };
                     if tx.send(effects_).is_err() {
                         error!("Channel closed in tasks scope: abort");
                         return;
@@ -236,7 +247,7 @@ impl<W: WorldReader + Sync + Send> Runner<W> {
         }
     }
 
-    fn tick_task(&self, task: &TaskBox, frame: &GameFrame) -> Vec<Effect> {
+    fn tick_task(&self, task: &TaskBox, frame: &GameFrame) -> Result<Vec<Effect>, TaskError> {
         let mut effects = task.tick(*frame);
 
         if task.context().is_finished(*frame) {
@@ -245,7 +256,7 @@ impl<W: WorldReader + Sync + Send> Runner<W> {
                 TaskEffect::Finished(task.clone()),
             )));
 
-            let (then_effects, then_tasks) = task.then();
+            let (then_effects, then_tasks) = task.then(&self.context)?;
             effects.extend(then_effects);
 
             for task in then_tasks {
@@ -256,7 +267,7 @@ impl<W: WorldReader + Sync + Send> Runner<W> {
             }
         }
 
-        effects
+        Ok(effects)
     }
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
@@ -299,6 +310,8 @@ impl<W: WorldReader + Sync + Send> Runner<W> {
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     use common::{
         game::{
             slice::{ClientTask, ClientUnit, ClientUnitTasks, GameSlice},
@@ -309,7 +322,7 @@ mod test {
         network::message::CreateTaskMessage,
         rules::{std1::Std1RuleSet, RuleSet},
         space::window::{DisplayStep, SetWindow, Window},
-        world::{partial::PartialWorld, Tile},
+        world::{partial::PartialWorld, TerrainType, Tile},
     };
 
     use crate::{
@@ -318,31 +331,6 @@ mod test {
 
     use super::*;
     use rstest::*;
-
-    struct EmptyWorld;
-    impl WorldReader for EmptyWorld {
-        type Error_ = ();
-
-        fn tile(&self, _x: u64, _y: u64) -> Option<&Tile> {
-            None
-        }
-
-        fn shape(&self) -> u64 {
-            0
-        }
-
-        fn width(&self) -> u64 {
-            0
-        }
-
-        fn height(&self) -> u64 {
-            0
-        }
-
-        fn window_tiles(&self, _window: &Window) -> Vec<&Tile> {
-            vec![]
-        }
-    }
 
     struct TestingRunnerContext {
         from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
@@ -373,8 +361,19 @@ mod test {
             self
         }
 
-        fn build(&mut self) -> Runner<EmptyWorld> {
+        fn build(&mut self) -> Runner {
             let mut state = State::default();
+            let world = WorldReader::new(
+                PathBuf::new(),
+                1,
+                1,
+                vec![
+                    Tile::new(TerrainType::GrassLand),
+                    Tile::new(TerrainType::GrassLand),
+                    Tile::new(TerrainType::GrassLand),
+                    Tile::new(TerrainType::GrassLand),
+                ],
+            );
 
             while let Some(unit) = self.units.pop() {
                 state.apply(vec![Effect::State(StateEffect::Unit(
@@ -389,7 +388,7 @@ mod test {
             let context = RunnerContext::new(
                 context,
                 state,
-                Arc::new(RwLock::new(EmptyWorld)),
+                Arc::new(RwLock::new(world)),
                 self.from_clients_receiver.clone(),
                 self.to_clients_sender.clone(),
             );
@@ -443,7 +442,17 @@ mod test {
         ));
         let expected_game_set_slice =
             ServerToClientMessage::State(ClientStateMessage::SetGameSlice(GameSlice::new(
-                PartialWorld::new(WorldPoint::new(0, 0), 1, 1, vec![]),
+                PartialWorld::new(
+                    WorldPoint::new(0, 0),
+                    1,
+                    1,
+                    vec![
+                        Tile::new(TerrainType::GrassLand),
+                        Tile::new(TerrainType::GrassLand),
+                        Tile::new(TerrainType::GrassLand),
+                        Tile::new(TerrainType::GrassLand),
+                    ],
+                ),
                 vec![],
                 vec![client_settler],
             )));

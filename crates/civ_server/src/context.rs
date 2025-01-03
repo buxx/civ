@@ -3,16 +3,16 @@ use std::sync::{
     Arc,
 };
 
-use common::rules::RuleSet;
+use common::rules::RuleSetBox;
 
 #[derive(Clone)]
 pub struct Context {
-    rules: Box<dyn RuleSet + Send + Sync>,
+    rules: RuleSetBox,
     stop: Arc<AtomicBool>,
 }
 
 impl Context {
-    pub fn new(rules: Box<dyn RuleSet + Send + Sync>) -> Self {
+    pub fn new(rules: RuleSetBox) -> Self {
         Self {
             rules,
             stop: Arc::new(AtomicBool::new(false)),
@@ -23,11 +23,11 @@ impl Context {
         self.stop.load(Ordering::Relaxed)
     }
 
-    pub fn require_stop(&mut self) {
+    pub fn require_stop(&self) {
         self.stop.swap(true, Ordering::Relaxed);
     }
 
-    pub fn rules(&self) -> &Box<dyn RuleSet + Send + Sync> {
+    pub fn rules(&self) -> &RuleSetBox {
         &self.rules
     }
 }

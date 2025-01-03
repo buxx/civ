@@ -145,6 +145,25 @@ impl State {
     pub fn index(&self) -> &Index {
         &self.index
     }
+
+    pub fn city_tasks(&self, city_id: &Uuid) -> Result<Vec<&TaskBox>, StateError> {
+        // CityTasks::from(
+        //     self.index
+        //         .city_tasks(city_id)
+        //         .iter()
+        //         // TODO: probably a performance issue here
+        //         .filter_map(|id| self.tasks.iter().find(|t| t.context().id() == *id))
+        //         .collect::<Vec<&TaskBox>>(),
+        // )
+        // .map_err(|e| StateError::CityTasksIntegrity(*city_id, e))
+        Ok(self
+            .index
+            .city_tasks(city_id)
+            .iter()
+            // TODO: probably a performance issue here
+            .filter_map(|id| self.tasks.iter().find(|t| t.context().id() == *id))
+            .collect::<Vec<&TaskBox>>())
+    }
 }
 
 #[derive(Error, Debug)]
@@ -157,4 +176,6 @@ pub enum StateError {
     UnitNotFound(usize, Uuid),
     #[error("No unit for uuid {0}")]
     UnitUuidNotFound(Uuid),
+    // #[error("City integrity error ({0}): {1}")]
+    // CityTasksIntegrity(Uuid, CityIntegrityError),
 }

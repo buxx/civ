@@ -2,7 +2,6 @@ use bon::Builder;
 use serde::{Deserialize, Serialize};
 
 pub mod partial;
-pub mod reader;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum TerrainType {
@@ -15,10 +14,16 @@ pub struct Tile {
     pub type_: TerrainType,
 }
 
+impl Tile {
+    pub fn new(type_: TerrainType) -> Self {
+        Self { type_ }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Chunk {
-    pub x: usize,
-    pub y: usize,
+    pub x: u64,
+    pub y: u64,
     pub tiles: Vec<Tile>,
 }
 

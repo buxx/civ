@@ -11,9 +11,10 @@ use uuid::Uuid;
 use crate::{
     context::Context,
     game::unit::Unit,
+    runner::RunnerContext,
     state::State,
     task::{
-        context::TaskContext, effect::Effect, CityName, Concern, Task, TaskBox, Then,
+        context::TaskContext, effect::Effect, CityName, Concern, Task, TaskBox, TaskError, Then,
         ThenTransformUnitIntoCity, WithUnit,
     },
 };
@@ -82,8 +83,8 @@ impl CityName for Settle {
 impl ThenTransformUnitIntoCity for Settle {}
 
 impl Then for Settle {
-    fn then(&self) -> (Vec<Effect>, Vec<TaskBox>) {
-        self.transform_unit_into_city()
+    fn then(&self, context: &RunnerContext) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError> {
+        self.transform_unit_into_city(context)
     }
 }
 

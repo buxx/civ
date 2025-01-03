@@ -3,9 +3,6 @@ use common::{
     geo::{GeoContext, WorldPoint},
     network::message::{ClientToServerMessage, ServerToClientMessage},
     rules::std1::Std1RuleSet,
-    world::reader::{
-        FullMemoryWorldReader, FullMemoryWorldReaderError, WorldReader, WorldReaderError,
-    },
 };
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
@@ -22,6 +19,7 @@ use std::{
 use task::effect::{Effect, StateEffect, UnitEffect};
 use thiserror::Error;
 use uuid::Uuid;
+use world::reader::{WorldReader, WorldReaderError};
 
 mod context;
 mod game;
@@ -32,6 +30,7 @@ mod runner;
 mod state;
 mod task;
 mod utils;
+mod world;
 
 pub const TICK_BASE_PERIOD: u64 = 60;
 
@@ -40,7 +39,7 @@ enum Error {
     #[error("Network prepare error: {0}")]
     PrepareNetwork(String),
     #[error("World error: {0}")]
-    World(#[from] WorldReaderError<FullMemoryWorldReaderError>),
+    World(#[from] WorldReaderError),
 }
 
 type FromClientsChannels = (
@@ -73,8 +72,7 @@ fn main() -> Result<(), Error> {
     ))]);
 
     info!("Read world ...");
-    let mut world = FullMemoryWorldReader::new(world_source);
-    world.init()?;
+    let world = WorldReader::from(world_source)?;
     info!("Read world ... OK ({} tiles)", world.shape());
 
     let context = Context::new(Box::new(rules));

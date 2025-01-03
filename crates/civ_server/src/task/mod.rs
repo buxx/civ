@@ -1,5 +1,7 @@
+pub mod city;
 pub mod create;
 
+use city::CityTasksBuilder;
 use common::{
     game::{
         slice::ClientTask,
@@ -12,9 +14,17 @@ use context::TaskContext;
 use core::fmt::Debug;
 use dyn_clone::DynClone;
 use effect::{CityEffect, Effect, StateEffect, UnitEffect};
+use thiserror::Error;
 use uuid::Uuid;
 
-use crate::game::{city::City, unit::Unit};
+use crate::{
+    game::{
+        city::{City, CityProduction},
+        unit::Unit,
+    },
+    runner::RunnerContext,
+    state::StateError,
+};
 
 pub mod context;
 pub mod effect;
@@ -31,8 +41,8 @@ pub trait Task: DynClone + Then {
 }
 dyn_clone::clone_trait_object!(Task);
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Concern {
-    Nothing,
     Unit(Uuid),
     City(Uuid),
 }
@@ -61,12 +71,22 @@ impl Debug for TaskBox {
     }
 }
 
+#[derive(Error, Debug)]
+pub enum TaskError {
+    #[error("State error: {0}")]
+    State(#[from] StateError),
+}
+
 pub trait Then {
-    fn then(&self) -> (Vec<Effect>, Vec<TaskBox>);
+    fn then(&self, context: &RunnerContext) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError>;
 }
 
 pub trait WithUnit {
     fn unit(&self) -> &Unit;
+}
+
+pub trait WithCity {
+    fn city(&self) -> &City;
 }
 
 pub trait CityName {
@@ -74,16 +94,28 @@ pub trait CityName {
 }
 
 pub trait ThenTransformUnitIntoCity: WithUnit + CityName + Geo {
-    fn transform_unit_into_city(&self) -> (Vec<Effect>, Vec<TaskBox>) {
+    fn transform_unit_into_city(
+        &self,
+        context: &RunnerContext,
+    ) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError> {
+        let state = context.state();
         let unit = self.unit();
         let city_id = Uuid::new_v4();
         let city = City::builder()
             .id(city_id)
             .name(self.city_name().to_string())
             .geo(*self.geo())
+            .production(CityProduction::default(context))
             .build();
+        let tasks = CityTasksBuilder::builder()
+            .context(context)
+            .city(&city)
+            .previous_tasks(&vec![])
+            .game_frame(*state.frame())
+            .build()
+            .build()?;
 
-        (
+        Ok((
             vec![
                 Effect::State(StateEffect::Unit(
                     unit.id(),
@@ -91,7 +123,7 @@ pub trait ThenTransformUnitIntoCity: WithUnit + CityName + Geo {
                 )),
                 Effect::State(StateEffect::City(city_id, CityEffect::New(city))),
             ],
-            vec![],
-        )
+            tasks,
+        ))
     }
 }
