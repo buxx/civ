@@ -7,15 +7,12 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    game::{
-        city::{City, IntoClientCity},
-        unit::{IntoClientUnit, Unit},
-    },
+    game::{city::City, unit::Unit, IntoClientModel},
     runner::Runner,
     state::StateError,
     task::{
         effect::{CityEffect, Effect, StateEffect, TaskEffect, UnitEffect},
-        Concern, IntoClientTask, TaskBox,
+        Concern, IntoClientConcreteTask, TaskBox,
     },
 };
 
@@ -134,7 +131,9 @@ impl Runner {
         let clients = state.clients().concerned(city.geo());
         if !clients.is_empty() {
             return Ok(Some((
-                ServerToClientMessage::State(ClientStateMessage::SetCity(city.into_client())),
+                ServerToClientMessage::State(ClientStateMessage::SetCity(
+                    city.clone().into_client(&state),
+                )),
                 clients,
             )));
         }
@@ -166,7 +165,9 @@ impl Runner {
         let clients = state.clients().concerned(unit.geo());
         if !clients.is_empty() {
             return Ok(Some((
-                ServerToClientMessage::State(ClientStateMessage::SetUnit(unit.into_client(&state))),
+                ServerToClientMessage::State(ClientStateMessage::SetUnit(
+                    unit.clone().into_client(&state),
+                )),
                 clients,
             )));
         }
@@ -198,7 +199,9 @@ impl Runner {
         let clients = state.clients().concerned(unit.geo());
         if !clients.is_empty() {
             return Ok(Some((
-                ServerToClientMessage::State(ClientStateMessage::SetUnit(unit.into_client(&state))),
+                ServerToClientMessage::State(ClientStateMessage::SetUnit(
+                    unit.clone().into_client(&state),
+                )),
                 clients,
             )));
         }

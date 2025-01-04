@@ -116,7 +116,7 @@ impl State {
             ClientStateMessage::RemoveUnitTask(unit_uuid, task_uuid) => {
                 if let Some(units) = &mut self.units {
                     if let Some(unit) = units.iter_mut().find(|u| u.id() == unit_uuid) {
-                        unit.tasks_mut().remove(task_uuid)
+                        unit.tasks_mut().remove(&task_uuid)
                     }
                 }
             }

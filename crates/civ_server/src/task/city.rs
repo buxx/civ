@@ -1,5 +1,3 @@
-use std::sync::RwLockReadGuard;
-
 use bon::Builder;
 use common::{
     game::{
@@ -16,7 +14,7 @@ use crate::{
     runner::RunnerContext,
 };
 
-use super::{context::TaskContext, TaskBox, TaskError};
+use super::{context::TaskContext, CityTaskBox, TaskBox, TaskError};
 
 /// Produce all tasks for given city. Used when city context change to refill city tasks
 #[derive(Builder)]
@@ -28,7 +26,7 @@ pub struct CityTasksBuilder<'a> {
 }
 
 impl CityTasksBuilder<'_> {
-    pub fn build(&self) -> Result<Vec<TaskBox>, TaskError> {
+    pub fn build(&self) -> Result<Vec<CityTaskBox>, TaskError> {
         let production_task = self.production_task();
 
         Ok(vec![Box::new(production_task)])

@@ -1,9 +1,12 @@
+use std::sync::RwLockReadGuard;
+
 use bon::Builder;
 use common::{
     game::{
         city::{CityProduct, CityProductionTons},
         slice::ClientCity,
-        unit::UnitType,
+        unit::{CityTaskType, UnitType},
+        ClientTasks,
     },
     geo::Geo,
 };
@@ -11,7 +14,13 @@ use uuid::Uuid;
 
 use common::geo::GeoContext;
 
-use crate::runner::RunnerContext;
+use crate::{
+    runner::RunnerContext,
+    state::State,
+    task::{IntoClientConcreteTask, Tasks},
+};
+
+use super::IntoClientModel;
 
 #[derive(Debug, Builder, Clone)]
 pub struct City {
@@ -19,6 +28,8 @@ pub struct City {
     name: String,
     geo: GeoContext,
     production: CityProduction,
+    #[builder(default = Tasks::empty())]
+    tasks: Tasks<CityTaskType>,
 }
 
 impl City {
@@ -33,6 +44,14 @@ impl City {
     pub fn production(&self) -> &CityProduction {
         &self.production
     }
+
+    pub fn tasks(&self) -> &Tasks<CityTaskType> {
+        &self.tasks
+    }
+
+    pub fn tasks_mut(&mut self) -> &mut Tasks<CityTaskType> {
+        &mut self.tasks
+    }
 }
 
 impl Geo for City {
@@ -45,13 +64,29 @@ impl Geo for City {
     }
 }
 
-pub trait IntoClientCity {
-    fn into_client(&self) -> ClientCity;
-}
+impl IntoClientModel<ClientCity> for City {
+    fn into_client(self, state: &RwLockReadGuard<State>) -> ClientCity {
+        let stack = self
+            .tasks()
+            .stack()
+            .iter()
+            .filter_map(|(uuid, _)| {
+                // FIXME: use task index by uuid to avoid performance bottleneck here; REF PERF_TASK
+                state
+                    .tasks()
+                    .iter()
+                    .find(|t| t.context().id() == *uuid)
+                    .map(|task| task.into_client())
+            })
+            .collect();
+        let tasks = ClientTasks::new(stack);
 
-impl IntoClientCity for City {
-    fn into_client(&self) -> ClientCity {
-        ClientCity::new(self.id(), self.name().to_string(), self.geo().clone())
+        ClientCity::builder()
+            .id(self.id())
+            .tasks(tasks)
+            .geo(*self.geo())
+            .name(self.name.clone())
+            .build()
     }
 }
 

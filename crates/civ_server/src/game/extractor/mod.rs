@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{state::State, world::reader::WorldReader};
 
-use super::{city::IntoClientCity, unit::IntoClientUnit};
+use super::IntoClientModel;
 
 // FIXME: lifetime not required ?
 pub struct Extractor<'a, 'b> {
@@ -58,7 +58,7 @@ impl<'a, 'b> Extractor<'a, 'b> {
                 )
             })
             .map(|(uuid, index)| self.state.city(*index, &uuid).unwrap())
-            .map(|city| city.into_client())
+            .map(|city| city.clone().into_client(self.state))
             .collect::<Vec<ClientCity>>()
     }
 
@@ -77,7 +77,7 @@ impl<'a, 'b> Extractor<'a, 'b> {
                 )
             })
             .map(|(uuid, index)| self.state.unit(*index, &uuid).unwrap())
-            .map(|unit| unit.into_client(self.state))
+            .map(|unit| unit.clone().into_client(self.state))
             .collect::<Vec<ClientUnit>>()
     }
 }

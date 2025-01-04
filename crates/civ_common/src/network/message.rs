@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     game::{
-        slice::{ClientCity, ClientTask, ClientUnit, GameSlice},
+        slice::{ClientCity, ClientUnit, ClientConcreteTask, GameSlice},
         GameFrame,
     },
     space::window::{SetWindow, Window},
@@ -48,7 +48,7 @@ pub enum ClientStateMessage {
     SetCity(ClientCity),
     RemoveCity(Uuid),
     SetUnit(ClientUnit),
-    AddUnitTask(Uuid, ClientTask),
+    AddUnitTask(Uuid, ClientConcreteTask),
     RemoveUnitTask(Uuid, Uuid),
     RemoveUnit(Uuid),
 }

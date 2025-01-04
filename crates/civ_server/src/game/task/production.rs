@@ -7,7 +7,9 @@ use uuid::Uuid;
 
 use crate::{
     runner::RunnerContext,
-    task::{context::TaskContext, effect::Effect, Concern, Task, TaskBox, TaskError, Then},
+    task::{
+        context::TaskContext, effect::Effect, CityTask, Concern, Task, TaskBox, TaskError, Then,
+    },
 };
 
 #[derive(Builder, Clone)]
@@ -18,7 +20,7 @@ pub struct CityProductionTask {
 }
 
 impl CityProductionTask {
-    pub fn tons(&self) -> CityProductionTons {
+    pub fn _tons(&self) -> CityProductionTons {
         self.tons
     }
 }
@@ -34,6 +36,16 @@ impl Task for CityProductionTask {
 
     fn context(&self) -> &TaskContext {
         &self.context
+    }
+}
+
+impl CityTask for CityProductionTask {
+    fn city_task_type(&self) -> CityTaskType {
+        CityTaskType::Production(self.tons)
+    }
+
+    fn into_task(&self) -> TaskBox {
+        Box::new(self.clone())
     }
 }
 

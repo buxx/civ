@@ -314,7 +314,7 @@ mod test {
 
     use common::{
         game::{
-            slice::{ClientTask, ClientUnit, ClientUnitTasks, GameSlice},
+            slice::{ClientUnit, ClientConcreteTask, ClientUnitTasks, GameSlice},
             unit::{TaskType, UnitTaskType, UnitType},
             GameFrame,
         },
@@ -423,7 +423,7 @@ mod test {
             .tasks(ClientUnitTasks::new(vec![]))
             .build();
         let create_task_id = Uuid::new_v4();
-        let client_unit_task = ClientTask::new(
+        let client_unit_task = ClientConcreteTask::new(
             create_task_id,
             TaskType::Unit(UnitTaskType::Settle),
             GameFrame(0),

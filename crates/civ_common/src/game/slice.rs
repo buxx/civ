@@ -6,7 +6,7 @@ use crate::{geo::GeoContext, world::partial::PartialWorld};
 
 use super::{
     unit::{TaskType, UnitType},
-    GameFrame,
+    ClientTask, ClientTasks, GameFrame,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -38,22 +38,15 @@ impl GameSlice {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientCity {
     id: Uuid,
     name: String,
+    tasks: ClientTasks<ClientConcreteTask>,
     geo: GeoContext,
 }
 
 impl ClientCity {
-    pub fn new(id: Uuid, name: String, physics: GeoContext) -> Self {
-        Self {
-            id,
-            name,
-            geo: physics,
-        }
-    }
-
     pub fn id(&self) -> Uuid {
         self.id
     }
@@ -65,13 +58,21 @@ impl ClientCity {
     pub fn geo(&self) -> &GeoContext {
         &self.geo
     }
+
+    pub fn tasks(&self) -> &ClientTasks<ClientConcreteTask> {
+        &self.tasks
+    }
+
+    pub fn tasks_mut(&mut self) -> &mut ClientTasks<ClientConcreteTask> {
+        &mut self.tasks
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Builder, Debug, PartialEq)]
 pub struct ClientUnit {
     id: Uuid,
     type_: UnitType,
-    tasks: ClientUnitTasks,
+    tasks: ClientTasks<ClientConcreteTask>,
     geo: GeoContext,
 }
 
@@ -92,55 +93,25 @@ impl ClientUnit {
         &self.type_
     }
 
-    pub fn tasks(&self) -> &ClientUnitTasks {
+    pub fn tasks(&self) -> &ClientTasks<ClientConcreteTask> {
         &self.tasks
     }
 
-    pub fn tasks_mut(&mut self) -> &mut ClientUnitTasks {
+    pub fn tasks_mut(&mut self) -> &mut ClientTasks<ClientConcreteTask> {
         &mut self.tasks
     }
 }
 
+// FIXME BS NOW: revoir archi pour task client unit/city
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ClientUnitTasks {
-    stack: Vec<ClientTask>,
-}
-
-impl ClientUnitTasks {
-    pub fn new(stack: Vec<ClientTask>) -> Self {
-        Self { stack }
-    }
-
-    pub fn push(&mut self, task: ClientTask) {
-        self.stack.push(task);
-    }
-
-    pub fn remove(&mut self, uuid: Uuid) {
-        self.stack.retain(|t| t.id() != uuid);
-    }
-
-    pub fn display(&self, frame: &GameFrame) -> String {
-        if self.stack.is_empty() {
-            return "Idle".into();
-        }
-
-        self.stack
-            .iter()
-            .map(|t| format!("{} ({}%)", t.task, (t.progress(frame) * 100.0) as u8))
-            .collect::<Vec<String>>()
-            .join(", ")
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ClientTask {
+pub struct ClientConcreteTask {
     id: Uuid,
     task: TaskType,
     start: GameFrame,
     end: GameFrame,
 }
 
-impl ClientTask {
+impl ClientConcreteTask {
     pub fn new(id: Uuid, task: TaskType, start: GameFrame, end: GameFrame) -> Self {
         Self {
             id,
@@ -160,3 +131,52 @@ impl ClientTask {
         current as f32 / total as f32
     }
 }
+
+impl ClientTask for ClientConcreteTask {
+    fn id(&self) -> &Uuid {
+        &self.id
+    }
+
+    fn display(&self, frame: &GameFrame) -> String {
+        format!("{} ({}%)", self.task, (self.progress(frame) * 100.0) as u8)
+    }
+}
+
+// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+// pub struct ClientCityTask {
+//     id: Uuid,
+//     task: TaskType,
+//     start: GameFrame,
+//     end: GameFrame,
+// }
+
+// impl ClientCityTask {
+//     pub fn new(id: Uuid, task: TaskType, start: GameFrame, end: GameFrame) -> Self {
+//         Self {
+//             id,
+//             task,
+//             start,
+//             end,
+//         }
+//     }
+
+//     pub fn id(&self) -> Uuid {
+//         self.id
+//     }
+
+//     pub fn progress(&self, frame: &GameFrame) -> f32 {
+//         let total = self.end.0 - self.start.0;
+//         let current = frame.0 - self.start.0;
+//         current as f32 / total as f32
+//     }
+// }
+
+// impl ClientTask for ClientCityTask {
+//     fn id(&self) -> &Uuid {
+//         &self.id
+//     }
+
+//     fn display(&self, frame: &GameFrame) -> String {
+//         format!("{} ({}%)", self.task, (self.progress(frame) * 100.0) as u8)
+//     }
+// }

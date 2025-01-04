@@ -3,8 +3,9 @@ use std::sync::RwLockReadGuard;
 use bon::Builder;
 use common::{
     game::{
-        slice::{ClientUnit, ClientUnitTasks},
-        unit::{TaskType, UnitType},
+        slice::{ClientConcreteTask, ClientUnit},
+        unit::{UnitTaskType, UnitType},
+        ClientTasks,
     },
     geo::Geo,
 };
@@ -12,14 +13,19 @@ use uuid::Uuid;
 
 use common::geo::GeoContext;
 
-use crate::{state::State, task::IntoClientTask};
+use crate::{
+    state::State,
+    task::{IntoClientConcreteTask, Tasks},
+};
+
+use super::IntoClientModel;
 
 #[derive(Debug, Builder, Clone)]
 pub struct Unit {
     id: Uuid,
     type_: UnitType,
-    #[builder(default)]
-    tasks: UnitTasks,
+    #[builder(default = Tasks::empty())]
+    tasks: Tasks<UnitTaskType>,
     geo: GeoContext,
 }
 
@@ -32,7 +38,7 @@ impl Unit {
         &self.type_
     }
 
-    pub fn tasks(&self) -> &UnitTasks {
+    pub fn tasks(&self) -> &Tasks<UnitTaskType> {
         &self.tasks
     }
 }
@@ -47,24 +53,9 @@ impl Geo for Unit {
     }
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct UnitTasks {
-    stack: Vec<(Uuid, TaskType)>,
-}
-
-impl UnitTasks {
-    pub fn stack(&self) -> &[(Uuid, TaskType)] {
-        &self.stack
-    }
-}
-
-pub trait IntoClientUnit {
-    fn into_client(&self, state: &RwLockReadGuard<State>) -> ClientUnit;
-}
-
-impl IntoClientUnit for Unit {
-    fn into_client(&self, state: &RwLockReadGuard<State>) -> ClientUnit {
-        let stack = self
+impl IntoClientModel<ClientUnit> for Unit {
+    fn into_client(self, state: &RwLockReadGuard<State>) -> ClientUnit {
+        let stack: Vec<ClientConcreteTask> = self
             .tasks()
             .stack()
             .iter()
@@ -77,7 +68,7 @@ impl IntoClientUnit for Unit {
                     .map(|task| task.into_client())
             })
             .collect();
-        let tasks = ClientUnitTasks::new(stack);
+        let tasks = ClientTasks::new(stack);
 
         ClientUnit::builder()
             .id(self.id())
