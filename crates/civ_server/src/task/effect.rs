@@ -1,7 +1,10 @@
 use common::{geo::WorldPoint, space::window::Window};
 use uuid::Uuid;
 
-use crate::game::{city::City, unit::Unit};
+use crate::game::{
+    city::{City, CityExploitation, CityProduction},
+    unit::Unit,
+};
 
 use super::TaskBox;
 
@@ -34,6 +37,8 @@ pub enum ClientEffect {
 pub enum CityEffect {
     New(City),
     Remove(City),
+    SetProduction(CityProduction),
+    SetExploitation(CityExploitation),
 }
 
 #[derive(Debug, Clone)]

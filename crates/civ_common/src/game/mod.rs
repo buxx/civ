@@ -1,3 +1,4 @@
+pub mod tasks;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign};
 use uuid::Uuid;

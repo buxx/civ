@@ -5,51 +5,118 @@ use common::{
         unit::{CityTaskType, TaskType},
         GameFrame, FRAME_PRODUCTION_TONS_RATIO, PRODUCTION_TON_FRAMES,
     },
+    geo::{Geo, GeoContext},
     rules::RuleSetBox,
 };
 use uuid::Uuid;
 
 use crate::{
-    game::{city::City, task::production::CityProductionTask},
+    game::{
+        city::{City, CityProduction},
+        task::{production::CityProductionTask, CityTaskWrapper, TaskWrapper},
+    },
     runner::RunnerContext,
 };
 
-use super::{context::TaskContext, CityTaskBox, TaskBox, TaskError};
+use super::{context::TaskContext, effect::CityEffect, TaskBox, TaskError};
 
+// FIXME BS NOW: a new city builder ? take old and effect ? product city and tasks ?
 /// Produce all tasks for given city. Used when city context change to refill city tasks
 #[derive(Builder)]
-pub struct CityTasksBuilder<'a> {
+pub struct CityBuilder<'a> {
     context: &'a RunnerContext,
-    city: &'a City,
-    previous_tasks: &'a Vec<&'a TaskBox>,
     game_frame: GameFrame,
+    from: BuildCityFrom,
+    previous: Option<&'a City>,
 }
 
-impl CityTasksBuilder<'_> {
-    pub fn build(&self) -> Result<Vec<CityTaskBox>, TaskError> {
-        let production_task = self.production_task();
+pub enum BuildCityFrom<'a> {
+    Scratch(String, GeoContext),  // CityName, GeoContext
+    Effect(CityEffect, &'a City), // CityEffect, ExistingCity
+}
 
-        Ok(vec![Box::new(production_task)])
+impl BuildCityFrom<'_> {
+    pub fn name(&self) -> &str {
+        match self {
+            BuildCityFrom::Scratch(city_name, _) => city_name,
+            BuildCityFrom::Effect(_, city) => city.name(),
+        }
     }
 
-    fn production_task(&self) -> CityProductionTask {
-        production_task(
+    pub fn geo(&self) -> &GeoContext {
+        match self {
+            BuildCityFrom::Scratch(_, geo) => geo,
+            BuildCityFrom::Effect(_, city) => city.geo(),
+        }
+    }
+
+    pub fn production(&self) -> Option<&CityProduction> {
+        match self {
+            BuildCityFrom::Scratch(_, _) => None,
+            BuildCityFrom::Effect(_, city) => Some(city.production()),
+        }
+    }
+}
+
+impl CityBuilder<'_> {
+    pub fn build(&self) -> Result<City, TaskError> {
+        return Ok(City::builder()
+            .name(self.from.name().to_string())
+            .geo(*self.from.geo())
+            .production(
+                self.from
+                    .production()
+                    .unwrap_or(&CityProduction::default(self.context))
+                    .clone(),
+            )
+            .tasks(CityTasks::new())
+            .build());
+
+        let production_task = production_task(
             &self.game_frame,
-            self.city,
-            self.previous_tasks,
+            self.previous,
             self.context.context.rules(),
-        )
+        );
+        Ok(vec![CityTaskWrapper::Production(production_task)])
     }
 }
 
 fn production_task(
+    context: &RunnerContext,
     game_frame: &GameFrame,
-    city: &City,
-    previous_tasks: &Vec<&TaskBox>,
+    from: &BuildCityFrom,
     rules: &RuleSetBox,
 ) -> CityProductionTask {
-    let previous_tons = previous_tons(game_frame, previous_tasks);
-    let current_product = city.production().current();
+    let (previous_tons, previous_product, tons, product) = match from {
+        BuildCityFrom::Scratch(_, _) => (
+            None,
+            None,
+            // FIXME BS NOW: for "current" tons, need to determine "new" city exploitation
+            CityProductionTons(1),
+            CityProduction::default(context).current(),
+        ),
+        BuildCityFrom::Effect(CityEffect::SetProduction(stack), city) => (
+            Some(*city.exploitation().production_tons()),
+            Some(city.production().current().clone()),
+            *city.exploitation().production_tons(),
+            stack.current().clone(),
+        ),
+        BuildCityFrom::Effect(CityEffect::SetExploitation(exploitation), city) => (
+            Some(*city.exploitation().production_tons()),
+            Some(city.production().current().clone()),
+            *exploitation.production_tons(),
+            city.production().current().clone(),
+        ),
+    };
+
+    let previous_tons = from
+        .production()
+        .and_then(|c| Some(*c.tons()))
+        .unwrap_or(CityProductionTons(0));
+    let current_product = from
+        .production()
+        .unwrap_or(&CityProduction::default(context))
+        .current();
     let current_product_left =
         CityProductionTons(rules.required_tons(current_product).0 - previous_tons.0);
     let current_tons = city.production().tons();
@@ -70,19 +137,32 @@ fn production_task(
         .build()
 }
 
-fn previous_tons(game_frame: &GameFrame, previous_tasks: &Vec<&TaskBox>) -> CityProductionTons {
-    match previous_tasks
-        .iter()
-        .find(|t| t.type_().is_city_production())
-        .map(|t| (t.type_(), t.context()))
-    {
-        Some((TaskType::City(CityTaskType::Production(tons)), context)) => {
-            let elapsed_frames = game_frame.0 - context.start().0;
-            CityProductionTons(
-                ((elapsed_frames as f64 * tons.0 as f64) * FRAME_PRODUCTION_TONS_RATIO) as u64,
-            )
-        }
-        _ => CityProductionTons(0),
+#[derive(Debug, Builder, Clone)]
+pub struct CityTasks {
+    production: CityProductionTask,
+}
+
+impl CityTasks {
+    pub fn new(production: CityProductionTask) -> Self {
+        Self { production }
+    }
+
+    pub fn into_vec(&self) -> Vec<CityTaskWrapper> {
+        vec![CityTaskWrapper::Production(self.production.clone())]
+    }
+}
+
+impl From<CityTasks> for Vec<TaskWrapper> {
+    fn from(value: CityTasks) -> Self {
+        vec![TaskWrapper::City(CityTaskWrapper::Production(
+            value.production,
+        ))]
+    }
+}
+
+impl From<CityTasks> for Vec<CityTaskWrapper> {
+    fn from(value: CityTasks) -> Self {
+        vec![CityTaskWrapper::Production(value.production)]
     }
 }
 
@@ -151,7 +231,7 @@ mod test {
         let expected_end = PRODUCTION_TON_FRAMES * 40;
 
         // WHEN
-        let task: CityProductionTask = production_task(&game_frame, &city, &vec![], &rule_set);
+        let task: CityProduction = production_task(&game_frame, &city, &vec![], &rule_set);
 
         // THEN
         assert_eq!(task.concern(), Concern::City(city_id));
@@ -176,7 +256,7 @@ mod test {
             ))
             .build();
         let previous_tasks: TaskBox = Box::new(
-            CityProductionTask::builder()
+            CityProduction::builder()
                 .context(
                     TaskContext::builder()
                         .id(Uuid::new_v4())
@@ -192,7 +272,7 @@ mod test {
         let expected_end = 24_000 + PRODUCTION_TON_FRAMES * 4;
 
         // WHEN
-        let task: CityProductionTask =
+        let task: CityProduction =
             production_task(&game_frame, &city, &vec![&previous_tasks], &rule_set);
 
         // THEN
@@ -223,7 +303,7 @@ mod test {
             ))
             .build();
         let previous_tasks: TaskBox = Box::new(
-            CityProductionTask::builder()
+            CityProduction::builder()
                 .context(
                     TaskContext::builder()
                         .id(Uuid::new_v4())
@@ -239,7 +319,7 @@ mod test {
         let expected_end = 120_000 + PRODUCTION_TON_FRAMES * (20 / 2);
 
         // WHEN
-        let task: CityProductionTask =
+        let task: CityProduction =
             production_task(&game_frame, &city, &vec![&previous_tasks], &rule_set);
 
         // THEN

@@ -16,7 +16,7 @@ use common::geo::GeoContext;
 use crate::{
     runner::RunnerContext,
     state::State,
-    task::{Concern, IntoClientConcreteTask, Tasks},
+    task::{city::CityTasks, Concern, IntoClientConcreteTask},
 };
 
 use super::IntoClientModel;
@@ -27,8 +27,8 @@ pub struct City {
     name: String,
     geo: GeoContext,
     production: CityProduction,
-    #[builder(default = Tasks::empty())]
-    tasks: Tasks<CityTaskType>,
+    exploitation: CityExploitation,
+    tasks: CityTasks,
 }
 
 impl City {
@@ -44,12 +44,20 @@ impl City {
         &self.production
     }
 
-    pub fn tasks(&self) -> &Tasks<CityTaskType> {
+    pub fn tasks(&self) -> &CityTasks {
         &self.tasks
     }
 
-    pub fn tasks_mut(&mut self) -> &mut Tasks<CityTaskType> {
+    pub fn tasks_mut(&mut self) -> &mut CityTasks {
         &mut self.tasks
+    }
+
+    pub fn exploitation(&self) -> &CityExploitation {
+        &self.exploitation
+    }
+
+    pub fn exploitation_mut(&mut self) -> &mut CityExploitation {
+        &mut self.exploitation
     }
 }
 
@@ -97,28 +105,22 @@ impl IntoClientModel<ClientCity> for City {
 #[derive(Debug, Clone)]
 pub struct CityProduction {
     stack: Vec<CityProduct>,
-    tons: CityProductionTons,
 }
 
 impl CityProduction {
-    pub fn new(stack: Vec<CityProduct>, tons: CityProductionTons) -> Self {
-        Self { stack, tons }
+    pub fn new(stack: Vec<CityProduct>) -> Self {
+        Self { stack }
     }
 
     pub fn default(_context: &RunnerContext) -> Self {
         // Default according to context (warrior, then phalanx, etc) and tons
         Self {
             stack: vec![CityProduct::Unit(UnitType::Warriors)],
-            tons: CityProductionTons(1),
         }
     }
 
     pub fn current(&self) -> &CityProduct {
         self.stack.first().expect("One item is mandatory")
-    }
-
-    pub fn tons(&self) -> &CityProductionTons {
-        &self.tons
     }
 }
 
@@ -149,3 +151,15 @@ impl CityProduction {
 //     #[error("No production task found")]
 //     NoProductionTaskFound,
 // }
+
+#[derive(Debug, Clone)]
+pub struct CityExploitation {
+    // TODO
+}
+
+impl CityExploitation {
+    pub fn production_tons(&self) -> &CityProductionTons {
+        // FIXME
+        &CityProductionTons(1)
+    }
+}

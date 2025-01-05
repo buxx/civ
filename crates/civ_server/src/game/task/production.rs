@@ -12,7 +12,7 @@ use crate::{
     },
 };
 
-#[derive(Builder, Clone)]
+#[derive(Debug, Builder, Clone)]
 pub struct CityProductionTask {
     context: TaskContext,
     city: Uuid,

@@ -1,7 +1,7 @@
 pub mod city;
 pub mod create;
 
-use city::CityTasksBuilder;
+use city::{BuildCityFrom, CityBuilder};
 use common::{
     game::{
         slice::ClientConcreteTask,
@@ -20,6 +20,7 @@ use uuid::Uuid;
 use crate::{
     game::{
         city::{City, CityProduction},
+        task::{CityTaskWrapper, TaskWrapper},
         unit::Unit,
     },
     runner::RunnerContext,
@@ -79,31 +80,31 @@ pub enum TaskError {
     State(#[from] StateError),
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct Tasks<T> {
-    stack: Vec<(Uuid, T)>,
-}
+// #[derive(Debug, Default, Clone)]
+// pub struct Tasks<T> {
+//     stack: Vec<(Uuid, T)>,
+// }
 
-impl<T> Tasks<T> {
-    pub fn empty() -> Self {
-        Self { stack: vec![] }
-    }
+// impl<T> Tasks<T> {
+//     pub fn empty() -> Self {
+//         Self { stack: vec![] }
+//     }
 
-    pub fn new(stack: Vec<(Uuid, T)>) -> Self {
-        Self { stack }
-    }
+//     pub fn new(stack: Vec<(Uuid, T)>) -> Self {
+//         Self { stack }
+//     }
 
-    pub fn stack(&self) -> &[(Uuid, T)] {
-        &self.stack
-    }
+//     pub fn stack(&self) -> &[(Uuid, T)] {
+//         &self.stack
+//     }
 
-    fn replace(&mut self, tasks: Vec<(Uuid, T)>) {
-        self.stack = tasks;
-    }
-}
+//     fn replace(&mut self, tasks: Vec<(Uuid, T)>) {
+//         self.stack = tasks;
+//     }
+// }
 
 pub trait Then {
-    fn then(&self, context: &RunnerContext) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError>;
+    fn then(&self, context: &RunnerContext) -> Result<(Vec<Effect>, Vec<TaskWrapper>), TaskError>;
 }
 
 pub trait WithUnit {
@@ -122,42 +123,46 @@ pub trait ThenTransformUnitIntoCity: WithUnit + CityName + Geo {
     fn transform_unit_into_city(
         &self,
         context: &RunnerContext,
-    ) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError> {
-        let state = context.state();
-        let unit = self.unit();
-        let city_id = Uuid::new_v4();
-        let mut city = City::builder()
-            .id(city_id)
-            .name(self.city_name().to_string())
-            .geo(*self.geo())
-            .production(CityProduction::default(context))
-            .tasks(Tasks::empty())
-            .build();
-        let tasks = CityTasksBuilder::builder()
-            .context(context)
-            .city(&city)
-            .previous_tasks(&vec![])
-            .game_frame(*state.frame())
-            .build()
-            .build()?;
-        city.tasks_mut().replace(
-            tasks
-                .iter()
-                .map(|t| (t.context().id(), t.city_task_type()))
-                .collect::<Vec<(Uuid, CityTaskType)>>(),
-        );
-        let tasks: Vec<TaskBox> = tasks.into_iter().map(|t| t.into_task()).collect();
+    ) -> Result<(Vec<Effect>, Vec<TaskWrapper>), TaskError> {
+        let city = self.city(context)?;
+        let tasks = city.tasks().clone().into();
+
+        // let state = context.state();
+
+        // let unit = self.unit();
+        // let mut city = self.city(context);
+        // let tasks = self.tasks(&city, context)?;
+        // city.update(&tasks);
+        // city.tasks_mut().replace(
+        //     tasks
+        //         .iter()
+        //         .map(|t| (t.context().id(), t.city_task_type()))
+        //         .collect::<Vec<(Uuid, CityTaskType)>>(),
+        // );
+        // let tasks: Vec<TaskBox> = tasks.into_iter().map(|t| t.into_task()).collect();
 
         Ok((
             vec![
                 Effect::State(StateEffect::Unit(
-                    unit.id(),
-                    UnitEffect::Remove(unit.clone()),
+                    self.unit().id(),
+                    UnitEffect::Remove(self.unit().clone()),
                 )),
-                Effect::State(StateEffect::City(city_id, CityEffect::New(city))),
+                Effect::State(StateEffect::City(city.id(), CityEffect::New(city))),
             ],
             tasks,
         ))
+    }
+
+    fn city(&self, context: &RunnerContext) -> Result<City, TaskError> {
+        CityBuilder::builder()
+            .context(context)
+            .game_frame(*context.state().frame())
+            .from(BuildCityFrom::Scratch(
+                self.city_name().to_string(),
+                *self.unit().geo(),
+            ))
+            .build()
+            .build()
     }
 }
 
