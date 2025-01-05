@@ -3,7 +3,8 @@ use uuid::Uuid;
 
 use crate::{
     game::{
-        slice::{ClientCity, ClientUnit, ClientConcreteTask, GameSlice},
+        city::{CityExploitation, CityProduction},
+        slice::{ClientCity, ClientUnit, GameSlice},
         GameFrame,
     },
     space::window::{SetWindow, Window},
@@ -26,12 +27,19 @@ pub enum ClientToServerEnveloppe {
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerMessage {
     SetWindow(SetWindow),
-    CreateTask(Uuid, CreateTaskMessage),
+    Unit(Uuid, ClientToServerUnitMessage),
+    City(Uuid, ClientToServerCityMessage),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub enum CreateTaskMessage {
-    Settle(Uuid, String),
+pub enum ClientToServerUnitMessage {
+    Settle(String), // CityName
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum ClientToServerCityMessage {
+    SetProduction(CityProduction),
+    SetExploitation(CityExploitation),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -48,7 +56,5 @@ pub enum ClientStateMessage {
     SetCity(ClientCity),
     RemoveCity(Uuid),
     SetUnit(ClientUnit),
-    AddUnitTask(Uuid, ClientConcreteTask),
-    RemoveUnitTask(Uuid, Uuid),
     RemoveUnit(Uuid),
 }

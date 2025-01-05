@@ -3,9 +3,8 @@ use std::sync::RwLockReadGuard;
 use bon::Builder;
 use common::{
     game::{
-        city::{CityProduct, CityProductionTons},
-        slice::{ClientCity, ClientConcreteTask},
-        unit::{CityTaskType, TaskType, UnitType},
+        city::{CityExploitation, CityProduction},
+        slice::ClientCity,
     },
     geo::Geo,
 };
@@ -13,11 +12,7 @@ use uuid::Uuid;
 
 use common::geo::GeoContext;
 
-use crate::{
-    runner::RunnerContext,
-    state::State,
-    task::{Concern, IntoClientConcreteTask, Tasks},
-};
+use crate::{state::State, task::city::CityTasks};
 
 use super::IntoClientModel;
 
@@ -27,13 +22,13 @@ pub struct City {
     name: String,
     geo: GeoContext,
     production: CityProduction,
-    #[builder(default = Tasks::empty())]
-    tasks: Tasks<CityTaskType>,
+    exploitation: CityExploitation,
+    tasks: CityTasks,
 }
 
 impl City {
-    pub fn id(&self) -> Uuid {
-        self.id
+    pub fn id(&self) -> &Uuid {
+        &self.id
     }
 
     pub fn name(&self) -> &str {
@@ -44,12 +39,20 @@ impl City {
         &self.production
     }
 
-    pub fn tasks(&self) -> &Tasks<CityTaskType> {
+    pub fn tasks(&self) -> &CityTasks {
         &self.tasks
     }
 
-    pub fn tasks_mut(&mut self) -> &mut Tasks<CityTaskType> {
+    pub fn tasks_mut(&mut self) -> &mut CityTasks {
         &mut self.tasks
+    }
+
+    pub fn exploitation(&self) -> &CityExploitation {
+        &self.exploitation
+    }
+
+    pub fn exploitation_mut(&mut self) -> &mut CityExploitation {
+        &mut self.exploitation
     }
 }
 
@@ -64,88 +67,14 @@ impl Geo for City {
 }
 
 impl IntoClientModel<ClientCity> for City {
-    fn into_client(self, state: &RwLockReadGuard<State>) -> ClientCity {
-        // FIXME BS NOW: ce bout de code montre qu'il y a un problème de rattachement entre les tâches et les city/unit
-        // trouver autre chose ...
-        let x = state
-            .tasks()
-            .iter()
-            .filter_map(|t| match (t.type_(), t.concern()) {
-                (TaskType::City(CityTaskType::Production(_)), Concern::City(city_id)) => {
-                    if city_id == self.id() {
-                        Some(t.into_client())
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            })
-            .collect::<Vec<ClientConcreteTask>>();
-        // FIXME BS NOW: fuck, les state.tasks pas encore mises à jour ?
-        let production_task = x.first().unwrap();
-        let product = self.production.current();
-
+    fn into_client(self, _state: &RwLockReadGuard<State>) -> ClientCity {
         ClientCity::builder()
-            .id(self.id())
+            .id(*self.id())
             .geo(*self.geo())
             .name(self.name.clone())
-            .production((product.clone(), production_task.clone()))
+            .production(self.production.clone())
+            .exploitation(self.exploitation.clone())
+            .tasks(self.tasks.clone().into())
             .build()
     }
 }
-
-#[derive(Debug, Clone)]
-pub struct CityProduction {
-    stack: Vec<CityProduct>,
-    tons: CityProductionTons,
-}
-
-impl CityProduction {
-    pub fn new(stack: Vec<CityProduct>, tons: CityProductionTons) -> Self {
-        Self { stack, tons }
-    }
-
-    pub fn default(_context: &RunnerContext) -> Self {
-        // Default according to context (warrior, then phalanx, etc) and tons
-        Self {
-            stack: vec![CityProduct::Unit(UnitType::Warriors)],
-            tons: CityProductionTons(1),
-        }
-    }
-
-    pub fn current(&self) -> &CityProduct {
-        self.stack.first().expect("One item is mandatory")
-    }
-
-    pub fn tons(&self) -> &CityProductionTons {
-        &self.tons
-    }
-}
-
-// pub struct CityTasks<'a> {
-//     pub production: &'a TaskBox,
-// }
-
-// impl<'a> CityTasks<'a> {
-//     pub fn from(tasks: Vec<&'a TaskBox>) -> Result<Self, CityIntegrityError> {
-//         let mut production: Option<&TaskBox> = None;
-
-//         for task in tasks {
-//             match task.type_() {
-//                 TaskType::Unit(_) => {}
-//                 TaskType::City(type_) => match type_ {
-//                     CityTaskType::Production => production = Some(task),
-//                 },
-//             }
-//         }
-
-//         let production = production.ok_or(CityIntegrityError::NoProductionTaskFound)?;
-//         Ok(Self { production })
-//     }
-// }
-
-// #[derive(Error, Debug)]
-// pub enum CityIntegrityError {
-//     #[error("No production task found")]
-//     NoProductionTaskFound,
-// }

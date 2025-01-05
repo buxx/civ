@@ -1,37 +1,26 @@
-pub mod city;
-pub mod create;
-
-use city::CityTasksBuilder;
+use bon::Builder;
+use city::{BuildCityFrom, CityGenerator};
 use common::{
-    game::{
-        slice::ClientConcreteTask,
-        unit::{CityTaskType, TaskType, UnitTaskType},
-        GameFrame,
-    },
+    game::{unit::TaskType, GameFrame},
     geo::Geo,
 };
-use context::TaskContext;
 use core::fmt::Debug;
 use dyn_clone::DynClone;
-use effect::{CityEffect, Effect, StateEffect, UnitEffect};
+use effect::Effect;
 use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    game::{
-        city::{City, CityProduction},
-        unit::Unit,
-    },
+    game::{city::City, unit::Unit},
     runner::RunnerContext,
     state::StateError,
 };
 
-pub mod context;
+pub mod city;
 pub mod effect;
+pub mod unit;
 
 pub type TaskBox = Box<dyn Task + Send + Sync>;
-pub type CityTaskBox = Box<dyn CityTask + Send + Sync>;
-// pub type UnitTaskBox = Box<dyn UnitTask + Send + Sync>;
 
 pub trait Task: DynClone + Then {
     fn type_(&self) -> TaskType;
@@ -49,21 +38,6 @@ pub enum Concern {
     City(Uuid),
 }
 
-pub trait IntoClientConcreteTask {
-    fn into_client(&self) -> ClientConcreteTask;
-}
-
-impl IntoClientConcreteTask for TaskBox {
-    fn into_client(&self) -> ClientConcreteTask {
-        ClientConcreteTask::new(
-            self.context().id(),
-            self.type_(),
-            self.context().start(),
-            self.context().end(),
-        )
-    }
-}
-
 impl Debug for TaskBox {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("TaskBox")
@@ -77,29 +51,6 @@ impl Debug for TaskBox {
 pub enum TaskError {
     #[error("State error: {0}")]
     State(#[from] StateError),
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct Tasks<T> {
-    stack: Vec<(Uuid, T)>,
-}
-
-impl<T> Tasks<T> {
-    pub fn empty() -> Self {
-        Self { stack: vec![] }
-    }
-
-    pub fn new(stack: Vec<(Uuid, T)>) -> Self {
-        Self { stack }
-    }
-
-    pub fn stack(&self) -> &[(Uuid, T)] {
-        &self.stack
-    }
-
-    fn replace(&mut self, tasks: Vec<(Uuid, T)>) {
-        self.stack = tasks;
-    }
 }
 
 pub trait Then {
@@ -123,54 +74,70 @@ pub trait ThenTransformUnitIntoCity: WithUnit + CityName + Geo {
         &self,
         context: &RunnerContext,
     ) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError> {
-        let state = context.state();
-        let unit = self.unit();
-        let city_id = Uuid::new_v4();
-        let mut city = City::builder()
-            .id(city_id)
-            .name(self.city_name().to_string())
-            .geo(*self.geo())
-            .production(CityProduction::default(context))
-            .tasks(Tasks::empty())
-            .build();
-        let tasks = CityTasksBuilder::builder()
-            .context(context)
-            .city(&city)
-            .previous_tasks(&vec![])
-            .game_frame(*state.frame())
-            .build()
-            .build()?;
-        city.tasks_mut().replace(
-            tasks
-                .iter()
-                .map(|t| (t.context().id(), t.city_task_type()))
-                .collect::<Vec<(Uuid, CityTaskType)>>(),
-        );
-        let tasks: Vec<TaskBox> = tasks.into_iter().map(|t| t.into_task()).collect();
+        let city = self.city(context)?;
+        let tasks = city.tasks().clone().into();
+        let effects = vec![
+            effect::remove_unit(self.unit().clone()),
+            effect::new_city(city),
+        ];
 
-        Ok((
-            vec![
-                Effect::State(StateEffect::Unit(
-                    unit.id(),
-                    UnitEffect::Remove(unit.clone()),
-                )),
-                Effect::State(StateEffect::City(city_id, CityEffect::New(city))),
-            ],
-            tasks,
-        ))
+        Ok((effects, tasks))
+    }
+
+    fn city(&self, context: &RunnerContext) -> Result<City, TaskError> {
+        CityGenerator::builder()
+            .context(context)
+            .game_frame(context.state().frame())
+            .from(BuildCityFrom::Scratch(
+                self.city_name().to_string(),
+                *self.unit().geo(),
+            ))
+            .build()
+            .generate()
     }
 }
 
-pub trait CityTask: DynClone + Task {
-    fn city_task_type(&self) -> CityTaskType;
-    // See https://users.rust-lang.org/t/reconsider-trait-as-another/123488/5
-    fn into_task(&self) -> TaskBox;
-}
-dyn_clone::clone_trait_object!(CityTask);
+// pub trait CityTask: DynClone + Task {
+//     fn city_task_type(&self) -> CityTaskType;
+//     // See https://users.rust-lang.org/t/reconsider-trait-as-another/123488/5
+//     fn into_task(&self) -> TaskBox;
+// }
+// dyn_clone::clone_trait_object!(CityTask);
 
-pub trait UnitTask: DynClone + Task {
-    fn unit_task_type(&self) -> UnitTaskType;
-    // See https://users.rust-lang.org/t/reconsider-trait-as-another/123488/5
-    fn into_task(&self) -> TaskBox;
+// pub trait UnitTask: DynClone + Task {
+//     fn unit_task_type(&self) -> UnitTaskType;
+//     // See https://users.rust-lang.org/t/reconsider-trait-as-another/123488/5
+//     fn into_task(&self) -> TaskBox;
+// }
+// dyn_clone::clone_trait_object!(UnitTask);
+
+#[derive(Debug, Builder, Clone, PartialEq)]
+pub struct TaskContext {
+    id: Uuid,
+    start: GameFrame,
+    end: GameFrame,
 }
-dyn_clone::clone_trait_object!(UnitTask);
+
+impl TaskContext {
+    pub fn is_finished(&self, frame: GameFrame) -> bool {
+        frame >= self.end
+    }
+
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+
+    pub fn start(&self) -> GameFrame {
+        self.start
+    }
+
+    pub fn end(&self) -> GameFrame {
+        self.end
+    }
+
+    pub fn progress(&self, frame: &GameFrame) -> f32 {
+        let total = self.end.0 - self.start.0;
+        let current = frame.0 - self.start.0;
+        current as f32 / total as f32
+    }
+}

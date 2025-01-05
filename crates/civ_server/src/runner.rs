@@ -2,8 +2,10 @@ use bon::Builder;
 use common::{
     game::{GameFrame, GAME_FRAMES_PER_SECOND},
     network::message::{
-        ClientStateMessage, ClientToServerMessage, NotificationLevel, ServerToClientMessage,
+        ClientStateMessage, ClientToServerCityMessage, ClientToServerMessage,
+        ClientToServerUnitMessage, NotificationLevel, ServerToClientMessage,
     },
+    task::{CreateTaskError, GamePlayReason},
 };
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{error, info};
@@ -13,15 +15,18 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
     context::Context,
+    game::task::settle::Settle,
     request::SetWindowRequestDealer,
-    state::State,
+    state::{NoLongerExist, State, StateError},
     task::{
-        effect::{Effect, StateEffect, TaskEffect},
-        TaskError,
+        city::{BuildCityFrom, BuildCityFromChange, CityGenerator},
+        effect::{self, Effect, StateEffect, TaskEffect},
+        Concern, TaskError,
     },
     world::reader::WorldReader,
 };
@@ -85,6 +90,20 @@ pub struct Runner {
     last_stat: Instant,
 }
 
+#[derive(Debug, Error)]
+pub enum RunnerError {
+    #[error("Deal with client request error: {0}")]
+    DealClientRequest(DealClientRequestError),
+}
+
+#[derive(Debug, Error)]
+pub enum DealClientRequestError {
+    #[error("Unexpected error: {0}")]
+    Unexpected(String),
+    #[error("Unfeasible: {0 }")]
+    Unfeasible(String),
+}
+
 impl Runner {
     pub(super) fn state(&self) -> RwLockReadGuard<State> {
         self.context
@@ -126,7 +145,28 @@ impl Runner {
         let mut effects = vec![];
 
         while let Ok((client_id, message)) = self.context.from_clients_receiver.try_recv() {
-            effects.extend(self.client(client_id, message));
+            match self.client(client_id, message) {
+                Ok(effects_) => effects.extend(effects_),
+                Err(error) => match error {
+                    RunnerError::DealClientRequest(error) => match error {
+                        DealClientRequestError::Unfeasible(message) => {
+                            self.context
+                                .to_client_sender
+                                .send((
+                                    client_id,
+                                    ServerToClientMessage::Notification(
+                                        NotificationLevel::Error,
+                                        message,
+                                    ),
+                                ))
+                                .unwrap();
+                        }
+                        DealClientRequestError::Unexpected(message) => {
+                            error!("Error during processing client request: {}", message)
+                        }
+                    },
+                },
+            };
         }
 
         effects
@@ -275,35 +315,122 @@ impl Runner {
         self.reflects(&effects);
     }
 
-    fn client(&self, client_id: Uuid, message: ClientToServerMessage) -> Vec<Effect> {
+    fn client(
+        &self,
+        client_id: Uuid,
+        message: ClientToServerMessage,
+    ) -> Result<Vec<Effect>, RunnerError> {
         match message {
             ClientToServerMessage::SetWindow(window) => {
+                //
                 SetWindowRequestDealer::new(self.context.clone(), client_id).deal(&window)
             }
-            ClientToServerMessage::CreateTask(uuid, message) => {
-                match self.create_task(uuid, message) {
-                    Ok(task) => {
-                        // FIXME: is task to attach on unit (city, etc) do it here !!!
-                        vec![Effect::State(StateEffect::Task(
-                            task.context().id(),
-                            TaskEffect::Push(task),
-                        ))]
-                    }
-                    Err(error) => {
-                        self.context
-                            .to_client_sender
-                            .send((
-                                client_id,
-                                ServerToClientMessage::Notification(
-                                    NotificationLevel::Error,
-                                    error.to_string(),
-                                ),
-                            ))
-                            .unwrap();
-                        vec![]
-                    }
-                }
+            ClientToServerMessage::Unit(uuid, message) => {
+                //
+                self.refresh_unit_on(&uuid, message)
             }
+            ClientToServerMessage::City(uuid, message) => {
+                //
+                self.refresh_city_on(&uuid, message)
+            }
+        }
+    }
+    fn refresh_unit_on(
+        &self,
+        uuid: &Uuid,
+        message: ClientToServerUnitMessage,
+    ) -> Result<Vec<Effect>, RunnerError> {
+        let state = self.state();
+        let unit = state.find_unit(uuid).unwrap(); // TODO: unwrap -> same error management than crate_task
+        let old_task = unit.task();
+
+        let task = match message {
+            ClientToServerUnitMessage::Settle(city_name) => Settle::new(
+                Uuid::new_v4(),
+                self.context.context.clone(),
+                self.state(),
+                unit.clone(),
+                city_name.clone(),
+            )?,
+        };
+        let mut unit = unit.clone();
+        unit.set_task(Some(task.clone().into()));
+
+        let mut effects = vec![effect::replace_unit(unit), effect::add_task(Box::new(task))];
+        if let Some(old_task) = old_task {
+            effects.push(effect::remove_task(old_task.clone().into()));
+        }
+        Ok(effects)
+    }
+
+    fn refresh_city_on(
+        &self,
+        uuid: &Uuid,
+        message: ClientToServerCityMessage,
+    ) -> Result<Vec<Effect>, RunnerError> {
+        let state = self.state();
+        let city = state.find_city(uuid).unwrap(); // TODO: unwrap -> same error management than crate_task
+        let from = match message {
+            ClientToServerCityMessage::SetProduction(production) => {
+                BuildCityFrom::Change(city, BuildCityFromChange::Production(production))
+            }
+            ClientToServerCityMessage::SetExploitation(exploitation) => {
+                BuildCityFrom::Change(city, BuildCityFromChange::Exploitation(exploitation))
+            }
+        };
+        let old_tasks = state
+            .index()
+            .city_tasks(uuid)
+            .iter()
+            .map(|i| (*i, Concern::City(*i)))
+            .collect::<Vec<(Uuid, Concern)>>();
+        let city = CityGenerator::builder()
+            .context(&self.context)
+            .game_frame(self.context.state().frame())
+            .from(from)
+            .build()
+            .generate()
+            // TODO: unwrap -> same error management than crate_task
+            .unwrap();
+        let new_tasks = city.tasks().clone().into();
+
+        Ok(vec![
+            effect::replace_city(city),
+            effect::remove_tasks(old_tasks),
+            effect::add_tasks(new_tasks),
+        ])
+    }
+}
+
+impl From<CreateTaskError> for RunnerError {
+    fn from(value: CreateTaskError) -> Self {
+        match &value {
+            CreateTaskError::GamePlay(reason) => {
+                //
+                RunnerError::DealClientRequest(DealClientRequestError::Unfeasible(
+                    reason.to_string(),
+                ))
+            }
+            CreateTaskError::Unexpected(message) => {
+                //
+                RunnerError::DealClientRequest(DealClientRequestError::Unexpected(message.clone()))
+            }
+        }
+    }
+}
+
+impl From<StateError> for CreateTaskError {
+    fn from(value: StateError) -> Self {
+        match value {
+            StateError::NotFound(error) => CreateTaskError::Unexpected(error.to_string()),
+            StateError::NoLongerExist(error) => match error {
+                NoLongerExist::City(_) => {
+                    CreateTaskError::GamePlay(GamePlayReason::CityNoLongerExist)
+                }
+                NoLongerExist::Unit(_) => {
+                    CreateTaskError::GamePlay(GamePlayReason::UnitNoLongerExist)
+                }
+            },
         }
     }
 }
@@ -314,19 +441,21 @@ mod test {
 
     use common::{
         game::{
-            slice::{ClientConcreteTask, ClientUnit, ClientUnitTasks, GameSlice},
+            slice::{ClientUnit, GameSlice},
+            tasks::client::{settle::ClientSettle, ClientTask, ClientTaskType},
             unit::{TaskType, UnitTaskType, UnitType},
             GameFrame,
         },
         geo::{Geo, GeoContext, WorldPoint},
-        network::message::CreateTaskMessage,
         rules::{std1::Std1RuleSet, RuleSet},
         space::window::{DisplayStep, SetWindow, Window},
         world::{partial::PartialWorld, TerrainType, Tile},
     };
 
     use crate::{
-        game::unit::Unit, task::effect::UnitEffect, FromClientsChannels, ToClientsChannels,
+        game::unit::Unit,
+        task::effect::{self},
+        FromClientsChannels, ToClientsChannels,
     };
 
     use super::*;
@@ -376,10 +505,7 @@ mod test {
             );
 
             while let Some(unit) = self.units.pop() {
-                state.apply(vec![Effect::State(StateEffect::Unit(
-                    unit.id(),
-                    UnitEffect::New(unit),
-                ))]);
+                state.apply(&vec![effect::new_unit(unit)]);
             }
 
             let context = Context::new(Box::new(self.rule_set.clone()));
@@ -419,22 +545,24 @@ mod test {
         let client_settler = ClientUnit::builder()
             .id(settler_id)
             .geo(*settler.geo())
-            .type_(settler.type_().clone())
-            .tasks(ClientUnitTasks::new(vec![]))
+            .type_(*settler.type_())
             .build();
-        let create_task_id = Uuid::new_v4();
-        let client_unit_task = ClientConcreteTask::new(
-            create_task_id,
-            TaskType::Unit(UnitTaskType::Settle),
-            GameFrame(0),
-            testing.rule_set.settle_duration(settler.type_()),
-        );
+        let expected_client_unit = ClientUnit::builder()
+            .id(settler_id)
+            .geo(*settler.geo())
+            .type_(*settler.type_())
+            .task(ClientTask::new(
+                ClientTaskType::Settle(ClientSettle::new(city_name.clone())),
+                GameFrame(0),
+                GameFrame(100),
+            ))
+            .build();
         let mut runner = testing.build();
 
         let set_window = ClientToServerMessage::SetWindow(SetWindow::new(0, 0, 1, 1));
-        let create_task = ClientToServerMessage::CreateTask(
-            create_task_id,
-            CreateTaskMessage::Settle(settler_id, city_name),
+        let create_task = ClientToServerMessage::Unit(
+            settler_id,
+            ClientToServerUnitMessage::Settle(city_name.clone()),
         );
 
         let expected_set_window = ServerToClientMessage::State(ClientStateMessage::SetWindow(
@@ -456,10 +584,8 @@ mod test {
                 vec![],
                 vec![client_settler],
             )));
-        let expected_set_unit_task = ServerToClientMessage::State(ClientStateMessage::AddUnitTask(
-            settler_id,
-            client_unit_task,
-        ));
+        let expected_set_unit =
+            ServerToClientMessage::State(ClientStateMessage::SetUnit(expected_client_unit));
 
         // WHEN
         testing
@@ -483,6 +609,6 @@ mod test {
         assert_eq!(message2, Ok((client_id, expected_game_set_slice)));
 
         let message3 = testing.to_clients_receiver.try_recv();
-        assert_eq!(message3, Ok((client_id, expected_set_unit_task)));
+        assert_eq!(message3, Ok((client_id, expected_set_unit)));
     }
 }

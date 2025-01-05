@@ -1,14 +1,14 @@
+pub mod tasks;
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, AddAssign};
-use uuid::Uuid;
+use std::ops::{Add, AddAssign, Sub};
 
 pub mod city;
 pub mod slice;
 pub mod unit;
 
 pub const GAME_FRAMES_PER_SECOND: u64 = 10;
-pub const PRODUCTION_TON_FRAMES: u64 = GAME_FRAMES_PER_SECOND * 10 * 60; // Number of frames to produce 1 prod ton
-pub const FRAME_PRODUCTION_TONS_RATIO: f64 = 1.0 / PRODUCTION_TON_FRAMES as f64;
+pub const PRODUCTION_FRAMES_PER_TONS: u64 = GAME_FRAMES_PER_SECOND * 10 * 60; // Number of frames to produce 1 prod ton
+pub const FRAME_PRODUCTION_TONS_RATIO: f64 = 1.0 / PRODUCTION_FRAMES_PER_TONS as f64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 pub struct GameFrame(pub u64);
@@ -27,38 +27,10 @@ impl AddAssign for GameFrame {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ClientTasks<T: ClientTask> {
-    stack: Vec<T>,
-}
+impl Sub for GameFrame {
+    type Output = Self;
 
-impl<T: ClientTask> ClientTasks<T> {
-    pub fn new(stack: Vec<T>) -> Self {
-        Self { stack }
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
     }
-
-    pub fn push(&mut self, task: T) {
-        self.stack.push(task);
-    }
-
-    pub fn remove(&mut self, uuid: &Uuid) {
-        self.stack.retain(|t| t.id() != uuid);
-    }
-
-    pub fn display(&self, frame: &GameFrame) -> String {
-        if self.stack.is_empty() {
-            return "Idle".into();
-        }
-
-        self.stack
-            .iter()
-            .map(|t| t.display(frame))
-            .collect::<Vec<String>>()
-            .join(", ")
-    }
-}
-
-pub trait ClientTask {
-    fn id(&self) -> &Uuid;
-    fn display(&self, frame: &GameFrame) -> String;
 }

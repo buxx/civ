@@ -2,21 +2,14 @@ use std::sync::RwLockReadGuard;
 
 use bon::Builder;
 use common::{
-    game::{
-        slice::{ClientConcreteTask, ClientUnit},
-        unit::{UnitTaskType, UnitType},
-        ClientTasks,
-    },
+    game::{slice::ClientUnit, unit::UnitType},
     geo::Geo,
 };
 use uuid::Uuid;
 
 use common::geo::GeoContext;
 
-use crate::{
-    state::State,
-    task::{IntoClientConcreteTask, Tasks},
-};
+use crate::{state::State, task::unit::UnitTaskWrapper};
 
 use super::IntoClientModel;
 
@@ -24,8 +17,7 @@ use super::IntoClientModel;
 pub struct Unit {
     id: Uuid,
     type_: UnitType,
-    #[builder(default = Tasks::empty())]
-    tasks: Tasks<UnitTaskType>,
+    task: Option<UnitTaskWrapper>,
     geo: GeoContext,
 }
 
@@ -38,8 +30,12 @@ impl Unit {
         &self.type_
     }
 
-    pub fn tasks(&self) -> &Tasks<UnitTaskType> {
-        &self.tasks
+    pub fn task(&self) -> &Option<UnitTaskWrapper> {
+        &self.task
+    }
+
+    pub fn set_task(&mut self, task: Option<UnitTaskWrapper>) {
+        self.task = task;
     }
 }
 
@@ -54,26 +50,11 @@ impl Geo for Unit {
 }
 
 impl IntoClientModel<ClientUnit> for Unit {
-    fn into_client(self, state: &RwLockReadGuard<State>) -> ClientUnit {
-        let stack: Vec<ClientConcreteTask> = self
-            .tasks()
-            .stack()
-            .iter()
-            .filter_map(|(uuid, _)| {
-                // FIXME: use task index by uuid to avoid performance bottleneck here; REF PERF_TASK
-                state
-                    .tasks()
-                    .iter()
-                    .find(|t| t.context().id() == *uuid)
-                    .map(|task| task.into_client())
-            })
-            .collect();
-        let tasks = ClientTasks::new(stack);
-
+    fn into_client(self, _state: &RwLockReadGuard<State>) -> ClientUnit {
         ClientUnit::builder()
             .id(self.id())
             .type_(self.type_().clone())
-            .tasks(tasks)
+            .maybe_task(self.task.clone().map(|t| t.into()))
             .geo(self.geo().clone())
             .build()
     }

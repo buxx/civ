@@ -16,7 +16,7 @@ use std::{
     sync::{Arc, RwLock},
     thread,
 };
-use task::effect::{Effect, StateEffect, UnitEffect};
+use task::effect::{self};
 use thiserror::Error;
 use uuid::Uuid;
 use world::reader::{WorldReader, WorldReaderError};
@@ -60,16 +60,13 @@ fn main() -> Result<(), Error> {
     // HACK
     let world_source = PathBuf::from("./world");
     let uuid = Uuid::new_v4();
-    state.apply(&vec![Effect::State(StateEffect::Unit(
-        uuid,
-        UnitEffect::New(
-            Unit::builder()
-                .id(uuid)
-                .type_(UnitType::Settlers)
-                .geo(GeoContext::builder().point(WorldPoint::new(0, 0)).build())
-                .build(),
-        ),
-    ))]);
+    state.apply(&vec![effect::new_unit(
+        Unit::builder()
+            .id(uuid)
+            .type_(UnitType::Settlers)
+            .geo(GeoContext::builder().point(WorldPoint::new(0, 0)).build())
+            .build(),
+    )]);
 
     info!("Read world ...");
     let world = WorldReader::from(world_source)?;

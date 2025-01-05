@@ -1,18 +1,17 @@
 use bon::Builder;
 use common::game::{
     city::CityProductionTons,
+    tasks::client::city::production::ClientCityProductionTask,
     unit::{CityTaskType, TaskType},
 };
 use uuid::Uuid;
 
 use crate::{
     runner::RunnerContext,
-    task::{
-        context::TaskContext, effect::Effect, CityTask, Concern, Task, TaskBox, TaskError, Then,
-    },
+    task::{effect::Effect, Concern, Task, TaskBox, TaskContext, TaskError, Then},
 };
 
-#[derive(Builder, Clone)]
+#[derive(Debug, Builder, Clone)]
 pub struct CityProductionTask {
     context: TaskContext,
     city: Uuid,
@@ -39,18 +38,25 @@ impl Task for CityProductionTask {
     }
 }
 
-impl CityTask for CityProductionTask {
-    fn city_task_type(&self) -> CityTaskType {
-        CityTaskType::Production(self.tons)
-    }
+// impl CityTask for CityProductionTask {
+//     fn city_task_type(&self) -> CityTaskType {
+//         CityTaskType::Production(self.tons)
+//     }
 
-    fn into_task(&self) -> TaskBox {
-        Box::new(self.clone())
-    }
-}
+//     fn into_task(&self) -> TaskBox {
+//         Box::new(self.clone())
+//     }
+// }
 
 impl Then for CityProductionTask {
     fn then(&self, _context: &RunnerContext) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError> {
         todo!()
+    }
+}
+
+impl From<CityProductionTask> for ClientCityProductionTask {
+    fn from(value: CityProductionTask) -> Self {
+        let context = value.context();
+        ClientCityProductionTask::new(context.start(), context.end())
     }
 }

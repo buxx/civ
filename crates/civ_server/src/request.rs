@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     game::extractor::Extractor,
-    runner::RunnerContext,
+    runner::{RunnerContext, RunnerError},
     task::effect::{ClientEffect, Effect, StateEffect},
 };
 
@@ -20,7 +20,7 @@ impl SetWindowRequestDealer {
         Self { context, client_id }
     }
 
-    pub fn deal(&self, set_window: &SetWindow) -> Vec<Effect> {
+    pub fn deal(&self, set_window: &SetWindow) -> Result<Vec<Effect>, RunnerError> {
         let window = Window::new(
             set_window.start_x(),
             set_window.start_y(),
@@ -49,9 +49,9 @@ impl SetWindowRequestDealer {
                 .unwrap();
         }
 
-        vec![Effect::State(StateEffect::Client(
+        Ok(vec![Effect::State(StateEffect::Client(
             self.client_id,
             ClientEffect::SetWindow(window),
-        ))]
+        ))])
     }
 }

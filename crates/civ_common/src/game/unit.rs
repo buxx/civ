@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::city::CityProductionTons;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum UnitType {
     Warriors,
     Settlers,

@@ -2,7 +2,7 @@ use std::thread;
 
 use common::{
     game::unit::{TaskType, UnitTaskType},
-    network::message::{ClientToServerMessage, CreateTaskMessage},
+    network::message::{ClientToServerMessage, ClientToServerUnitMessage},
 };
 use uuid::Uuid;
 
@@ -31,10 +31,15 @@ pub fn detail(context: CommandContext, id: Uuid, follow: bool) -> Result<(), Com
     while follow_ && !context.context.stop_is_required() {
         if let Some(unit) = state.units()?.iter().find(|c| c.id() == id) {
             let frame = state.frame()?;
+            let task_str = unit
+                .task()
+                .as_ref()
+                .map(|t| t.to_string(&frame))
+                .unwrap_or("Idle".to_string());
             println!("id: {}", unit.id());
             println!("xy: {:?}", unit.geo().point());
             println!("type: {:?}", unit.type_().to_string());
-            println!("tasks: {}", unit.tasks().display(&frame));
+            println!("task: {}", task_str);
         }
         follow_ = follow;
 
@@ -67,12 +72,10 @@ pub fn settle(context: CommandContext, unit_id: Uuid, city_name: &str) -> Result
         return Ok(());
     }
 
-    context
-        .to_server_sender
-        .send(ClientToServerMessage::CreateTask(
-            unit.id(),
-            CreateTaskMessage::Settle(unit_id, city_name.to_string()),
-        ))?;
+    context.to_server_sender.send(ClientToServerMessage::Unit(
+        unit.id(),
+        ClientToServerUnitMessage::Settle(city_name.to_string()),
+    ))?;
 
     Ok(())
 }

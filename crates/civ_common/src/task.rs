@@ -1,17 +1,27 @@
-use std::error::Error as StdError;
-
 use thiserror::Error;
+
+use crate::game::unit::UnitType;
 
 #[derive(Error, Debug)]
 pub enum CreateTaskError {
-    #[error("Action is no longer possible: {0}")]
-    IncoherentContext(String, Option<Box<dyn StdError>>),
-    #[error("Action is no longer possible: {0}")]
-    GamePlay(GamePlayError),
+    #[error("Action is not possible: {0}")]
+    GamePlay(GamePlayReason),
+    #[error("Unexpected error: {0}")]
+    Unexpected(String),
 }
 
 #[derive(Error, Debug)]
-pub enum GamePlayError {
+pub enum GamePlayReason {
     #[error("Cant settle: {0}")]
-    CantSettle(String),
+    CantSettle(CantSettleReason),
+    #[error("City no longer exist")]
+    CityNoLongerExist,
+    #[error("Unit no longer exist")]
+    UnitNoLongerExist,
+}
+
+#[derive(Error, Debug)]
+pub enum CantSettleReason {
+    #[error("{0} can't settle")]
+    WrongUnitType(UnitType),
 }

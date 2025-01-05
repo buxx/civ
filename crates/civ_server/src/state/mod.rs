@@ -1,7 +1,7 @@
 pub mod clients;
 
 use clients::Clients;
-use common::{game::GameFrame, geo::Geo};
+use common::game::GameFrame;
 use index::Index;
 use thiserror::Error;
 use uuid::Uuid;
@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::{
     game::{city::City, unit::Unit},
     task::{
-        effect::{CityEffect, Effect, StateEffect, TaskEffect, UnitEffect},
+        effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
         TaskBox,
     },
 };
@@ -48,7 +48,7 @@ impl State {
     }
 
     pub fn apply(&mut self, effects: &Vec<Effect>) {
-        let mut remove_ids = vec![];
+        let mut remove_tasks = vec![];
 
         for effect in effects {
             match effect {
@@ -57,15 +57,28 @@ impl State {
                         self.clients.apply(*uuid, effect);
                     }
                     StateEffect::Task(uuid, effect) => match effect {
-                        TaskEffect::Finished(_) => remove_ids.push(uuid),
                         TaskEffect::Push(task) => self.tasks.push(task.clone()),
+                        TaskEffect::Finished(_) => remove_tasks.push(uuid),
+                        TaskEffect::Remove(_, _) => remove_tasks.push(uuid),
+                    },
+                    StateEffect::Tasks(effect) => match effect {
+                        TasksEffect::Remove(tasks) => {
+                            remove_tasks
+                                .extend(tasks.iter().map(|(i, _)| i).collect::<Vec<&Uuid>>());
+                        }
+                        TasksEffect::Add(tasks) => self.tasks.extend(tasks.clone()),
                     },
                     StateEffect::City(uuid, effect) => match effect {
                         CityEffect::New(city) => {
                             self.cities.push(city.clone());
                         }
+                        CityEffect::Replace(city) => {
+                            // TODO: unwrap (city can no longer exist)
+                            *self.find_city_mut(city.id()).unwrap() = city.clone();
+                        }
                         CityEffect::Remove(_) => {
-                            self.cities.retain(|city| city.id() != *uuid);
+                            // TODO: can use remove (by index) ? (state index is usable ?)
+                            self.cities.retain(|city| city.id() != uuid);
                         }
                     },
                     StateEffect::Unit(uuid, effect) => match effect {
@@ -75,21 +88,18 @@ impl State {
                         UnitEffect::Remove(_) => {
                             self.units.retain(|unit| unit.id() != *uuid);
                         }
-                        UnitEffect::Move(unit_, to_) => {
-                            if let Some(unit) = self.units.iter_mut().find(|u| u.id() == unit_.id())
-                            {
-                                unit.geo_mut().set_point(*to_)
-                            }
+                        UnitEffect::Replace(unit) => {
+                            *self.find_unit_mut(uuid).unwrap() = unit.clone();
                         }
                     },
                 },
             }
         }
 
-        if !remove_ids.is_empty() {
+        if !remove_tasks.is_empty() {
             // TODO: this is not a good performance way (idea: transport tasks index in tick)
             self.tasks
-                .retain(|task| !remove_ids.contains(&&task.context().id()));
+                .retain(|task| !remove_tasks.contains(&&task.context().id()));
         }
 
         // Update index must be after because based on &self.cities and &self.units
@@ -102,12 +112,22 @@ impl State {
 
     pub fn city(&self, index: usize, uuid: &Uuid) -> Result<&City, StateError> {
         if let Some(city) = self.cities.get(index) {
-            if &city.id() == uuid {
+            if city.id() == uuid {
                 return Ok(city);
             }
         }
 
-        Err(StateError::CityNotFound(index, *uuid))
+        Err(StateError::NotFound(NotFound::City(index, *uuid)))
+    }
+
+    pub fn city_mut(&mut self, index: usize, uuid: &Uuid) -> Result<&mut City, StateError> {
+        if let Some(city) = self.cities.get_mut(index) {
+            if city.id() == uuid {
+                return Ok(city);
+            }
+        }
+
+        Err(StateError::NotFound(NotFound::City(index, *uuid)))
     }
 
     pub fn find_city(&self, uuid: &Uuid) -> Result<&City, StateError> {
@@ -115,8 +135,17 @@ impl State {
             .index()
             .uuid_cities()
             .get(uuid)
-            .ok_or(StateError::CityUuidFound(*uuid))?;
+            .ok_or(StateError::NoLongerExist(NoLongerExist::City(*uuid)))?;
         self.city(*unit_index, uuid)
+    }
+
+    pub fn find_city_mut(&mut self, uuid: &Uuid) -> Result<&mut City, StateError> {
+        let unit_index = self
+            .index()
+            .uuid_cities()
+            .get(uuid)
+            .ok_or(StateError::NoLongerExist(NoLongerExist::City(*uuid)))?;
+        self.city_mut(*unit_index, uuid)
     }
 
     pub fn unit(&self, index: usize, uuid: &Uuid) -> Result<&Unit, StateError> {
@@ -126,7 +155,17 @@ impl State {
             }
         }
 
-        Err(StateError::UnitNotFound(index, *uuid))
+        Err(StateError::NotFound(NotFound::Unit(index, *uuid)))
+    }
+
+    pub fn unit_mut(&mut self, index: usize, uuid: &Uuid) -> Result<&mut Unit, StateError> {
+        if let Some(unit) = self.units.get_mut(index) {
+            if &unit.id() == uuid {
+                return Ok(unit);
+            }
+        }
+
+        Err(StateError::NotFound(NotFound::Unit(index, *uuid)))
     }
 
     pub fn find_unit(&self, uuid: &Uuid) -> Result<&Unit, StateError> {
@@ -134,8 +173,17 @@ impl State {
             .index()
             .uuid_units()
             .get(uuid)
-            .ok_or(StateError::UnitUuidNotFound(*uuid))?;
+            .ok_or(StateError::NoLongerExist(NoLongerExist::Unit(*uuid)))?;
         self.unit(*unit_index, uuid)
+    }
+
+    pub fn find_unit_mut(&mut self, uuid: &Uuid) -> Result<&mut Unit, StateError> {
+        let unit_index = self
+            .index()
+            .uuid_units()
+            .get(uuid)
+            .ok_or(StateError::NoLongerExist(NoLongerExist::Unit(*uuid)))?;
+        self.unit_mut(*unit_index, uuid)
     }
 
     pub fn units(&self) -> &[Unit] {
@@ -146,36 +194,31 @@ impl State {
         &self.index
     }
 
-    pub fn city_tasks(&self, city_id: &Uuid) -> Result<Vec<&TaskBox>, StateError> {
-        // CityTasks::from(
-        //     self.index
-        //         .city_tasks(city_id)
-        //         .iter()
-        //         // TODO: probably a performance issue here
-        //         .filter_map(|id| self.tasks.iter().find(|t| t.context().id() == *id))
-        //         .collect::<Vec<&TaskBox>>(),
-        // )
-        // .map_err(|e| StateError::CityTasksIntegrity(*city_id, e))
-        Ok(self
-            .index
-            .city_tasks(city_id)
-            .iter()
-            // TODO: probably a performance issue here
-            .filter_map(|id| self.tasks.iter().find(|t| t.context().id() == *id))
-            .collect::<Vec<&TaskBox>>())
+    pub fn index_mut(&mut self) -> &mut Index {
+        &mut self.index
     }
 }
 
 #[derive(Error, Debug)]
 pub enum StateError {
-    #[error("No city for index {0} and uuid {1}")]
-    CityNotFound(usize, Uuid),
+    #[error("Not found: {0}")]
+    NotFound(NotFound),
+    #[error("No longer exist: {0}")]
+    NoLongerExist(NoLongerExist),
+}
+
+#[derive(Error, Debug)]
+pub enum NoLongerExist {
     #[error("No city for uuid {0}")]
-    CityUuidFound(Uuid),
-    #[error("No unit for index {0} and uuid {1}")]
-    UnitNotFound(usize, Uuid),
+    City(Uuid),
     #[error("No unit for uuid {0}")]
-    UnitUuidNotFound(Uuid),
-    // #[error("City integrity error ({0}): {1}")]
-    // CityTasksIntegrity(Uuid, CityIntegrityError),
+    Unit(Uuid),
+}
+
+#[derive(Error, Debug)]
+pub enum NotFound {
+    #[error("No city for index {0} and uuid {1}")]
+    City(usize, Uuid),
+    #[error("No unit for index {0} and uuid {1}")]
+    Unit(usize, Uuid),
 }
