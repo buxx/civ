@@ -5,6 +5,7 @@ use uuid::Uuid;
 use crate::{geo::GeoContext, world::partial::PartialWorld};
 
 use super::{
+    city::CityProduct,
     unit::{TaskType, UnitType},
     ClientTask, ClientTasks, GameFrame,
 };
@@ -42,8 +43,8 @@ impl GameSlice {
 pub struct ClientCity {
     id: Uuid,
     name: String,
-    tasks: ClientTasks<ClientConcreteTask>,
     geo: GeoContext,
+    production: (CityProduct, ClientConcreteTask),
 }
 
 impl ClientCity {
@@ -59,12 +60,12 @@ impl ClientCity {
         &self.geo
     }
 
-    pub fn tasks(&self) -> &ClientTasks<ClientConcreteTask> {
-        &self.tasks
-    }
-
-    pub fn tasks_mut(&mut self) -> &mut ClientTasks<ClientConcreteTask> {
-        &mut self.tasks
+    pub fn production_str(&self, frame: &GameFrame) -> String {
+        format!(
+            "{} ({}%)",
+            self.production.0,
+            self.production.1.progress(frame)
+        )
     }
 }
 

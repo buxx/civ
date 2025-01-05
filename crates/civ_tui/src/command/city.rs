@@ -26,9 +26,11 @@ pub fn city(context: CommandContext, id: Uuid, follow: bool) -> Result<(), Comma
     let mut follow_ = true;
     while follow_ && !context.context.stop_is_required() {
         if let Some(city) = state.cities()?.iter().find(|c| c.id() == id) {
+            let frame = state.frame()?;
             println!("id: {}", city.id());
             println!("name: {}", city.name());
             println!("xy: {:?}", city.geo().point());
+            println!("production: {}", city.production_str(&frame));
         }
         follow_ = follow;
 

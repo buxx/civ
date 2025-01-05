@@ -4,9 +4,8 @@ use bon::Builder;
 use common::{
     game::{
         city::{CityProduct, CityProductionTons},
-        slice::ClientCity,
-        unit::{CityTaskType, UnitType},
-        ClientTasks,
+        slice::{ClientCity, ClientConcreteTask},
+        unit::{CityTaskType, TaskType, UnitType},
     },
     geo::Geo,
 };
@@ -17,7 +16,7 @@ use common::geo::GeoContext;
 use crate::{
     runner::RunnerContext,
     state::State,
-    task::{IntoClientConcreteTask, Tasks},
+    task::{Concern, IntoClientConcreteTask, Tasks},
 };
 
 use super::IntoClientModel;
@@ -66,26 +65,31 @@ impl Geo for City {
 
 impl IntoClientModel<ClientCity> for City {
     fn into_client(self, state: &RwLockReadGuard<State>) -> ClientCity {
-        let stack = self
+        // FIXME BS NOW: ce bout de code montre qu'il y a un problème de rattachement entre les tâches et les city/unit
+        // trouver autre chose ...
+        let x = state
             .tasks()
-            .stack()
             .iter()
-            .filter_map(|(uuid, _)| {
-                // FIXME: use task index by uuid to avoid performance bottleneck here; REF PERF_TASK
-                state
-                    .tasks()
-                    .iter()
-                    .find(|t| t.context().id() == *uuid)
-                    .map(|task| task.into_client())
+            .filter_map(|t| match (t.type_(), t.concern()) {
+                (TaskType::City(CityTaskType::Production(_)), Concern::City(city_id)) => {
+                    if city_id == self.id() {
+                        Some(t.into_client())
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
             })
-            .collect();
-        let tasks = ClientTasks::new(stack);
+            .collect::<Vec<ClientConcreteTask>>();
+        // FIXME BS NOW: fuck, les state.tasks pas encore mises à jour ?
+        let production_task = x.first().unwrap();
+        let product = self.production.current();
 
         ClientCity::builder()
             .id(self.id())
-            .tasks(tasks)
             .geo(*self.geo())
             .name(self.name.clone())
+            .production((product.clone(), production_task.clone()))
             .build()
     }
 }
@@ -104,7 +108,7 @@ impl CityProduction {
     pub fn default(_context: &RunnerContext) -> Self {
         // Default according to context (warrior, then phalanx, etc) and tons
         Self {
-            stack: vec![CityProduct::Unit(UnitType::Settlers)],
+            stack: vec![CityProduct::Unit(UnitType::Warriors)],
             tons: CityProductionTons(1),
         }
     }

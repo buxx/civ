@@ -1,4 +1,7 @@
-use std::ops::{Add, AddAssign, SubAssign};
+use std::{
+    fmt::Display,
+    ops::{Add, AddAssign, SubAssign},
+};
 
 use super::unit::UnitType;
 use serde::{Deserialize, Serialize};
@@ -29,4 +32,12 @@ impl SubAssign for CityProductionTons {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum CityProduct {
     Unit(UnitType),
+}
+
+impl Display for CityProduct {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CityProduct::Unit(unit_type) => f.write_str(&unit_type.to_string()),
+        }
+    }
 }

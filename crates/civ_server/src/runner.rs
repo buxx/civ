@@ -271,8 +271,8 @@ impl Runner {
     }
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
+        self.state_mut().apply(&effects);
         self.reflects(&effects);
-        self.state_mut().apply(effects);
     }
 
     fn client(&self, client_id: Uuid, message: ClientToServerMessage) -> Vec<Effect> {
@@ -314,7 +314,7 @@ mod test {
 
     use common::{
         game::{
-            slice::{ClientUnit, ClientConcreteTask, ClientUnitTasks, GameSlice},
+            slice::{ClientConcreteTask, ClientUnit, ClientUnitTasks, GameSlice},
             unit::{TaskType, UnitTaskType, UnitType},
             GameFrame,
         },

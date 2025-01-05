@@ -88,7 +88,21 @@ impl Runner {
                             clients,
                         )));
                     }
-                    Concern::City(_uuid) => todo!(),
+                    Concern::City(uuid) => {
+                        let city = self
+                            .state()
+                            .city(
+                                *self.state().index().uuid_cities().get(&uuid).unwrap(),
+                                &uuid,
+                            )
+                            .unwrap()
+                            .clone()
+                            .into_client(&self.state());
+                        return Ok(Some((
+                            ServerToClientMessage::State(ClientStateMessage::SetCity(city)),
+                            clients,
+                        )));
+                    }
                 }
             }
         }

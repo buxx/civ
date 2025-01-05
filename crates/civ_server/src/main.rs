@@ -60,7 +60,7 @@ fn main() -> Result<(), Error> {
     // HACK
     let world_source = PathBuf::from("./world");
     let uuid = Uuid::new_v4();
-    state.apply(vec![Effect::State(StateEffect::Unit(
+    state.apply(&vec![Effect::State(StateEffect::Unit(
         uuid,
         UnitEffect::New(
             Unit::builder()

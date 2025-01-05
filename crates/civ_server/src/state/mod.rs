@@ -47,10 +47,10 @@ impl State {
         self.frame_i += GameFrame(1);
     }
 
-    pub fn apply(&mut self, effects: Vec<Effect>) {
+    pub fn apply(&mut self, effects: &Vec<Effect>) {
         let mut remove_ids = vec![];
 
-        for effect in &effects {
+        for effect in effects {
             match effect {
                 Effect::State(effect) => match effect {
                     StateEffect::Client(uuid, effect) => {
