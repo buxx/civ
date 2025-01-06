@@ -16,7 +16,10 @@ use std::{
     sync::{Arc, RwLock},
     thread,
 };
-use task::effect::{Effect, StateEffect, UnitEffect};
+use task::{
+    effect::{Effect, StateEffect, UnitEffect},
+    unit::UnitTaskWrapper,
+};
 use thiserror::Error;
 use uuid::Uuid;
 use world::reader::{WorldReader, WorldReaderError};
@@ -67,6 +70,7 @@ fn main() -> Result<(), Error> {
                 .id(uuid)
                 .type_(UnitType::Settlers)
                 .geo(GeoContext::builder().point(WorldPoint::new(0, 0)).build())
+                .task(UnitTaskWrapper::Idle)
                 .build(),
         ),
     ))]);

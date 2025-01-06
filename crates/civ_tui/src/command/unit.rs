@@ -34,7 +34,7 @@ pub fn detail(context: CommandContext, id: Uuid, follow: bool) -> Result<(), Com
             println!("id: {}", unit.id());
             println!("xy: {:?}", unit.geo().point());
             println!("type: {:?}", unit.type_().to_string());
-            println!("tasks: {}", unit.tasks().display(&frame));
+            println!("task: {}", unit.task().to_string(&frame));
         }
         follow_ = follow;
 

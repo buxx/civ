@@ -11,8 +11,8 @@ use crate::{
     runner::Runner,
     state::StateError,
     task::{
-        effect::{CityEffect, Effect, StateEffect, TaskEffect, UnitEffect},
-        Concern, IntoClientConcreteTask, TaskBox,
+        effect::{CityEffect, Effect, StateEffect, UnitEffect},
+        Concern, TaskBox,
     },
 };
 
@@ -43,18 +43,25 @@ impl Runner {
         match effect {
             Effect::State(effect) => match effect {
                 StateEffect::Client(_, _) => Ok(None),
-                StateEffect::Task(_, effect) => match effect {
-                    TaskEffect::Push(task) => self.new_task_reflects(task),
-                    TaskEffect::Finished(task) => self.finished_task_reflects(task),
-                },
+                StateEffect::Task(_, _) => {
+                    // Task are reflected into City & Unit in server side,
+                    // then City & Units are entirely send to client
+                    Ok(None)
+                }
+                StateEffect::Tasks(_) => {
+                    // Task are reflected into City & Unit in server side,
+                    // then City & Units are entirely send to client
+                    Ok(None)
+                }
                 StateEffect::City(_, effect) => match effect {
-                    CityEffect::New(city) => self.new_city_reflects(city),
+                    CityEffect::New(city) => self.set_city_reflects(city),
+                    CityEffect::Replace(city) => self.set_city_reflects(city),
                     CityEffect::Remove(city) => self.removed_city_reflects(city),
                 },
                 StateEffect::Unit(_, effect) => match effect {
-                    UnitEffect::New(unit) => self.new_unit_reflects(unit),
+                    UnitEffect::New(unit) => self.set_unit_reflects(unit),
                     UnitEffect::Remove(unit) => self.removed_unit_reflects(unit),
-                    UnitEffect::Move(unit, _) => self.updated_unit_reflects(unit),
+                    UnitEffect::Move(unit, _) => self.set_unit_reflects(unit),
                 },
             },
         }
@@ -69,75 +76,7 @@ impl Runner {
         }
     }
 
-    fn new_task_reflects(
-        &self,
-        task: &TaskBox,
-    ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
-        let state = self.state();
-
-        if let Some(geo) = self.task_point(task)? {
-            let clients = state.clients().concerned(&geo);
-            if !clients.is_empty() {
-                match task.concern() {
-                    Concern::Unit(uuid) => {
-                        return Ok(Some((
-                            ServerToClientMessage::State(ClientStateMessage::AddUnitTask(
-                                uuid,
-                                task.into_client(),
-                            )),
-                            clients,
-                        )));
-                    }
-                    Concern::City(uuid) => {
-                        let city = self
-                            .state()
-                            .city(
-                                *self.state().index().uuid_cities().get(&uuid).unwrap(),
-                                &uuid,
-                            )
-                            .unwrap()
-                            .clone()
-                            .into_client(&self.state());
-                        return Ok(Some((
-                            ServerToClientMessage::State(ClientStateMessage::SetCity(city)),
-                            clients,
-                        )));
-                    }
-                }
-            }
-        }
-
-        Ok(None)
-    }
-
-    fn finished_task_reflects(
-        &self,
-        task: &TaskBox,
-    ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
-        let state = self.state();
-
-        if let Some(geo) = self.task_point(task)? {
-            let clients = state.clients().concerned(&geo);
-            if !clients.is_empty() {
-                match task.concern() {
-                    Concern::Unit(uuid) => {
-                        return Ok(Some((
-                            ServerToClientMessage::State(ClientStateMessage::RemoveUnitTask(
-                                uuid,
-                                task.context().id(),
-                            )),
-                            clients,
-                        )));
-                    }
-                    Concern::City(_uuid) => todo!(),
-                }
-            }
-        }
-
-        Ok(None)
-    }
-
-    fn new_city_reflects(
+    fn set_city_reflects(
         &self,
         city: &City,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
@@ -163,7 +102,7 @@ impl Runner {
         let clients = state.clients().concerned(city.geo());
         if !clients.is_empty() {
             return Ok(Some((
-                ServerToClientMessage::State(ClientStateMessage::RemoveCity(city.id())),
+                ServerToClientMessage::State(ClientStateMessage::RemoveCity(*city.id())),
                 clients,
             )));
         }
@@ -171,7 +110,7 @@ impl Runner {
         Ok(None)
     }
 
-    fn new_unit_reflects(
+    fn set_unit_reflects(
         &self,
         unit: &Unit,
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
@@ -198,24 +137,6 @@ impl Runner {
         if !clients.is_empty() {
             return Ok(Some((
                 ServerToClientMessage::State(ClientStateMessage::RemoveUnit(unit.id())),
-                clients,
-            )));
-        }
-
-        Ok(None)
-    }
-
-    fn updated_unit_reflects(
-        &self,
-        unit: &Unit,
-    ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
-        let state = self.state();
-        let clients = state.clients().concerned(unit.geo());
-        if !clients.is_empty() {
-            return Ok(Some((
-                ServerToClientMessage::State(ClientStateMessage::SetUnit(
-                    unit.clone().into_client(&state),
-                )),
                 clients,
             )));
         }

@@ -2,7 +2,8 @@ use bon::Builder;
 use common::{
     game::{GameFrame, GAME_FRAMES_PER_SECOND},
     network::message::{
-        ClientStateMessage, ClientToServerMessage, NotificationLevel, ServerToClientMessage,
+        ClientStateMessage, ClientToServerCityMessage, ClientToServerMessage, NotificationLevel,
+        ServerToClientMessage,
     },
 };
 use crossbeam::channel::{unbounded, Receiver, Sender};
@@ -20,8 +21,9 @@ use crate::{
     request::SetWindowRequestDealer,
     state::State,
     task::{
-        effect::{Effect, StateEffect, TaskEffect},
-        TaskError,
+        city::{BuildCityFrom, BuildCityFromChange, CityGenerator},
+        effect::{self, Effect, StateEffect, TaskEffect},
+        Concern, TaskError,
     },
     world::reader::WorldReader,
 };
@@ -289,6 +291,7 @@ impl Runner {
                             TaskEffect::Push(task),
                         ))]
                     }
+                    // TODO: move error management before (wrap all this match branch errors)
                     Err(error) => {
                         self.context
                             .to_client_sender
@@ -304,7 +307,42 @@ impl Runner {
                     }
                 }
             }
+            ClientToServerMessage::City(uuid, message) => self.refresh_city_on(&uuid, message),
         }
+    }
+
+    fn refresh_city_on(&self, uuid: &Uuid, message: ClientToServerCityMessage) -> Vec<Effect> {
+        let state = self.state();
+        let city = state.find_city(&uuid).unwrap(); // TODO: unwrap -> same error management than crate_task
+        let from = match message {
+            ClientToServerCityMessage::SetProduction(production) => {
+                BuildCityFrom::Change(city, BuildCityFromChange::Production(production))
+            }
+            ClientToServerCityMessage::SetExploitation(exploitation) => {
+                BuildCityFrom::Change(city, BuildCityFromChange::Exploitation(exploitation))
+            }
+        };
+        let old_tasks = state
+            .index()
+            .city_tasks(&uuid)
+            .iter()
+            .map(|i| (*i, Concern::City(*i)))
+            .collect::<Vec<(Uuid, Concern)>>();
+        let city = CityGenerator::builder()
+            .context(&self.context)
+            .game_frame(self.context.state().frame())
+            .from(from)
+            .build()
+            .generate()
+            // TODO: unwrap -> same error management than crate_task
+            .unwrap();
+        let new_tasks = city.tasks().clone().into();
+
+        vec![
+            effect::replace_city(city),
+            effect::remove_tasks(old_tasks),
+            effect::add_tasks(new_tasks),
+        ]
     }
 }
 
@@ -314,7 +352,7 @@ mod test {
 
     use common::{
         game::{
-            slice::{ClientConcreteTask, ClientUnit, ClientUnitTasks, GameSlice},
+            slice::{ClientUnit, GameSlice},
             unit::{TaskType, UnitTaskType, UnitType},
             GameFrame,
         },
@@ -326,7 +364,9 @@ mod test {
     };
 
     use crate::{
-        game::unit::Unit, task::effect::UnitEffect, FromClientsChannels, ToClientsChannels,
+        game::unit::Unit,
+        task::effect::{self},
+        FromClientsChannels, ToClientsChannels,
     };
 
     use super::*;
@@ -376,10 +416,7 @@ mod test {
             );
 
             while let Some(unit) = self.units.pop() {
-                state.apply(vec![Effect::State(StateEffect::Unit(
-                    unit.id(),
-                    UnitEffect::New(unit),
-                ))]);
+                state.apply(&vec![effect::new_unit(unit)]);
             }
 
             let context = Context::new(Box::new(self.rule_set.clone()));

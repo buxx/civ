@@ -1,15 +1,14 @@
 use bon::Builder;
 use common::game::{
     city::CityProductionTons,
+    tasks::client::city::production::ClientCityProductionTask,
     unit::{CityTaskType, TaskType},
 };
 use uuid::Uuid;
 
 use crate::{
     runner::RunnerContext,
-    task::{
-        context::TaskContext, effect::Effect, CityTask, Concern, Task, TaskBox, TaskError, Then,
-    },
+    task::{effect::Effect, CityTask, Concern, Task, TaskBox, TaskContext, TaskError, Then},
 };
 
 #[derive(Debug, Builder, Clone)]
@@ -52,5 +51,12 @@ impl CityTask for CityProductionTask {
 impl Then for CityProductionTask {
     fn then(&self, _context: &RunnerContext) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError> {
         todo!()
+    }
+}
+
+impl From<CityProductionTask> for ClientCityProductionTask {
+    fn from(value: CityProductionTask) -> Self {
+        let context = value.context();
+        ClientCityProductionTask::new(context.start(), context.end())
     }
 }

@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    ops::{Add, AddAssign, SubAssign},
+    ops::{Add, AddAssign, Sub, SubAssign},
 };
 
 use super::unit::UnitType;
@@ -29,6 +29,14 @@ impl SubAssign for CityProductionTons {
     }
 }
 
+impl Sub for CityProductionTons {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum CityProduct {
     Unit(UnitType),
@@ -39,5 +47,43 @@ impl Display for CityProduct {
         match self {
             CityProduct::Unit(unit_type) => f.write_str(&unit_type.to_string()),
         }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct CityProduction {
+    stack: Vec<CityProduct>,
+}
+
+impl CityProduction {
+    pub fn new(stack: Vec<CityProduct>) -> Self {
+        Self { stack }
+    }
+
+    pub fn default() -> Self {
+        // Default according to context (warrior, then phalanx, etc) and tons
+        Self {
+            stack: vec![CityProduct::Unit(UnitType::Warriors)],
+        }
+    }
+
+    pub fn current(&self) -> &CityProduct {
+        self.stack.first().expect("One item is mandatory")
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct CityExploitation {
+    // TODO
+}
+
+impl CityExploitation {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn production_tons(&self) -> &CityProductionTons {
+        // FIXME
+        &CityProductionTons(1)
     }
 }

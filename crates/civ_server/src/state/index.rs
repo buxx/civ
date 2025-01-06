@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::{
     game::{city::City, unit::Unit},
     task::{
-        effect::{CityEffect, Effect, StateEffect, TaskEffect, UnitEffect},
+        effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
         Concern, TaskBox,
     },
 };
@@ -33,9 +33,9 @@ impl Index {
         self.xy_cities.clear();
 
         for (i, city) in cities.iter().enumerate() {
-            self.cities_index.insert(city.id(), i);
-            self.cities_xy.insert(city.id(), *city.geo().point());
-            self.xy_cities.insert(*city.geo().point(), city.id());
+            self.cities_index.insert(*city.id(), i);
+            self.cities_xy.insert(*city.id(), *city.geo().point());
+            self.xy_cities.insert(*city.geo().point(), *city.id());
         }
     }
 
@@ -117,35 +117,30 @@ impl Index {
             match effect {
                 Effect::State(effect) => match effect {
                     StateEffect::Client(_, _) => {}
+                    StateEffect::Tasks(effect) => match effect {
+                        TasksEffect::Remove(tasks) => {
+                            for (task_id, concern) in tasks {
+                                self.apply_remove_task(task_id, concern)
+                            }
+                        }
+                        TasksEffect::Add(tasks) => {
+                            for task in tasks {
+                                self.apply_new_task(task)
+                            }
+                        }
+                    },
                     StateEffect::Task(_, effect) => match effect {
-                        TaskEffect::Push(task) => match task.concern() {
-                            Concern::Unit(uuid) => self
-                                .unit_tasks
-                                .entry(uuid)
-                                .or_default()
-                                .push(task.context().id()),
-                            Concern::City(uuid) => self
-                                .city_tasks
-                                .entry(uuid)
-                                .or_default()
-                                .push(task.context().id()),
-                        },
-                        TaskEffect::Finished(task) => match task.concern() {
-                            Concern::Unit(uuid) => self
-                                .unit_tasks
-                                .entry(uuid)
-                                .or_default()
-                                .retain(|id| *id != task.context().id()),
-                            Concern::City(uuid) => self
-                                .city_tasks
-                                .entry(uuid)
-                                .or_default()
-                                .retain(|id| *id != task.context().id()),
-                        },
+                        TaskEffect::Push(task) => self.apply_new_task(task),
+                        TaskEffect::Finished(task) => {
+                            self.apply_remove_task(&task.context().id(), &task.concern())
+                        }
                     },
                     StateEffect::City(_, effect) => match effect {
                         CityEffect::New(_) | CityEffect::Remove(_) => {
                             reindex_cities = true;
+                        }
+                        CityEffect::Replace(_) => {
+                            // Tasks already added/removed by TasksEffect
                         }
                     },
                     StateEffect::Unit(_, effect) => match effect {
@@ -174,8 +169,42 @@ impl Index {
         }
     }
 
+    fn apply_new_task(&mut self, task: &TaskBox) {
+        match task.concern() {
+            Concern::Unit(uuid) => self
+                .unit_tasks
+                .entry(uuid)
+                .or_default()
+                .push(task.context().id()),
+            Concern::City(uuid) => self
+                .city_tasks
+                .entry(uuid)
+                .or_default()
+                .push(task.context().id()),
+        }
+    }
+
+    fn apply_remove_task(&mut self, task_id: &Uuid, concern: &Concern) {
+        match concern {
+            Concern::Unit(uuid) => self
+                .unit_tasks
+                .entry(*uuid)
+                .or_default()
+                .retain(|id| id != task_id),
+            Concern::City(uuid) => self
+                .city_tasks
+                .entry(*uuid)
+                .or_default()
+                .retain(|id| id != task_id),
+        }
+    }
+
     pub fn uuid_cities(&self) -> &HashMap<Uuid, usize> {
         &self.cities_index
+    }
+
+    pub fn uuid_cities_mut(&mut self) -> &mut HashMap<Uuid, usize> {
+        &mut self.cities_index
     }
 
     pub fn uuid_units(&self) -> &HashMap<Uuid, usize> {

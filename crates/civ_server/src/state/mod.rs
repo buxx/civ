@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::{
     game::{city::City, unit::Unit},
     task::{
-        effect::{CityEffect, Effect, StateEffect, TaskEffect, UnitEffect},
+        effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
         TaskBox,
     },
 };
@@ -48,7 +48,7 @@ impl State {
     }
 
     pub fn apply(&mut self, effects: &Vec<Effect>) {
-        let mut remove_ids = vec![];
+        let mut remove_tasks = vec![];
 
         for effect in effects {
             match effect {
@@ -57,15 +57,27 @@ impl State {
                         self.clients.apply(*uuid, effect);
                     }
                     StateEffect::Task(uuid, effect) => match effect {
-                        TaskEffect::Finished(_) => remove_ids.push(uuid),
+                        TaskEffect::Finished(_) => remove_tasks.push(uuid),
                         TaskEffect::Push(task) => self.tasks.push(task.clone()),
+                    },
+                    StateEffect::Tasks(effect) => match effect {
+                        TasksEffect::Remove(tasks) => {
+                            remove_tasks
+                                .extend(tasks.iter().map(|(i, _)| i).collect::<Vec<&Uuid>>());
+                        }
+                        TasksEffect::Add(tasks) => self.tasks.extend(tasks.clone()),
                     },
                     StateEffect::City(uuid, effect) => match effect {
                         CityEffect::New(city) => {
                             self.cities.push(city.clone());
                         }
+                        CityEffect::Replace(city) => {
+                            // TODO: unwrap (city can no longer exist)
+                            *self.find_city_mut(city.id()).unwrap() = city.clone();
+                        }
                         CityEffect::Remove(_) => {
-                            self.cities.retain(|city| city.id() != *uuid);
+                            // TODO: can use remove (by index) ? (state index is usable ?)
+                            self.cities.retain(|city| city.id() != uuid);
                         }
                     },
                     StateEffect::Unit(uuid, effect) => match effect {
@@ -86,10 +98,10 @@ impl State {
             }
         }
 
-        if !remove_ids.is_empty() {
+        if !remove_tasks.is_empty() {
             // TODO: this is not a good performance way (idea: transport tasks index in tick)
             self.tasks
-                .retain(|task| !remove_ids.contains(&&task.context().id()));
+                .retain(|task| !remove_tasks.contains(&&task.context().id()));
         }
 
         // Update index must be after because based on &self.cities and &self.units
@@ -102,7 +114,17 @@ impl State {
 
     pub fn city(&self, index: usize, uuid: &Uuid) -> Result<&City, StateError> {
         if let Some(city) = self.cities.get(index) {
-            if &city.id() == uuid {
+            if city.id() == uuid {
+                return Ok(city);
+            }
+        }
+
+        Err(StateError::CityNotFound(index, *uuid))
+    }
+
+    pub fn city_mut(&mut self, index: usize, uuid: &Uuid) -> Result<&mut City, StateError> {
+        if let Some(city) = self.cities.get_mut(index) {
+            if city.id() == uuid {
                 return Ok(city);
             }
         }
@@ -117,6 +139,15 @@ impl State {
             .get(uuid)
             .ok_or(StateError::CityUuidFound(*uuid))?;
         self.city(*unit_index, uuid)
+    }
+
+    pub fn find_city_mut(&mut self, uuid: &Uuid) -> Result<&mut City, StateError> {
+        let unit_index = self
+            .index()
+            .uuid_cities()
+            .get(uuid)
+            .ok_or(StateError::CityUuidFound(*uuid))?;
+        self.city_mut(*unit_index, uuid)
     }
 
     pub fn unit(&self, index: usize, uuid: &Uuid) -> Result<&Unit, StateError> {
@@ -144,6 +175,10 @@ impl State {
 
     pub fn index(&self) -> &Index {
         &self.index
+    }
+
+    pub fn index_mut(&mut self) -> &mut Index {
+        &mut self.index
     }
 
     pub fn city_tasks(&self, city_id: &Uuid) -> Result<Vec<&TaskBox>, StateError> {

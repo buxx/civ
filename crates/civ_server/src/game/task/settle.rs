@@ -2,7 +2,10 @@ use std::sync::RwLockReadGuard;
 
 use bon::Builder;
 use common::{
-    game::unit::{TaskType, UnitTaskType},
+    game::{
+        tasks::client::{settle::ClientSettle, ClientTaskType},
+        unit::{TaskType, UnitTaskType},
+    },
     geo::{Geo, GeoContext},
     task::{CreateTaskError, GamePlayError},
 };
@@ -14,16 +17,16 @@ use crate::{
     runner::RunnerContext,
     state::State,
     task::{
-        context::TaskContext, effect::Effect, CityName, Concern, Task, TaskBox, TaskError, Then,
+        effect::Effect, CityName, Concern, Task, TaskBox, TaskContext, TaskError, Then,
         ThenTransformUnitIntoCity, WithUnit,
     },
 };
 
-#[derive(Builder, Clone)]
+#[derive(Debug, Builder, Clone)]
 pub struct Settle {
     context: TaskContext,
     geo: GeoContext,
-    settler: Unit,
+    settler: Box<Unit>,
     city_name: String,
 }
 
@@ -44,7 +47,7 @@ impl Settle {
         let end = *state.frame() + context.rules().settle_duration(settler.type_()).0;
         let task = Settle::builder()
             .geo(*settler.geo())
-            .settler(settler)
+            .settler(Box::new(settler))
             .city_name(city_name)
             .context(
                 TaskContext::builder()
@@ -99,5 +102,11 @@ impl Task for Settle {
 
     fn concern(&self) -> Concern {
         Concern::Unit(self.settler.id())
+    }
+}
+
+impl From<Settle> for ClientTaskType {
+    fn from(value: Settle) -> Self {
+        ClientTaskType::Settle(ClientSettle::new(value.city_name.to_string()))
     }
 }

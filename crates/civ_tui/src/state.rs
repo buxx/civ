@@ -106,20 +106,6 @@ impl State {
                     units.retain(|u| u.id() != uuid)
                 }
             }
-            ClientStateMessage::AddUnitTask(uuid, task) => {
-                if let Some(units) = &mut self.units {
-                    if let Some(unit) = units.iter_mut().find(|u| u.id() == uuid) {
-                        unit.tasks_mut().push(task)
-                    }
-                }
-            }
-            ClientStateMessage::RemoveUnitTask(unit_uuid, task_uuid) => {
-                if let Some(units) = &mut self.units {
-                    if let Some(unit) = units.iter_mut().find(|u| u.id() == unit_uuid) {
-                        unit.tasks_mut().remove(&task_uuid)
-                    }
-                }
-            }
         }
     }
 
