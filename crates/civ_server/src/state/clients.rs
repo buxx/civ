@@ -37,8 +37,7 @@ impl Clients {
             .filter(|(_, state)| {
                 state
                     .window
-                    .as_ref()
-                    .and_then(|w| Some(w.contains(geo)))
+                    .as_ref().map(|w| w.contains(geo))
                     .unwrap_or(false)
             })
             .map(|(uuid, _)| *uuid)

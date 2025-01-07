@@ -103,7 +103,7 @@ impl State {
         }
 
         // Update index must be after because based on &self.cities and &self.units
-        self.index.apply(&effects, &self.cities, &self.units);
+        self.index.apply(effects, &self.cities, &self.units);
     }
 
     pub fn cities(&self) -> &[City] {

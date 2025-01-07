@@ -452,11 +452,11 @@ mod test {
         game::{
             slice::{ClientUnit, GameSlice},
             tasks::client::{settle::ClientSettle, ClientTask, ClientTaskType},
-            unit::{TaskType, UnitTaskType, UnitType},
+            unit::UnitType,
             GameFrame,
         },
         geo::{Geo, GeoContext, WorldPoint},
-        rules::{std1::Std1RuleSet, RuleSet},
+        rules::std1::Std1RuleSet,
         space::window::{DisplayStep, SetWindow, Window},
         world::{partial::PartialWorld, TerrainType, Tile},
     };
