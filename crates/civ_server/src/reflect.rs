@@ -1,5 +1,5 @@
 use common::{
-    geo::{Geo, GeoContext},
+    geo::Geo,
     network::message::{ClientStateMessage, ServerToClientMessage},
 };
 use log::error;
@@ -10,10 +10,7 @@ use crate::{
     game::{city::City, unit::Unit, IntoClientModel},
     runner::Runner,
     state::StateError,
-    task::{
-        effect::{CityEffect, Effect, StateEffect, UnitEffect},
-        Concern, TaskBox,
-    },
+    task::effect::{CityEffect, Effect, StateEffect, UnitEffect},
 };
 
 impl Runner {
@@ -64,15 +61,6 @@ impl Runner {
                     UnitEffect::Remove(unit) => self.removed_unit_reflects(unit),
                 },
             },
-        }
-    }
-
-    fn task_point(&self, task: &TaskBox) -> Result<Option<GeoContext>, ReflectError> {
-        let state = self.state();
-
-        match task.concern() {
-            Concern::Unit(uuid) => Ok(Some(*state.find_unit(&uuid)?.geo())),
-            Concern::City(uuid) => Ok(Some(*state.find_city(&uuid)?.geo())),
         }
     }
 

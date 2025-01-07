@@ -60,13 +60,6 @@ impl CityProduction {
         Self { stack }
     }
 
-    pub fn default() -> Self {
-        // Default according to context (warrior, then phalanx, etc) and tons
-        Self {
-            stack: vec![CityProduct::Unit(UnitType::Warriors)],
-        }
-    }
-
     pub fn current(&self) -> &CityProduct {
         self.stack.first().expect("One item is mandatory")
     }

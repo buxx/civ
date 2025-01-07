@@ -22,7 +22,6 @@ pub struct CityGenerator<'a> {
     context: &'a RunnerContext,
     game_frame: &'a GameFrame,
     from: BuildCityFrom<'a>,
-    previous: Option<&'a City>,
 }
 
 pub enum BuildCityFrom<'a> {
@@ -67,11 +66,11 @@ impl BuildCityFrom<'_> {
 
 impl CityGenerator<'_> {
     pub fn generate(&self) -> Result<City, TaskError> {
-        let default_production = CityProduction::default();
-        let city_id = self.from.id().map(|i| *i).unwrap_or(Uuid::new_v4());
+        let default_production = self.context.default_production();
+        let city_id = self.from.id().copied().unwrap_or(Uuid::new_v4());
         let tasks = CityTasks::new(production_task(
-            &self.context.context.rules(),
-            &self.game_frame,
+            self.context.context.rules(),
+            self.game_frame,
             &self.from,
             &city_id,
             default_production.current(),
@@ -86,7 +85,7 @@ impl CityGenerator<'_> {
             .production(
                 self.from
                     .production()
-                    .unwrap_or(&CityProduction::default())
+                    .unwrap_or(&self.context.default_production())
                     .clone(),
             )
             .tasks(tasks)
@@ -95,6 +94,11 @@ impl CityGenerator<'_> {
     }
 }
 
+type FromProduction<'a> = (
+    Option<(GameFrame, &'a CityProductionTons, &'a CityProduct)>,
+    (&'a CityProductionTons, &'a CityProduct),
+);
+
 fn production_task(
     rules: &RuleSetBox,
     game_frame: &GameFrame,
@@ -102,10 +106,7 @@ fn production_task(
     city_id: &Uuid,
     default_product: &CityProduct,
 ) -> CityProductionTask {
-    let (previous, current): (
-        Option<(GameFrame, &CityProductionTons, &CityProduct)>,
-        (&CityProductionTons, &CityProduct),
-    ) = match from {
+    let (previous, current): FromProduction = match from {
         BuildCityFrom::Scratch(_, _) => (
             None,
             // FIXME BS NOW: for "current" tons, need to determine "new" city exploitation

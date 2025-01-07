@@ -1,6 +1,10 @@
 use bon::Builder;
 use common::{
-    game::{GameFrame, GAME_FRAMES_PER_SECOND},
+    game::{
+        city::{CityProduct, CityProduction},
+        unit::UnitType,
+        GameFrame, GAME_FRAMES_PER_SECOND,
+    },
     network::message::{
         ClientStateMessage, ClientToServerCityMessage, ClientToServerMessage,
         ClientToServerUnitMessage, NotificationLevel, ServerToClientMessage,
@@ -61,6 +65,11 @@ impl RunnerContext {
         self.state
             .read()
             .expect("Assume state is always accessible")
+    }
+
+    pub fn default_production(&self) -> CityProduction {
+        // Default according to context (warrior, then phalanx, etc) and tons
+        CityProduction::new(vec![CityProduct::Unit(UnitType::Warriors)])
     }
 }
 

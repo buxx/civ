@@ -53,9 +53,9 @@ impl IntoClientModel<ClientUnit> for Unit {
     fn into_client(self, _state: &RwLockReadGuard<State>) -> ClientUnit {
         ClientUnit::builder()
             .id(self.id())
-            .type_(self.type_().clone())
+            .type_(*self.type_())
             .maybe_task(self.task.clone().map(|t| t.into()))
-            .geo(self.geo().clone())
+            .geo(*self.geo())
             .build()
     }
 }
