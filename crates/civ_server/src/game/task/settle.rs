@@ -13,12 +13,13 @@ use uuid::Uuid;
 
 use crate::{
     context::Context,
+    effect::Effect,
     game::unit::Unit,
     runner::RunnerContext,
     state::State,
     task::{
-        effect::Effect, unit::UnitTaskWrapper, CityName, Concern, Task, TaskBox, TaskContext,
-        TaskError, Then, ThenTransformUnitIntoCity, WithUnit,
+        unit::UnitTaskWrapper, CityName, Concern, Task, TaskBox, TaskContext, TaskError, Then,
+        ThenTransformUnitIntoCity, WithUnit,
     },
 };
 

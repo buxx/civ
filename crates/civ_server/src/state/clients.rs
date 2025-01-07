@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use common::{geo::GeoContext, space::window::Window};
 use uuid::Uuid;
 
-use crate::task::effect::ClientEffect;
+use crate::effect::ClientEffect;
 
 #[derive(Default)]
 pub struct Clients {
@@ -37,7 +37,8 @@ impl Clients {
             .filter(|(_, state)| {
                 state
                     .window
-                    .as_ref().map(|w| w.contains(geo))
+                    .as_ref()
+                    .map(|w| w.contains(geo))
                     .unwrap_or(false)
             })
             .map(|(uuid, _)| *uuid)

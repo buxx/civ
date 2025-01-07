@@ -7,11 +7,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
+    effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
     game::{city::City, unit::Unit},
-    task::{
-        effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
-        TaskBox,
-    },
+    task::TaskBox,
 };
 
 pub mod index;

@@ -6,18 +6,17 @@ use common::{
 };
 use core::fmt::Debug;
 use dyn_clone::DynClone;
-use effect::Effect;
 use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
+    effect::{self, Effect},
     game::{city::City, unit::Unit},
     runner::RunnerContext,
     state::StateError,
 };
 
 pub mod city;
-pub mod effect;
 pub mod unit;
 
 pub type TaskBox = Box<dyn Task + Send + Sync>;

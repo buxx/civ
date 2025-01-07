@@ -7,8 +7,9 @@ use common::game::{
 use uuid::Uuid;
 
 use crate::{
+    effect::Effect,
     runner::RunnerContext,
-    task::{effect::Effect, Concern, Task, TaskBox, TaskContext, TaskError, Then},
+    task::{Concern, Task, TaskBox, TaskContext, TaskError, Then},
 };
 
 #[derive(Debug, Builder, Clone)]
@@ -37,16 +38,6 @@ impl Task for CityProductionTask {
         &self.context
     }
 }
-
-// impl CityTask for CityProductionTask {
-//     fn city_task_type(&self) -> CityTaskType {
-//         CityTaskType::Production(self.tons)
-//     }
-
-//     fn into_task(&self) -> TaskBox {
-//         Box::new(self.clone())
-//     }
-// }
 
 impl Then for CityProductionTask {
     fn then(&self, _context: &RunnerContext) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError> {

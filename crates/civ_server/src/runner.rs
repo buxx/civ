@@ -24,12 +24,12 @@ use uuid::Uuid;
 
 use crate::{
     context::Context,
+    effect::{self, Effect, StateEffect, TaskEffect},
     game::task::settle::Settle,
     request::SetWindowRequestDealer,
     state::{NoLongerExist, State, StateError},
     task::{
         city::{BuildCityFrom, BuildCityFromChange, CityGenerator},
-        effect::{self, Effect, StateEffect, TaskEffect},
         Concern, TaskError,
     },
     world::reader::WorldReader,
@@ -450,8 +450,8 @@ mod test {
     };
 
     use crate::{
+        effect::{self},
         game::unit::Unit,
-        task::effect::{self},
         FromClientsChannels, ToClientsChannels,
     };
 

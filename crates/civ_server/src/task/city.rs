@@ -75,7 +75,7 @@ impl CityGenerator<'_> {
             &city_id,
             default_production.current(),
         ));
-        // FIXME: tons according to exploitation (according to geo ...)
+        // TODO: tons according to exploitation (according to geo ...)
         let exploitation = CityExploitation::new(CityProductionTons(1));
 
         Ok(City::builder()
@@ -361,5 +361,5 @@ mod test {
         assert_eq!(task.context().end(), GameFrame(expected_end));
     }
 
-    // FIXME: test with change to unit (will produce excess)
+    // TODO: test with change to unit (will produce excess)
 }

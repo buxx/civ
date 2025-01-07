@@ -7,10 +7,10 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
+    effect::{CityEffect, Effect, StateEffect, UnitEffect},
     game::{city::City, unit::Unit, IntoClientModel},
     runner::Runner,
     state::StateError,
-    task::effect::{CityEffect, Effect, StateEffect, UnitEffect},
 };
 
 impl Runner {

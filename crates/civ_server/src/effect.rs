@@ -3,9 +3,8 @@ use uuid::Uuid;
 
 use crate::game::{city::City, unit::Unit};
 
-use super::{Concern, TaskBox};
+use crate::task::{Concern, TaskBox};
 
-// FIXME: Move this mod into state
 #[derive(Debug, Clone)]
 pub enum Effect {
     State(StateEffect),

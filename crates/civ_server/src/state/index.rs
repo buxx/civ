@@ -7,11 +7,9 @@ use common::{
 use uuid::Uuid;
 
 use crate::{
+    effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
     game::{city::City, unit::Unit},
-    task::{
-        effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
-        Concern, TaskBox,
-    },
+    task::{Concern, TaskBox},
 };
 
 #[derive(Default)]

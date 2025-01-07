@@ -16,12 +16,12 @@ use std::{
     sync::{Arc, RwLock},
     thread,
 };
-use task::effect::{self};
 use thiserror::Error;
 use uuid::Uuid;
 use world::reader::{WorldReader, WorldReaderError};
 
 mod context;
+mod effect;
 mod game;
 mod network;
 mod reflect;

@@ -5,9 +5,9 @@ use common::{
 use uuid::Uuid;
 
 use crate::{
+    effect::{ClientEffect, Effect, StateEffect},
     game::extractor::Extractor,
     runner::{RunnerContext, RunnerError},
-    task::effect::{ClientEffect, Effect, StateEffect},
 };
 
 pub struct SetWindowRequestDealer {
