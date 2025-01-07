@@ -116,6 +116,7 @@ impl Index {
         for effect in effects {
             match effect {
                 Effect::State(effect) => match effect {
+                    StateEffect::IncrementGameFrame => {}
                     StateEffect::Client(_, _) => {}
                     StateEffect::Tasks(effect) => match effect {
                         TasksEffect::Remove(tasks) => {

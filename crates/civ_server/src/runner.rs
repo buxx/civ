@@ -6,8 +6,8 @@ use common::{
         GameFrame, GAME_FRAMES_PER_SECOND,
     },
     network::message::{
-        ClientStateMessage, ClientToServerCityMessage, ClientToServerMessage,
-        ClientToServerUnitMessage, NotificationLevel, ServerToClientMessage,
+        ClientToServerCityMessage, ClientToServerMessage, ClientToServerUnitMessage,
+        NotificationLevel, ServerToClientMessage,
     },
     task::{CreateTaskError, GamePlayReason},
 };
@@ -137,7 +137,7 @@ impl Runner {
     fn do_one_iteration(&mut self) {
         let tick_start = Instant::now();
 
-        // FIXME: do client requests in thread pool to not block task tick
+        // TODO: do client requests in thread pool to not block task tick
         // and solve all effects here by reading channel
         let effects = self.clients();
         self.apply_effects(effects);
@@ -185,20 +185,7 @@ impl Runner {
         let increment_each = self.tick_base_period / GAME_FRAMES_PER_SECOND;
         if self.ticks_since_last_increment >= increment_each {
             self.ticks_since_last_increment = 0;
-            self.state_mut().increment();
-
-            // FIXME: By message reflect instead this algo
-            let client_ids = self.state().clients().client_ids();
-            let frame = *self.state().frame();
-            for client_id in client_ids {
-                self.context
-                    .to_client_sender
-                    .send((
-                        client_id,
-                        ServerToClientMessage::State(ClientStateMessage::SetGameFrame(frame)),
-                    ))
-                    .unwrap();
-            }
+            self.apply_effects(vec![Effect::State(StateEffect::IncrementGameFrame)])
         }
         self.ticks_since_last_increment += 1;
     }
@@ -456,6 +443,7 @@ mod test {
             GameFrame,
         },
         geo::{Geo, GeoContext, WorldPoint},
+        network::message::ClientStateMessage,
         rules::std1::Std1RuleSet,
         space::window::{DisplayStep, SetWindow, Window},
         world::{partial::PartialWorld, TerrainType, Tile},

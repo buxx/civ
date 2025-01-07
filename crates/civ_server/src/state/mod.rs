@@ -43,7 +43,7 @@ impl State {
         &mut self.clients
     }
 
-    pub fn increment(&mut self) {
+    pub fn increment_frame(&mut self) {
         self.frame_i += GameFrame(1);
     }
 
@@ -53,6 +53,9 @@ impl State {
         for effect in effects {
             match effect {
                 Effect::State(effect) => match effect {
+                    StateEffect::IncrementGameFrame => {
+                        self.increment_frame();
+                    }
                     StateEffect::Client(uuid, effect) => {
                         self.clients.apply(*uuid, effect);
                     }

@@ -13,6 +13,7 @@ pub enum Effect {
 
 #[derive(Debug, Clone)]
 pub enum StateEffect {
+    IncrementGameFrame,
     Client(Uuid, ClientEffect),
     Tasks(TasksEffect),
     Task(Uuid, TaskEffect),

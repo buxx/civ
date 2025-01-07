@@ -74,7 +74,6 @@ impl ClientCity {
 
 #[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientCityTasks {
-    // FIXME BS NOW: client version like for unit
     production: ClientCityProductionTask,
 }
 
@@ -113,82 +112,3 @@ impl ClientUnit {
         &self.task
     }
 }
-
-// // FIXME BS NOW: revoir archi pour task client unit/city
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct ClientConcreteTask {
-//     id: Uuid,
-//     task: TaskType,
-//     start: GameFrame,
-//     end: GameFrame,
-// }
-
-// impl ClientConcreteTask {
-//     pub fn new(id: Uuid, task: TaskType, start: GameFrame, end: GameFrame) -> Self {
-//         Self {
-//             id,
-//             task,
-//             start,
-//             end,
-//         }
-//     }
-
-//     pub fn id(&self) -> Uuid {
-//         self.id
-//     }
-
-//     pub fn progress(&self, frame: &GameFrame) -> f32 {
-//         let total = self.end.0 - self.start.0;
-//         let current = frame.0 - self.start.0;
-//         current as f32 / total as f32
-//     }
-// }
-
-// impl ClientTask for ClientConcreteTask {
-//     fn id(&self) -> &Uuid {
-//         &self.id
-//     }
-
-//     fn display(&self, frame: &GameFrame) -> String {
-//         format!("{} ({}%)", self.task, (self.progress(frame) * 100.0) as u8)
-//     }
-// }
-
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct ClientCityTask {
-//     id: Uuid,
-//     task: TaskType,
-//     start: GameFrame,
-//     end: GameFrame,
-// }
-
-// impl ClientCityTask {
-//     pub fn new(id: Uuid, task: TaskType, start: GameFrame, end: GameFrame) -> Self {
-//         Self {
-//             id,
-//             task,
-//             start,
-//             end,
-//         }
-//     }
-
-//     pub fn id(&self) -> Uuid {
-//         self.id
-//     }
-
-//     pub fn progress(&self, frame: &GameFrame) -> f32 {
-//         let total = self.end.0 - self.start.0;
-//         let current = frame.0 - self.start.0;
-//         current as f32 / total as f32
-//     }
-// }
-
-// impl ClientTask for ClientCityTask {
-//     fn id(&self) -> &Uuid {
-//         &self.id
-//     }
-
-//     fn display(&self, frame: &GameFrame) -> String {
-//         format!("{} ({}%)", self.task, (self.progress(frame) * 100.0) as u8)
-//     }
-// }

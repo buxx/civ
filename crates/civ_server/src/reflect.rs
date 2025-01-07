@@ -60,8 +60,20 @@ impl Runner {
                     UnitEffect::Replace(unit) => self.set_unit_reflects(unit),
                     UnitEffect::Remove(unit) => self.removed_unit_reflects(unit),
                 },
+                StateEffect::IncrementGameFrame => self.increment_game_frame_reflects(),
             },
         }
+    }
+
+    fn increment_game_frame_reflects(
+        &self,
+    ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+        let client_ids = self.state().clients().client_ids();
+        let frame = *self.state().frame();
+        Ok(Some((
+            ServerToClientMessage::State(ClientStateMessage::SetGameFrame(frame)),
+            client_ids,
+        )))
     }
 
     fn set_city_reflects(

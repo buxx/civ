@@ -109,7 +109,7 @@ fn production_task(
     let (previous, current): FromProduction = match from {
         BuildCityFrom::Scratch(_, _) => (
             None,
-            // FIXME BS NOW: for "current" tons, need to determine "new" city exploitation
+            // TODO: for "current" tons, need to determine with "new" city exploitation
             (&CityProductionTons(1), default_product),
         ),
         BuildCityFrom::Change(city, BuildCityFromChange::Production(production)) => (
