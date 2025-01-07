@@ -100,7 +100,7 @@ impl WorldReader {
 }
 
 pub fn tiles_from_window<'a>(
-    world_tiles: &'a Vec<Tile>,
+    world_tiles: &'a [Tile],
     window: &Window,
     world_width: u64,
 ) -> Vec<&'a Tile> {

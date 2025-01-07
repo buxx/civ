@@ -27,7 +27,7 @@ pub struct Index {
 }
 
 impl Index {
-    pub fn reindex_cities(&mut self, cities: &Vec<City>) {
+    pub fn reindex_cities(&mut self, cities: &[City]) {
         self.cities_index.clear();
         self.cities_xy.clear();
         self.xy_cities.clear();
@@ -39,7 +39,7 @@ impl Index {
         }
     }
 
-    pub fn reindex_units(&mut self, units: &Vec<Unit>) {
+    pub fn reindex_units(&mut self, units: &[Unit]) {
         self.units_index.clear();
         self.units_xy.clear();
         self.xy_units.clear();
@@ -109,7 +109,7 @@ impl Index {
         units
     }
 
-    pub fn apply(&mut self, effects: &Vec<Effect>, cities: &Vec<City>, units: &Vec<Unit>) {
+    pub fn apply(&mut self, effects: &Vec<Effect>, cities: &[City], units: &[Unit]) {
         let mut reindex_cities = false;
         let mut reindex_units = false;
 
