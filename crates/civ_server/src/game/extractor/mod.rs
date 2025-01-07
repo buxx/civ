@@ -12,17 +12,13 @@ use crate::{state::State, world::reader::WorldReader};
 
 use super::IntoClientModel;
 
-// FIXME: lifetime not required ?
-pub struct Extractor<'a, 'b> {
-    state: &'a RwLockReadGuard<'a, State>,
-    world: &'b RwLockReadGuard<'b, WorldReader>,
+pub struct Extractor<'a> {
+    state: RwLockReadGuard<'a, State>,
+    world: RwLockReadGuard<'a, WorldReader>,
 }
 
-impl<'a, 'b> Extractor<'a, 'b> {
-    pub fn new(
-        state: &'a RwLockReadGuard<'a, State>,
-        world: &'b RwLockReadGuard<'b, WorldReader>,
-    ) -> Self {
+impl<'a> Extractor<'a> {
+    pub fn new(state: RwLockReadGuard<'a, State>, world: RwLockReadGuard<'a, WorldReader>) -> Self {
         Self { state, world }
     }
 
@@ -58,7 +54,7 @@ impl<'a, 'b> Extractor<'a, 'b> {
                 )
             })
             .map(|(uuid, index)| self.state.city(*index, &uuid).unwrap())
-            .map(|city| city.clone().into_client(self.state))
+            .map(|city| city.clone().into_client(&self.state))
             .collect::<Vec<ClientCity>>()
     }
 
@@ -77,7 +73,7 @@ impl<'a, 'b> Extractor<'a, 'b> {
                 )
             })
             .map(|(uuid, index)| self.state.unit(*index, &uuid).unwrap())
-            .map(|unit| unit.clone().into_client(self.state))
+            .map(|unit| unit.clone().into_client(&self.state))
             .collect::<Vec<ClientUnit>>()
     }
 }

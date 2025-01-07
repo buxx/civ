@@ -30,9 +30,8 @@ impl SetWindowRequestDealer {
         );
 
         let new_game_slice = Extractor::new(
-            &self.context.state(),
-            &self
-                .context
+            self.context.state(),
+            self.context
                 .world
                 .read()
                 .expect("Consider world as always readable"),
