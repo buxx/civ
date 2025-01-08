@@ -1,0 +1,7 @@
+name: 'Install dependencies'
+description: 'Install project OS dependencies (according using Ubuntu)'
+runs:
+  using: "composite"
+  steps:
+    - run: echo no deps for now
+      shell: bash
