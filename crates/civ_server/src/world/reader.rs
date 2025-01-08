@@ -87,7 +87,7 @@ impl WorldReader {
     }
 
     pub fn window_tiles(&self, window: &Window) -> Vec<&Tile> {
-        tiles_from_window(&self.tiles, window, self.width)
+        tiles_from_window(&self.tiles, window, self.width, self.height)
     }
 
     pub fn width(&self) -> u64 {
@@ -103,13 +103,18 @@ pub fn tiles_from_window<'a>(
     world_tiles: &'a [Tile],
     window: &Window,
     world_width: u64,
+    world_height: u64,
 ) -> Vec<&'a Tile> {
     let mut tiles = vec![];
 
-    for y in window.start_y()..window.end_y() + 1 {
-        let line_start_index = y * world_width + window.start_x();
-        let line_end_index = y * world_width + window.end_x();
-        // FIXME: manage window outside world
+    let window_start_x = window.start_x();
+    let window_start_y = window.start_y();
+    let window_end_x = window.end_x().min(world_width - 1);
+    let window_end_y = window.end_y().min(world_height - 1);
+
+    for y in window_start_y..window_end_y + 1 {
+        let line_start_index = y * world_width + window_start_x;
+        let line_end_index = y * world_width + window_end_x;
         let line_tiles = &world_tiles[line_start_index as usize..=line_end_index as usize];
         tiles.extend(line_tiles);
     }
@@ -182,13 +187,15 @@ mod test {
             },
         ];
         let world_width = 4;
+        let world_height = 4;
         let window = Window::new(1, 1, 3, 3, DisplayStep::Close);
 
         // WHEN
-        let window_tiles: Vec<Tile> = tiles_from_window(&world_tiles, &window, world_width)
-            .into_iter()
-            .cloned()
-            .collect();
+        let window_tiles: Vec<Tile> =
+            tiles_from_window(&world_tiles, &window, world_width, world_height)
+                .into_iter()
+                .cloned()
+                .collect();
 
         // THEN
         assert_eq!(
@@ -225,6 +232,45 @@ mod test {
                     type_: TerrainType::GrassLand,
                 },
             ]
+        );
+    }
+
+    #[rstest]
+    fn test_tiles_from_window_outside() {
+        // GIVEN
+        let world_tiles = vec![
+            // line 0
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            Tile {
+                type_: TerrainType::Plain,
+            },
+            // line 1
+            Tile {
+                type_: TerrainType::GrassLand,
+            },
+            Tile {
+                type_: TerrainType::Plain,
+            },
+        ];
+        let world_width = 2;
+        let world_height = 2;
+        let window = Window::new(1, 1, 10, 10, DisplayStep::Close);
+
+        // WHEN
+        let window_tiles: Vec<Tile> =
+            tiles_from_window(&world_tiles, &window, world_width, world_height)
+                .into_iter()
+                .cloned()
+                .collect();
+
+        // THEN
+        assert_eq!(
+            window_tiles,
+            vec![Tile {
+                type_: TerrainType::Plain,
+            },]
         );
     }
 }

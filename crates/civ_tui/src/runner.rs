@@ -28,7 +28,7 @@ pub struct Runner {
 
 impl Runner {
     pub fn run(&mut self) {
-        // FIXME clean
+        // TODO clean
         let from_server_receiver = self.from_server_receiver.clone();
         let state = Arc::clone(&self.state);
         thread::spawn(move || {

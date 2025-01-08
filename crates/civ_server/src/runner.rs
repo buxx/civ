@@ -491,8 +491,8 @@ mod test {
             let mut state = State::default();
             let world = WorldReader::new(
                 PathBuf::new(),
-                1,
-                1,
+                2,
+                2,
                 vec![
                     Tile::new(TerrainType::GrassLand),
                     Tile::new(TerrainType::GrassLand),
