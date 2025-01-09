@@ -42,4 +42,4 @@ jobs:
           # Enable Job Summary for PRs
           summary-always: true
           # Mention @rhysd in the commit comment
-          alert-comment-cc-users: '@rhysd'
+          alert-comment-cc-users: '@buxx'
