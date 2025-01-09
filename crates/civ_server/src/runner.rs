@@ -12,8 +12,7 @@ use common::{
     task::{CreateTaskError, GamePlayReason},
 };
 use crossbeam::channel::{unbounded, Receiver, Sender};
-use log::{error, info};
-use rayon::{Scope, ThreadPoolBuilder};
+use log::{debug, error, info};
 use std::{
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
     thread,
@@ -97,6 +96,8 @@ pub struct Runner {
     ticks_since_last_stats: u64,
     #[builder(default = Instant::now())]
     last_stat: Instant,
+    #[builder(default = vec![])]
+    workers_channels: Vec<(Sender<()>, Receiver<Vec<Effect>>)>,
 }
 
 #[derive(Debug, Error)]
@@ -129,12 +130,56 @@ impl Runner {
     }
 
     pub fn run(&mut self) {
+        self.setup_workers();
+
         while !self.context.context.stop_is_required() {
             self.do_one_iteration();
         }
     }
 
-    fn do_one_iteration(&mut self) {
+    pub fn setup_workers(&mut self) {
+        let workers_count = num_cpus::get();
+
+        for i in 0..workers_count {
+            let (start_work_sender, start_work_receiver) = unbounded();
+            let (results_sender, results_receiver) = unbounded();
+
+            self.workers_channels
+                .push((start_work_sender, results_receiver));
+
+            let state = Arc::clone(&self.context.state);
+            let context = self.context.clone();
+            thread::spawn(move || {
+                while start_work_receiver.recv().is_ok() {
+                    let state = state.read().expect("Assume state is always accessible");
+                    let frame = *state.frame();
+                    let tasks_count = state.tasks().len();
+                    let slices = slices(tasks_count, workers_count);
+                    let tasks = state.tasks();
+                    let (start, end) = slices[i];
+                    let mut effects = vec![];
+
+                    for task in &tasks[start..end] {
+                        match tick_task(&context, task, &frame) {
+                            Ok(effects_) => effects.extend(effects_),
+                            Err(e) => {
+                                eprintln!("Error when tasks execution: {}. Abort.", e);
+                                context.context.require_stop();
+                                return;
+                            }
+                        };
+                    }
+
+                    if results_sender.send(effects).is_err() {
+                        error!("Channel closed in tasks scope: abort");
+                        return;
+                    }
+                }
+            });
+        }
+    }
+
+    pub fn do_one_iteration(&mut self) {
         let tick_start = Instant::now();
 
         // TODO: do client requests in thread pool to not block task tick
@@ -218,7 +263,7 @@ impl Runner {
     fn fps_target(&mut self, tick_start: Instant) {
         let tick_duration = Instant::now() - tick_start;
         let sleep_target_ns: u64 = 1_000_000_000 / self.tick_base_period;
-        let sleep_target = Duration::from_nanos(sleep_target_ns);
+        let sleep_target: Duration = Duration::from_nanos(sleep_target_ns);
         let need_sleep = sleep_target
             - Duration::from_nanos(
                 (tick_duration.as_nanos() as u64).min(sleep_target.as_nanos() as u64),
@@ -230,80 +275,19 @@ impl Runner {
     }
 
     fn tick(&mut self) -> Vec<Effect> {
-        let workers_count = num_cpus::get();
-        let (tx, rx): (Sender<Vec<Effect>>, Receiver<Vec<Effect>>) = unbounded();
-        ThreadPoolBuilder::new()
-            .num_threads(workers_count)
-            .build()
-            .expect("Thread pool build must be stable")
-            .scope(|scope| self.tick_tasks_chunk(tx, scope, workers_count));
+        let mut effects = vec![];
 
-        rx.try_iter()
-            .collect::<Vec<Vec<Effect>>>()
-            .into_iter()
-            .flatten()
-            .collect()
-    }
-
-    fn tick_tasks_chunk<'a>(
-        &'a self,
-        tx: Sender<Vec<Effect>>,
-        scope: &Scope<'a>,
-        workers_count: usize,
-    ) {
-        let state = self.state();
-        let frame = *state.frame();
-        let tasks_count = state.tasks().len();
-        drop(state);
-
-        let state = Arc::new(&self.context.state);
-        for (start, end) in slices(tasks_count, workers_count) {
-            let state = Arc::clone(&state);
-            let tx = tx.clone();
-
-            let context = self.context.context.clone();
-            scope.spawn(move |_| {
-                let state = state.read().expect("Assume state is always accessible");
-                let tasks = state.tasks();
-                for task in &tasks[start..end] {
-                    let effects_ = match self.tick_task(task, &frame) {
-                        Ok(effects_) => effects_,
-                        Err(e) => {
-                            eprintln!("Error when tasks execution: {}. Abort.", e);
-                            context.require_stop();
-                            return;
-                        }
-                    };
-                    if tx.send(effects_).is_err() {
-                        error!("Channel closed in tasks scope: abort");
-                        return;
-                    }
-                }
-            })
-        }
-    }
-
-    fn tick_task(&self, task: &TaskBox, frame: &GameFrame) -> Result<Vec<Effect>, TaskError> {
-        let mut effects = task.tick(*frame);
-
-        if task.context().is_finished(*frame) {
-            effects.push(Effect::State(StateEffect::Task(
-                task.context().id(),
-                TaskEffect::Finished(task.clone()),
-            )));
-
-            let (then_effects, then_tasks) = task.then(&self.context)?;
-            effects.extend(then_effects);
-
-            for task in then_tasks {
-                effects.push(Effect::State(StateEffect::Task(
-                    task.context().id(),
-                    TaskEffect::Push(task),
-                )));
+        for (i, (start_sender, _)) in self.workers_channels.iter().enumerate() {
+            if start_sender.send(()).is_err() {
+                debug!("Worker {} start channel is closed", i)
             }
         }
 
-        Ok(effects)
+        for (_, results_receiver) in &self.workers_channels {
+            effects.extend(results_receiver.recv().unwrap_or_default());
+        }
+
+        effects
     }
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
@@ -396,6 +380,33 @@ impl Runner {
             effect::add_tasks(new_tasks),
         ])
     }
+}
+
+fn tick_task(
+    context: &RunnerContext,
+    task: &TaskBox,
+    frame: &GameFrame,
+) -> Result<Vec<Effect>, TaskError> {
+    let mut effects = task.tick(*frame);
+
+    if task.context().is_finished(*frame) {
+        effects.push(Effect::State(StateEffect::Task(
+            task.context().id(),
+            TaskEffect::Finished(task.clone()),
+        )));
+
+        let (then_effects, then_tasks) = task.then(context)?;
+        effects.extend(then_effects);
+
+        for task in then_tasks {
+            effects.push(Effect::State(StateEffect::Task(
+                task.context().id(),
+                TaskEffect::Push(task),
+            )));
+        }
+    }
+
+    Ok(effects)
 }
 
 impl From<CreateTaskError> for RunnerError {

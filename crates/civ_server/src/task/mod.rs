@@ -33,6 +33,7 @@ dyn_clone::clone_trait_object!(Task);
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Concern {
+    Nothing,
     Unit(Uuid),
     City(Uuid),
 }

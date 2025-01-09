@@ -39,6 +39,7 @@ impl Runner {
     ) -> Result<Option<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
         match effect {
             Effect::State(effect) => match effect {
+                StateEffect::Testing => Ok(None),
                 StateEffect::Client(_, _) => Ok(None),
                 StateEffect::Task(_, _) => {
                     // Task are reflected into City & Unit in server side,

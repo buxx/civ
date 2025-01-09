@@ -18,6 +18,7 @@ pub enum StateEffect {
     Task(Uuid, TaskEffect),
     City(Uuid, CityEffect),
     Unit(Uuid, UnitEffect),
+    Testing,
 }
 
 #[derive(Debug, Clone)]

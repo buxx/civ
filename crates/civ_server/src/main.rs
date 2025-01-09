@@ -1,16 +1,17 @@
+use civ_server::context::Context;
+use civ_server::game::unit::Unit;
+use civ_server::network::Network;
+use civ_server::runner::{Runner, RunnerContext};
+use civ_server::state::State;
+use civ_server::world::reader::{WorldReader, WorldReaderError};
+use civ_server::{effect, FromClientsChannels, ToClientsChannels};
 use common::{
     game::unit::UnitType,
     geo::{GeoContext, WorldPoint},
-    network::message::{ClientToServerMessage, ServerToClientMessage},
     rules::std1::Std1RuleSet,
 };
-use context::Context;
-use crossbeam::channel::{unbounded, Receiver, Sender};
-use game::unit::Unit;
+use crossbeam::channel::unbounded;
 use log::info;
-use network::Network;
-use runner::{Runner, RunnerContext};
-use state::State;
 use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
@@ -18,19 +19,6 @@ use std::{
 };
 use thiserror::Error;
 use uuid::Uuid;
-use world::reader::{WorldReader, WorldReaderError};
-
-mod context;
-mod effect;
-mod game;
-mod network;
-mod reflect;
-mod request;
-mod runner;
-mod state;
-mod task;
-mod utils;
-mod world;
 
 pub const TICK_BASE_PERIOD: u64 = 60;
 
@@ -41,15 +29,6 @@ enum Error {
     #[error("World error: {0}")]
     World(#[from] WorldReaderError),
 }
-
-type FromClientsChannels = (
-    Sender<(Uuid, ClientToServerMessage)>,
-    Receiver<(Uuid, ClientToServerMessage)>,
-);
-type ToClientsChannels = (
-    Sender<(Uuid, ServerToClientMessage)>,
-    Receiver<(Uuid, ServerToClientMessage)>,
-);
 
 fn main() -> Result<(), Error> {
     let env = env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info");
