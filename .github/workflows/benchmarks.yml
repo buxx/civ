@@ -14,10 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      # Run benchmark and stores the output to a file
+      - run: rustup toolchain update nightly && rustup default nightly
       - name: Run benchmark
-        run: cargo bench -- --output-format bencher | tee output.txt
+        run: cargo +nightly bench -- --output-format bencher | tee output.txt
       # Download previous benchmark result from cache (if exists)
       - name: Download previous benchmark data
         uses: actions/cache@v4
