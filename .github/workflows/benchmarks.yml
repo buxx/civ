@@ -23,7 +23,7 @@ jobs:
         with:
           path: ./cache
           key: ${{ runner.os }}-benchmark
-      # Run `github-action-benchmark` action
+      # Run action
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
