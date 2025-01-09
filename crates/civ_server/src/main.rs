@@ -36,8 +36,8 @@ fn main() -> Result<(), Error> {
 
     let rules = Std1RuleSet;
     let mut state = State::default();
-    // HACK
     let world_source = PathBuf::from("./world");
+    // HACK
     let uuid = Uuid::new_v4();
     state.apply(&vec![effect::new_unit(
         Unit::builder()
