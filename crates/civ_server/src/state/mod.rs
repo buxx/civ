@@ -22,6 +22,7 @@ pub struct State {
     tasks: Vec<TaskBox>,
     cities: Vec<City>,
     units: Vec<Unit>,
+    testing: u64,
 }
 
 impl State {
@@ -31,6 +32,10 @@ impl State {
 
     pub fn tasks(&self) -> &Vec<TaskBox> {
         &self.tasks
+    }
+
+    pub fn tasks_mut(&mut self) -> &mut Vec<TaskBox> {
+        &mut self.tasks
     }
 
     pub fn clients(&self) -> &Clients {
@@ -93,6 +98,9 @@ impl State {
                             *self.find_unit_mut(uuid).unwrap() = unit.clone();
                         }
                     },
+                    StateEffect::Testing => {
+                        self.testing += 1;
+                    }
                 },
             }
         }
@@ -191,12 +199,20 @@ impl State {
         &self.units
     }
 
+    pub fn units_mut(&mut self) -> &mut Vec<Unit> {
+        &mut self.units
+    }
+
     pub fn index(&self) -> &Index {
         &self.index
     }
 
     pub fn index_mut(&mut self) -> &mut Index {
         &mut self.index
+    }
+
+    pub fn testing(&self) -> u64 {
+        self.testing
     }
 }
 

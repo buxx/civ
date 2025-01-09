@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "bincode",
+        "fibonacci",
         "nanos",
         "reindex",
         "rstest",

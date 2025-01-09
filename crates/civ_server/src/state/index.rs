@@ -69,6 +69,7 @@ impl Index {
                     .entry(uuid)
                     .or_default()
                     .push(task.context().id()),
+                Concern::Nothing => {}
             }
         }
     }
@@ -156,6 +157,7 @@ impl Index {
                             self.units_xy.remove(&unit.id());
                         }
                     },
+                    StateEffect::Testing => {}
                 },
             }
         }
@@ -181,6 +183,7 @@ impl Index {
                 .entry(uuid)
                 .or_default()
                 .push(task.context().id()),
+            Concern::Nothing => {}
         }
     }
 
@@ -196,6 +199,7 @@ impl Index {
                 .entry(*uuid)
                 .or_default()
                 .retain(|id| id != task_id),
+            Concern::Nothing => {}
         }
     }
 

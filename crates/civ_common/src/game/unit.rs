@@ -23,6 +23,7 @@ impl Display for UnitType {
 pub enum TaskType {
     City(CityTaskType),
     Unit(UnitTaskType),
+    Testing,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -40,6 +41,7 @@ impl Display for TaskType {
         match self {
             TaskType::Unit(UnitTaskType::Settle) => f.write_str("Settle"),
             TaskType::City(CityTaskType::Production(_)) => f.write_str("Production"),
+            TaskType::Testing => f.write_str("Testing"),
         }
     }
 }
