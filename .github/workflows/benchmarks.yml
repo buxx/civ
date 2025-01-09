@@ -43,3 +43,5 @@ jobs:
           summary-always: true
           # Mention @rhysd in the commit comment
           alert-comment-cc-users: '@buxx'
+          # Push and deploy GitHub pages branch automatically
+          auto-push: true
