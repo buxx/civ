@@ -17,7 +17,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       # Run benchmark and stores the output to a file
       - name: Run benchmark
-        run: cargo bench -- --output-format bencher | tee output.txt
+        run: cargo bench | tee output.txt
       # Download previous benchmark result from cache (if exists)
       - name: Download previous benchmark data
         uses: actions/cache@v4
@@ -29,7 +29,7 @@ jobs:
         uses: benchmark-action/github-action-benchmark@v1
         with:
           # What benchmark tool the output.txt came from
-          tool: 'rust'
+          tool: 'cargo'
           # Where the output from the benchmark tool is stored
           output-file-path: output.txt
           # Where the previous data file is stored

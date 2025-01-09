@@ -30,3 +30,6 @@ criterion = "0.5.1"
 [[bench]]
 name = "benchmarks"
 harness = false
+
+[profile.bench]
+lto = true
