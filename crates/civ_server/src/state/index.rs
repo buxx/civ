@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use common::{
     geo::{Geo, WorldPoint},
-    space::window::{DisplayStep, Window},
+    space::window::Window,
 };
 use uuid::Uuid;
 
@@ -75,7 +75,7 @@ impl Index {
     }
 
     pub fn xy_cities(&self, window: &Window) -> Vec<Uuid> {
-        if !DisplayStep::from_shape(window.shape()).include_cities() {
+        if !window.step().include_cities() {
             return vec![];
         }
 
@@ -92,7 +92,8 @@ impl Index {
     }
 
     pub fn xy_units(&self, window: &Window) -> Vec<Uuid> {
-        if !DisplayStep::from_shape(window.shape()).include_units() {
+        // TODO: prevent from client spoofing ? (used in bench)
+        if !window.step().include_units() {
             return vec![];
         }
 

@@ -56,6 +56,10 @@ impl Window {
             && point.y >= self.start_y
             && point.y <= self.end_y
     }
+
+    pub fn step(&self) -> &DisplayStep {
+        &self.step
+    }
 }
 
 impl Display for Window {
