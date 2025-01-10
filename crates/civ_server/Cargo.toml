@@ -28,7 +28,11 @@ rstest.workspace = true
 criterion = "0.5.1"
 
 [[bench]]
-name = "benchmarks"
+name = "tasks"
+harness = false
+
+[[bench]]
+name = "index"
 harness = false
 
 [profile.bench]
