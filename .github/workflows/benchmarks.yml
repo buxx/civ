@@ -43,3 +43,12 @@ jobs:
           alert-comment-cc-users: '@buxx'
           # Push and deploy GitHub pages branch automatically
           auto-push: true
+      - uses: bencherdev/bencher@main
+      - name: Track base branch benchmarks with Bencher
+        run: |
+          bencher run \
+            --file output.txt
+            --project civ \
+            --token '${{ secrets.BENCHER_API_TOKEN }}'
+            --adapter rust_criterion
+            --github-actions '${{ secrets.GITHUB_TOKEN }}'
