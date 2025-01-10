@@ -47,8 +47,8 @@ jobs:
       - name: Track base branch benchmarks with Bencher
         run: |
           bencher run \
-            --file output.txt
+            --file output.txt \
             --project civ \
-            --token '${{ secrets.BENCHER_API_TOKEN }}'
-            --adapter rust_criterion
+            --token '${{ secrets.BENCHER_API_TOKEN }}' \
+            --adapter rust_criterion \
             --github-actions '${{ secrets.GITHUB_TOKEN }}'
