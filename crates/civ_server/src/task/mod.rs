@@ -90,6 +90,7 @@ pub trait ThenTransformUnitIntoCity: WithUnit + CityName + Geo {
             .game_frame(context.state().frame())
             .from(BuildCityFrom::Scratch(
                 self.city_name().to_string(),
+                *self.unit().flag(),
                 *self.unit().geo(),
             ))
             .build()

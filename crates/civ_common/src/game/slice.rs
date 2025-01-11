@@ -6,6 +6,7 @@ use crate::{geo::GeoContext, world::partial::PartialWorld};
 
 use super::{
     city::{CityExploitation, CityProduction},
+    nation::flag::Flag,
     tasks::client::{city::production::ClientCityProductionTask, ClientTask},
     unit::UnitType,
     GameFrame,
@@ -43,6 +44,7 @@ impl GameSlice {
 #[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientCity {
     id: Uuid,
+    flag: Flag,
     name: String,
     geo: GeoContext,
     production: CityProduction,
@@ -57,6 +59,10 @@ impl ClientCity {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn flag(&self) -> &Flag {
+        &self.flag
     }
 
     pub fn geo(&self) -> &GeoContext {
@@ -86,6 +92,7 @@ impl ClientCityTasks {
 #[derive(Serialize, Deserialize, Clone, Builder, Debug, PartialEq)]
 pub struct ClientUnit {
     id: Uuid,
+    flag: Flag,
     type_: UnitType,
     geo: GeoContext,
     task: Option<ClientTask>,
@@ -94,6 +101,10 @@ pub struct ClientUnit {
 impl ClientUnit {
     pub fn id(&self) -> Uuid {
         self.id
+    }
+
+    pub fn flag(&self) -> &Flag {
+        &self.flag
     }
 
     pub fn geo(&self) -> &GeoContext {

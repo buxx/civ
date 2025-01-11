@@ -4,6 +4,7 @@ use bon::Builder;
 use common::{
     game::{
         city::{CityExploitation, CityProduction},
+        nation::flag::Flag,
         slice::ClientCity,
     },
     geo::Geo,
@@ -19,6 +20,7 @@ use super::IntoClientModel;
 #[derive(Debug, Builder, Clone)]
 pub struct City {
     id: Uuid,
+    flag: Flag,
     name: String,
     geo: GeoContext,
     production: CityProduction,
@@ -33,6 +35,10 @@ impl City {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn flag(&self) -> &Flag {
+        &self.flag
     }
 
     pub fn production(&self) -> &CityProduction {
@@ -69,12 +75,13 @@ impl Geo for City {
 impl IntoClientModel<ClientCity> for City {
     fn into_client(self, _state: &RwLockReadGuard<State>) -> ClientCity {
         ClientCity::builder()
-            .id(*self.id())
-            .geo(*self.geo())
+            .id(self.id)
+            .geo(self.geo)
             .name(self.name.clone())
             .production(self.production.clone())
             .exploitation(self.exploitation.clone())
             .tasks(self.tasks.clone().into())
+            .flag(self.flag)
             .build()
     }
 }

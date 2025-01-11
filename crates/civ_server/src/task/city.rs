@@ -2,6 +2,7 @@ use bon::Builder;
 use common::{
     game::{
         city::{CityExploitation, CityProduct, CityProduction, CityProductionTons},
+        nation::flag::Flag,
         slice::ClientCityTasks,
         GameFrame, FRAME_PRODUCTION_TONS_RATIO, PRODUCTION_FRAMES_PER_TONS,
     },
@@ -25,7 +26,7 @@ pub struct CityGenerator<'a> {
 }
 
 pub enum BuildCityFrom<'a> {
-    Scratch(String, GeoContext),
+    Scratch(String, Flag, GeoContext),
     Change(&'a City, BuildCityFromChange),
 }
 
@@ -37,28 +38,35 @@ pub enum BuildCityFromChange {
 impl BuildCityFrom<'_> {
     pub fn id(&self) -> Option<&Uuid> {
         match self {
-            BuildCityFrom::Scratch(_, _) => None,
+            BuildCityFrom::Scratch(_, _, _) => None,
             BuildCityFrom::Change(city, _) => Some(city.id()),
         }
     }
 
     pub fn name(&self) -> &str {
         match self {
-            BuildCityFrom::Scratch(city_name, _) => city_name,
+            BuildCityFrom::Scratch(city_name, _, _) => city_name,
             BuildCityFrom::Change(city, _) => city.name(),
+        }
+    }
+
+    pub fn flag(&self) -> &Flag {
+        match self {
+            BuildCityFrom::Scratch(_, flag, _) => flag,
+            BuildCityFrom::Change(city, _) => city.flag(),
         }
     }
 
     pub fn geo(&self) -> &GeoContext {
         match self {
-            BuildCityFrom::Scratch(_, geo) => geo,
+            BuildCityFrom::Scratch(_, _, geo) => geo,
             BuildCityFrom::Change(city, _) => city.geo(),
         }
     }
 
     pub fn production(&self) -> Option<&CityProduction> {
         match self {
-            BuildCityFrom::Scratch(_, _) => None,
+            BuildCityFrom::Scratch(_, _, _) => None,
             BuildCityFrom::Change(city, _) => Some(city.production()),
         }
     }
@@ -81,6 +89,7 @@ impl CityGenerator<'_> {
         Ok(City::builder()
             .id(city_id)
             .name(self.from.name().to_string())
+            .flag(*self.from.flag())
             .geo(*self.from.geo())
             .production(
                 self.from
@@ -107,7 +116,7 @@ fn production_task(
     default_product: &CityProduct,
 ) -> CityProductionTask {
     let (previous, current): FromProduction = match from {
-        BuildCityFrom::Scratch(_, _) => (
+        BuildCityFrom::Scratch(_, _, _) => (
             None,
             // TODO: for "current" tons, need to determine with "new" city exploitation
             (&CityProductionTons(1), default_product),
@@ -248,7 +257,7 @@ mod test {
         let task = production_task(
             &rule_set,
             &game_frame,
-            &BuildCityFrom::Scratch("CityName".to_string(), city_geo),
+            &BuildCityFrom::Scratch("CityName".to_string(), Flag::Abkhazia, city_geo),
             &city_id,
             &CityProduct::Unit(UnitType::Settlers),
         );
@@ -269,6 +278,7 @@ mod test {
         let city = City::builder()
             .geo(city_geo)
             .id(city_id)
+            .flag(Flag::Abkhazia)
             .name("CityName".to_string())
             .production(CityProduction::new(vec![CityProduct::Unit(
                 UnitType::Settlers,
@@ -324,6 +334,7 @@ mod test {
             .geo(city_geo)
             .id(city_id)
             .name("CityName".to_string())
+            .flag(Flag::Abkhazia)
             .production(CityProduction::new(vec![CityProduct::Unit(was_producing)]))
             .tasks(CityTasks::new(
                 CityProductionTask::builder()

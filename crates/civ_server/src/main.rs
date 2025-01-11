@@ -5,6 +5,7 @@ use civ_server::runner::{Runner, RunnerContext};
 use civ_server::state::State;
 use civ_server::world::reader::{WorldReader, WorldReaderError};
 use civ_server::{effect, FromClientsChannels, ToClientsChannels};
+use common::game::nation::flag::Flag;
 use common::{
     game::unit::UnitType,
     geo::{GeoContext, WorldPoint},
@@ -44,6 +45,7 @@ fn main() -> Result<(), Error> {
             .id(uuid)
             .type_(UnitType::Settlers)
             .geo(GeoContext::builder().point(WorldPoint::new(0, 0)).build())
+            .flag(Flag::Abkhazia)
             .build(),
     )]);
 

@@ -2,7 +2,7 @@ use std::sync::RwLockReadGuard;
 
 use bon::Builder;
 use common::{
-    game::{slice::ClientUnit, unit::UnitType},
+    game::{nation::flag::Flag, slice::ClientUnit, unit::UnitType},
     geo::Geo,
 };
 use uuid::Uuid;
@@ -16,6 +16,7 @@ use super::IntoClientModel;
 #[derive(Debug, Builder, Clone)]
 pub struct Unit {
     id: Uuid,
+    flag: Flag,
     type_: UnitType,
     task: Option<UnitTaskWrapper>,
     geo: GeoContext,
@@ -24,6 +25,10 @@ pub struct Unit {
 impl Unit {
     pub fn id(&self) -> Uuid {
         self.id
+    }
+
+    pub fn flag(&self) -> &Flag {
+        &self.flag
     }
 
     pub fn type_(&self) -> &UnitType {
@@ -52,10 +57,11 @@ impl Geo for Unit {
 impl IntoClientModel<ClientUnit> for Unit {
     fn into_client(self, _state: &RwLockReadGuard<State>) -> ClientUnit {
         ClientUnit::builder()
-            .id(self.id())
-            .type_(*self.type_())
+            .id(self.id)
+            .type_(self.type_)
             .maybe_task(self.task.clone().map(|t| t.into()))
-            .geo(*self.geo())
+            .geo(self.geo)
+            .flag(self.flag)
             .build()
     }
 }
