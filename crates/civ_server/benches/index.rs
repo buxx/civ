@@ -7,6 +7,7 @@ use civ_server::{
 use common::{
     game::{
         city::{CityExploitation, CityProduction, CityProductionTons},
+        nation::flag::Flag,
         unit::UnitType,
         GameFrame,
     },
@@ -25,6 +26,7 @@ fn build_unit(i: usize) -> Unit {
                 .build(),
         )
         .type_(UnitType::Warriors)
+        .flag(Flag::Abkhazia)
         .build()
 }
 
@@ -77,6 +79,7 @@ fn build_city(i: usize) -> City {
                 )
                 .build(),
         )
+        .flag(Flag::Abkhazia)
         .build()
 }
 
