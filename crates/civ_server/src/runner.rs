@@ -448,6 +448,7 @@ mod test {
 
     use common::{
         game::{
+            nation::flag::Flag,
             slice::{ClientUnit, GameSlice},
             tasks::client::{settle::ClientSettle, ClientTask, ClientTaskType},
             unit::UnitType,
@@ -540,6 +541,7 @@ mod test {
             .geo(GeoContext::builder().point(WorldPoint::new(0, 0)).build())
             .id(Uuid::new_v4())
             .type_(UnitType::Settlers)
+            .flag(Flag::Abkhazia)
             .build()
     }
 
@@ -554,10 +556,12 @@ mod test {
             .id(settler_id)
             .geo(*settler.geo())
             .type_(*settler.type_())
+            .flag(Flag::Abkhazia)
             .build();
         let expected_client_unit = ClientUnit::builder()
             .id(settler_id)
             .geo(*settler.geo())
+            .flag(Flag::Abkhazia)
             .type_(*settler.type_())
             .task(ClientTask::new(
                 ClientTaskType::Settle(ClientSettle::new(city_name.clone())),
