@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use common::{
+    game::nation::flag::Flag,
     geo::{Geo, WorldPoint},
     space::window::Window,
 };
@@ -18,6 +19,8 @@ pub struct Index {
     units_index: HashMap<Uuid, usize>,
     xy_cities: HashMap<WorldPoint, Uuid>,
     xy_units: HashMap<WorldPoint, Vec<Uuid>>,
+    flag_cities: HashMap<Flag, Uuid>,
+    flag_units: HashMap<Flag, Vec<Uuid>>,
     city_tasks: HashMap<Uuid, Vec<Uuid>>,
     unit_tasks: HashMap<Uuid, Vec<Uuid>>,
 }
@@ -26,21 +29,28 @@ impl Index {
     pub fn reindex_cities(&mut self, cities: &[City]) {
         self.cities_index.clear();
         self.xy_cities.clear();
+        self.flag_cities.clear();
 
         for (i, city) in cities.iter().enumerate() {
             self.cities_index.insert(*city.id(), i);
             self.xy_cities.insert(*city.geo().point(), *city.id());
+            self.flag_cities.insert(*city.flag(), *city.id());
         }
     }
 
     pub fn reindex_units(&mut self, units: &[Unit]) {
         self.units_index.clear();
         self.xy_units.clear();
+        self.flag_units.clear();
 
         for (i, unit) in units.iter().enumerate() {
             self.units_index.insert(unit.id(), i);
             self.xy_units
                 .entry(*unit.geo().point())
+                .or_default()
+                .push(unit.id());
+            self.flag_units
+                .entry(*unit.flag())
                 .or_default()
                 .push(unit.id());
         }
