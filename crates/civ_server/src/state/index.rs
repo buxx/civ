@@ -16,8 +16,6 @@ use crate::{
 pub struct Index {
     cities_index: HashMap<Uuid, usize>,
     units_index: HashMap<Uuid, usize>,
-    cities_xy: HashMap<Uuid, WorldPoint>, // TODO: not used, no ?
-    units_xy: HashMap<Uuid, WorldPoint>,  // TODO: not used, no ?
     xy_cities: HashMap<WorldPoint, Uuid>,
     xy_units: HashMap<WorldPoint, Vec<Uuid>>,
     city_tasks: HashMap<Uuid, Vec<Uuid>>,
@@ -27,24 +25,20 @@ pub struct Index {
 impl Index {
     pub fn reindex_cities(&mut self, cities: &[City]) {
         self.cities_index.clear();
-        self.cities_xy.clear();
         self.xy_cities.clear();
 
         for (i, city) in cities.iter().enumerate() {
             self.cities_index.insert(*city.id(), i);
-            self.cities_xy.insert(*city.id(), *city.geo().point());
             self.xy_cities.insert(*city.geo().point(), *city.id());
         }
     }
 
     pub fn reindex_units(&mut self, units: &[Unit]) {
         self.units_index.clear();
-        self.units_xy.clear();
         self.xy_units.clear();
 
         for (i, unit) in units.iter().enumerate() {
             self.units_index.insert(unit.id(), i);
-            self.units_xy.insert(unit.id(), *unit.geo().point());
             self.xy_units
                 .entry(*unit.geo().point())
                 .or_default()
@@ -154,8 +148,6 @@ impl Index {
                                 .entry(*unit.geo().point())
                                 .or_default()
                                 .retain(|id| id != &unit.id());
-
-                            self.units_xy.remove(&unit.id());
                         }
                     },
                     StateEffect::Testing => {}
