@@ -26,6 +26,11 @@ pub enum ClientToServerEnveloppe {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerMessage {
+    InGame(ClientToServerInGameMessage),
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum ClientToServerInGameMessage {
     SetWindow(SetWindow),
     Unit(Uuid, ClientToServerUnitMessage),
     City(Uuid, ClientToServerCityMessage),
