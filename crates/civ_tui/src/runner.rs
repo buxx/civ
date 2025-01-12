@@ -6,7 +6,9 @@ use std::{
 
 use bon::Builder;
 use clap::Parser;
-use common::network::message::{ClientToServerMessage, NotificationLevel, ServerToClientMessage};
+use common::network::message::{
+    ClientToServerInGameMessage, NotificationLevel, ServerToClientMessage,
+};
 use crossbeam::channel::{Receiver, Sender};
 
 use crate::{
@@ -23,7 +25,7 @@ pub struct Runner {
     context: Context,
     state: Arc<RwLock<State>>,
     from_server_receiver: Receiver<ServerToClientMessage>,
-    to_server_sender: Sender<ClientToServerMessage>,
+    to_server_sender: Sender<ClientToServerInGameMessage>,
 }
 
 impl Runner {

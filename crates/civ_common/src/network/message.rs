@@ -21,11 +21,11 @@ pub enum NotificationLevel {
 pub enum ClientToServerEnveloppe {
     Hello(Uuid),
     Goodbye,
-    Message(ClientToServerMessage),
+    InGame(ClientToServerInGameMessage),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub enum ClientToServerMessage {
+pub enum ClientToServerInGameMessage {
     SetWindow(SetWindow),
     Unit(Uuid, ClientToServerUnitMessage),
     City(Uuid, ClientToServerCityMessage),

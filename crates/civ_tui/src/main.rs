@@ -4,7 +4,7 @@ use std::{
 };
 
 use common::{
-    network::message::{ClientToServerMessage, ServerToClientMessage},
+    network::message::{ClientToServerInGameMessage, ServerToClientMessage},
     rules::std1::Std1RuleSet,
 };
 use context::Context;
@@ -36,8 +36,8 @@ fn main() -> Result<(), Error> {
     let context = Context::new(Box::new(Std1RuleSet));
     let state = Arc::new(RwLock::new(State::new(client_id)));
     let (to_server_sender, to_server_receiver): (
-        Sender<ClientToServerMessage>,
-        Receiver<ClientToServerMessage>,
+        Sender<ClientToServerInGameMessage>,
+        Receiver<ClientToServerInGameMessage>,
     ) = unbounded();
     let (from_server_sender, from_server_receiver): (
         Sender<ServerToClientMessage>,

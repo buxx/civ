@@ -5,7 +5,7 @@ use std::{
 };
 
 use common::network::message::{
-    ClientToServerEnveloppe, ClientToServerMessage, ServerToClientMessage,
+    ClientToServerEnveloppe, ClientToServerInGameMessage, ServerToClientMessage,
 };
 use crossbeam::channel::{Receiver, Sender};
 use message_io::{
@@ -28,7 +28,7 @@ pub struct Network {
     client_id: Uuid,
     context: Context,
     state: Arc<RwLock<State>>,
-    to_server_receiver: Receiver<ClientToServerMessage>,
+    to_server_receiver: Receiver<ClientToServerInGameMessage>,
     from_server_sender: Sender<ServerToClientMessage>,
     handler: NodeHandler<Signal>,
     node_listener: Option<NodeListener<Signal>>,
@@ -42,7 +42,7 @@ impl Network {
         server_address: &str,
         context: Context,
         state: Arc<RwLock<State>>,
-        to_server_receiver: Receiver<ClientToServerMessage>,
+        to_server_receiver: Receiver<ClientToServerInGameMessage>,
         from_server_sender: Sender<ServerToClientMessage>,
     ) -> io::Result<Self> {
         let (handler, node_listener) = node::split();
@@ -107,7 +107,7 @@ impl Network {
                     Signal::SendClientToServerMessages => {
                         while let Ok(message) = self.to_server_receiver.try_recv() {
                             let data =
-                                bincode::serialize(&ClientToServerEnveloppe::Message(message))
+                                bincode::serialize(&ClientToServerEnveloppe::InGame(message))
                                     .unwrap();
                             self.handler.network().send(self.server_endpoint, &data);
                         }

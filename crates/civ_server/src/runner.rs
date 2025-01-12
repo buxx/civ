@@ -6,7 +6,7 @@ use common::{
         GameFrame, GAME_FRAMES_PER_SECOND,
     },
     network::message::{
-        ClientToServerCityMessage, ClientToServerMessage, ClientToServerUnitMessage,
+        ClientToServerCityMessage, ClientToServerInGameMessage, ClientToServerUnitMessage,
         NotificationLevel, ServerToClientMessage,
     },
     task::{CreateTaskError, GamePlayReason},
@@ -39,7 +39,7 @@ pub struct RunnerContext {
     pub context: Context,
     pub state: Arc<RwLock<State>>,
     pub world: Arc<RwLock<WorldReader>>,
-    pub from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
+    pub from_clients_receiver: Receiver<(Uuid, ClientToServerInGameMessage)>,
     pub to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
 }
 
@@ -48,7 +48,7 @@ impl RunnerContext {
         context: Context,
         state: Arc<RwLock<State>>,
         world: Arc<RwLock<WorldReader>>,
-        from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
+        from_clients_receiver: Receiver<(Uuid, ClientToServerInGameMessage)>,
         to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
     ) -> Self {
         Self {
@@ -298,18 +298,18 @@ impl Runner {
     fn client(
         &self,
         client_id: Uuid,
-        message: ClientToServerMessage,
+        message: ClientToServerInGameMessage,
     ) -> Result<Vec<Effect>, RunnerError> {
         match message {
-            ClientToServerMessage::SetWindow(window) => {
+            ClientToServerInGameMessage::SetWindow(window) => {
                 //
                 SetWindowRequestDealer::new(self.context.clone(), client_id).deal(&window)
             }
-            ClientToServerMessage::Unit(uuid, message) => {
+            ClientToServerInGameMessage::Unit(uuid, message) => {
                 //
                 self.refresh_unit_on(&uuid, message)
             }
-            ClientToServerMessage::City(uuid, message) => {
+            ClientToServerInGameMessage::City(uuid, message) => {
                 //
                 self.refresh_city_on(&uuid, message)
             }
@@ -471,8 +471,8 @@ mod test {
     use rstest::*;
 
     struct TestingRunnerContext {
-        from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
-        from_clients_receiver: Receiver<(Uuid, ClientToServerMessage)>,
+        from_clients_sender: Sender<(Uuid, ClientToServerInGameMessage)>,
+        from_clients_receiver: Receiver<(Uuid, ClientToServerInGameMessage)>,
         to_clients_sender: Sender<(Uuid, ServerToClientMessage)>,
         to_clients_receiver: Receiver<(Uuid, ServerToClientMessage)>,
         units: Vec<Unit>,
@@ -571,8 +571,8 @@ mod test {
             .build();
         let mut runner = testing.build();
 
-        let set_window = ClientToServerMessage::SetWindow(SetWindow::new(0, 0, 1, 1));
-        let create_task = ClientToServerMessage::Unit(
+        let set_window = ClientToServerInGameMessage::SetWindow(SetWindow::new(0, 0, 1, 1));
+        let create_task = ClientToServerInGameMessage::Unit(
             settler_id,
             ClientToServerUnitMessage::Settle(city_name.clone()),
         );

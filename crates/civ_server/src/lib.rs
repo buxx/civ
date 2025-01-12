@@ -1,4 +1,4 @@
-use common::network::message::{ClientToServerMessage, ServerToClientMessage};
+use common::network::message::{ClientToServerInGameMessage, ServerToClientMessage};
 use crossbeam::channel::{Receiver, Sender};
 use uuid::Uuid;
 
@@ -15,8 +15,8 @@ pub mod utils;
 pub mod world;
 
 pub type FromClientsChannels = (
-    Sender<(Uuid, ClientToServerMessage)>,
-    Receiver<(Uuid, ClientToServerMessage)>,
+    Sender<(Uuid, ClientToServerInGameMessage)>,
+    Receiver<(Uuid, ClientToServerInGameMessage)>,
 );
 pub type ToClientsChannels = (
     Sender<(Uuid, ServerToClientMessage)>,

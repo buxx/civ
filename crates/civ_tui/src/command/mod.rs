@@ -3,7 +3,7 @@ use crate::{
     state::{State, StateError},
 };
 use clap::{Args, Parser, Subcommand};
-use common::network::message::{ClientToServerMessage, ServerToClientMessage};
+use common::network::message::{ClientToServerInGameMessage, ServerToClientMessage};
 use crossbeam::channel::{Receiver, SendError, Sender};
 use std::{
     sync::{Arc, RwLock},
@@ -84,7 +84,7 @@ pub struct CommandContext {
     pub context: Context,
     pub state: Arc<RwLock<State>>,
     pub from_server_receiver: Receiver<ServerToClientMessage>,
-    pub to_server_sender: Sender<ClientToServerMessage>,
+    pub to_server_sender: Sender<ClientToServerInGameMessage>,
 }
 
 impl CommandContext {
@@ -92,7 +92,7 @@ impl CommandContext {
         context: Context,
         state: Arc<RwLock<State>>,
         from_server_receiver: Receiver<ServerToClientMessage>,
-        to_server_sender: Sender<ClientToServerMessage>,
+        to_server_sender: Sender<ClientToServerInGameMessage>,
     ) -> Self {
         Self {
             context,
@@ -110,7 +110,7 @@ pub enum CommandError {
     #[error("Unit no more available")]
     UnitNoMoreAvailable,
     #[error("Unexpected closed channel: {0}")]
-    Unexpected(#[from] SendError<ClientToServerMessage>),
+    Unexpected(#[from] SendError<ClientToServerInGameMessage>),
 }
 
 impl From<StateError> for CommandError {

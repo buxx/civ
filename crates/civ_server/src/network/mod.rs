@@ -1,6 +1,6 @@
 use clients::Clients;
 use common::network::message::{
-    ClientToServerEnveloppe, ClientToServerMessage, ServerToClientMessage,
+    ClientToServerEnveloppe, ClientToServerInGameMessage, ServerToClientMessage,
 };
 use crossbeam::channel::{Receiver, Sender};
 use log::info;
@@ -27,7 +27,7 @@ enum Signal {
 pub struct Network {
     context: Context,
     state: Arc<RwLock<State>>,
-    from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
+    from_clients_sender: Sender<(Uuid, ClientToServerInGameMessage)>,
     to_clients_receiver: Receiver<(Uuid, ServerToClientMessage)>,
     handler: NodeHandler<Signal>,
     node_listener: NodeListener<Signal>,
@@ -41,7 +41,7 @@ impl Network {
         context: Context,
         state: Arc<RwLock<State>>,
         listen_addr: &str,
-        from_clients_sender: Sender<(Uuid, ClientToServerMessage)>,
+        from_clients_sender: Sender<(Uuid, ClientToServerInGameMessage)>,
         to_clients_receiver: Receiver<(Uuid, ServerToClientMessage)>,
     ) -> io::Result<Self> {
         let (handler, node_listener) = node::split::<Signal>();
@@ -95,7 +95,7 @@ impl Network {
                                 .clients_mut()
                                 .set_count(self.clients.length());
                         }
-                        ClientToServerEnveloppe::Message(message) => {
+                        ClientToServerEnveloppe::InGame(message) => {
                             let client_id = self.clients.client_id(&endpoint).unwrap();
                             self.from_clients_sender
                                 .send((*client_id, message))
