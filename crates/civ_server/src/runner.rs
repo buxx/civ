@@ -6,8 +6,8 @@ use common::{
         GameFrame, GAME_FRAMES_PER_SECOND,
     },
     network::message::{
-        ClientToServerCityMessage, ClientToServerInGameMessage, ClientToServerMessage,
-        ClientToServerUnitMessage, NotificationLevel, ServerToClientMessage,
+        ClientToServerCityMessage, ClientToServerMessage, ClientToServerUnitMessage,
+        NotificationLevel, ServerToClientMessage,
     },
     task::{CreateTaskError, GamePlayReason},
 };
@@ -301,15 +301,15 @@ impl Runner {
         message: ClientToServerMessage,
     ) -> Result<Vec<Effect>, RunnerError> {
         match message {
-            ClientToServerMessage::InGame(ClientToServerInGameMessage::SetWindow(window)) => {
+            ClientToServerMessage::SetWindow(window) => {
                 //
                 SetWindowRequestDealer::new(self.context.clone(), client_id).deal(&window)
             }
-            ClientToServerMessage::InGame(ClientToServerInGameMessage::Unit(uuid, message)) => {
+            ClientToServerMessage::Unit(uuid, message) => {
                 //
                 self.refresh_unit_on(&uuid, message)
             }
-            ClientToServerMessage::InGame(ClientToServerInGameMessage::City(uuid, message)) => {
+            ClientToServerMessage::City(uuid, message) => {
                 //
                 self.refresh_city_on(&uuid, message)
             }
