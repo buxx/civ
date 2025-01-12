@@ -7,7 +7,7 @@ use common::{
     },
     network::message::{
         ClientToServerCityMessage, ClientToServerInGameMessage, ClientToServerUnitMessage,
-        NotificationLevel, ServerToClientMessage,
+        NotificationLevel, ServerToClientInGameMessage, ServerToClientMessage,
     },
     task::{CreateTaskError, GamePlayReason},
 };
@@ -208,9 +208,11 @@ impl Runner {
                                 .to_client_sender
                                 .send((
                                     client_id,
-                                    ServerToClientMessage::Notification(
-                                        NotificationLevel::Error,
-                                        message,
+                                    ServerToClientMessage::InGame(
+                                        ServerToClientInGameMessage::Notification(
+                                            NotificationLevel::Error,
+                                            message,
+                                        ),
                                     ),
                                 ))
                                 .unwrap();
@@ -577,11 +579,12 @@ mod test {
             ClientToServerUnitMessage::Settle(city_name.clone()),
         );
 
-        let expected_set_window = ServerToClientMessage::State(ClientStateMessage::SetWindow(
-            Window::new(0, 0, 1, 1, DisplayStep::Close),
-        ));
-        let expected_game_set_slice =
-            ServerToClientMessage::State(ClientStateMessage::SetGameSlice(GameSlice::new(
+        let expected_set_window =
+            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                ClientStateMessage::SetWindow(Window::new(0, 0, 1, 1, DisplayStep::Close)),
+            ));
+        let expected_game_set_slice = ServerToClientMessage::InGame(
+            ServerToClientInGameMessage::State(ClientStateMessage::SetGameSlice(GameSlice::new(
                 PartialWorld::new(
                     WorldPoint::new(0, 0),
                     1,
@@ -595,9 +598,11 @@ mod test {
                 ),
                 vec![],
                 vec![client_settler],
-            )));
-        let expected_set_unit =
-            ServerToClientMessage::State(ClientStateMessage::SetUnit(expected_client_unit));
+            ))),
+        );
+        let expected_set_unit = ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+            ClientStateMessage::SetUnit(expected_client_unit),
+        ));
 
         // WHEN
         testing

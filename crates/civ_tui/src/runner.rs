@@ -7,7 +7,8 @@ use std::{
 use bon::Builder;
 use clap::Parser;
 use common::network::message::{
-    ClientToServerInGameMessage, NotificationLevel, ServerToClientMessage,
+    ClientToServerInGameMessage, NotificationLevel, ServerToClientInGameMessage,
+    ServerToClientMessage,
 };
 use crossbeam::channel::{Receiver, Sender};
 
@@ -37,10 +38,13 @@ impl Runner {
             while let Ok(message) = from_server_receiver.recv() {
                 let mut state = state.write().expect("Assume state is always accessible");
                 match message {
-                    ServerToClientMessage::State(message) => {
+                    ServerToClientMessage::InGame(ServerToClientInGameMessage::State(message)) => {
                         state.apply(message);
                     }
-                    ServerToClientMessage::Notification(level, message) => {
+                    ServerToClientMessage::InGame(ServerToClientInGameMessage::Notification(
+                        level,
+                        message,
+                    )) => {
                         match level {
                             NotificationLevel::Error => {
                                 state.push_error(PublicError::ServerNotification(message));

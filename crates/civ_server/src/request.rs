@@ -1,5 +1,5 @@
 use common::{
-    network::message::{ClientStateMessage, ServerToClientMessage},
+    network::message::{ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage},
     space::window::{DisplayStep, SetWindow, Window},
 };
 use uuid::Uuid;
@@ -39,8 +39,12 @@ impl SetWindowRequestDealer {
         .game_slice(&self.client_id, &window);
 
         for message in [
-            ServerToClientMessage::State(ClientStateMessage::SetWindow(window.clone())),
-            ServerToClientMessage::State(ClientStateMessage::SetGameSlice(new_game_slice)),
+            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                ClientStateMessage::SetWindow(window.clone()),
+            )),
+            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                ClientStateMessage::SetGameSlice(new_game_slice),
+            )),
         ] {
             self.context
                 .to_client_sender

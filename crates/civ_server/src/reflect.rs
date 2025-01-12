@@ -1,6 +1,6 @@
 use common::{
     geo::Geo,
-    network::message::{ClientStateMessage, ServerToClientMessage},
+    network::message::{ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage},
 };
 use log::error;
 use thiserror::Error;
@@ -72,7 +72,9 @@ impl Runner {
         let client_ids = self.state().clients().client_ids();
         let frame = *self.state().frame();
         Ok(Some((
-            ServerToClientMessage::State(ClientStateMessage::SetGameFrame(frame)),
+            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                ClientStateMessage::SetGameFrame(frame),
+            )),
             client_ids,
         )))
     }
@@ -85,8 +87,8 @@ impl Runner {
         let clients = state.clients().concerned(city.geo());
         if !clients.is_empty() {
             return Ok(Some((
-                ServerToClientMessage::State(ClientStateMessage::SetCity(
-                    city.clone().into_client(&state),
+                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                    ClientStateMessage::SetCity(city.clone().into_client(&state)),
                 )),
                 clients,
             )));
@@ -103,7 +105,9 @@ impl Runner {
         let clients = state.clients().concerned(city.geo());
         if !clients.is_empty() {
             return Ok(Some((
-                ServerToClientMessage::State(ClientStateMessage::RemoveCity(*city.id())),
+                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                    ClientStateMessage::RemoveCity(*city.id()),
+                )),
                 clients,
             )));
         }
@@ -119,8 +123,8 @@ impl Runner {
         let clients = state.clients().concerned(unit.geo());
         if !clients.is_empty() {
             return Ok(Some((
-                ServerToClientMessage::State(ClientStateMessage::SetUnit(
-                    unit.clone().into_client(&state),
+                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                    ClientStateMessage::SetUnit(unit.clone().into_client(&state)),
                 )),
                 clients,
             )));
@@ -137,7 +141,9 @@ impl Runner {
         let clients = state.clients().concerned(unit.geo());
         if !clients.is_empty() {
             return Ok(Some((
-                ServerToClientMessage::State(ClientStateMessage::RemoveUnit(unit.id())),
+                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                    ClientStateMessage::RemoveUnit(unit.id()),
+                )),
                 clients,
             )));
         }

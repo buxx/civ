@@ -44,6 +44,11 @@ pub enum ClientToServerCityMessage {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum ServerToClientMessage {
+    InGame(ServerToClientInGameMessage),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum ServerToClientInGameMessage {
     State(ClientStateMessage),
     Notification(NotificationLevel, String),
 }
