@@ -3,10 +3,10 @@ use std::sync::RwLockReadGuard;
 use common::{
     game::slice::{ClientCity, ClientUnit, GameSlice},
     geo::WorldPoint,
+    network::Client,
     space::window::Window,
     world::{partial::PartialWorld, Tile},
 };
-use uuid::Uuid;
 
 use crate::{state::State, world::reader::WorldReader};
 
@@ -22,7 +22,7 @@ impl<'a> Extractor<'a> {
         Self { state, world }
     }
 
-    pub fn game_slice(&self, _client_id: &Uuid, window: &Window) -> GameSlice {
+    pub fn game_slice(&self, _client: &Client, window: &Window) -> GameSlice {
         let world = self.world(window);
         let cities: Vec<ClientCity> = self.cities(window);
         let units: Vec<ClientUnit> = self.units(window);
@@ -42,7 +42,7 @@ impl<'a> Extractor<'a> {
     fn cities(&self, window: &Window) -> Vec<ClientCity> {
         let index = self.state.index();
         index
-            .xy_cities(window)
+            .window_cities(window)
             .iter()
             .map(|uuid| {
                 (
@@ -61,7 +61,7 @@ impl<'a> Extractor<'a> {
     fn units(&self, window: &Window) -> Vec<ClientUnit> {
         let index = self.state.index();
         index
-            .xy_units(window)
+            .window_units(window)
             .iter()
             .map(|uuid| {
                 (

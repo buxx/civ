@@ -130,10 +130,10 @@ fn index_xy_window(index: &Index, xy_end: u64) {
     let mut city_counter = 0;
     let mut unit_counter = 0;
 
-    for _city in index.xy_cities(&Window::new(0, 0, xy_end, xy_end, DisplayStep::Close)) {
+    for _city in index.window_cities(&Window::new(0, 0, xy_end, xy_end, DisplayStep::Close)) {
         city_counter += 1;
     }
-    for _unit in index.xy_units(&Window::new(0, 0, xy_end, xy_end, DisplayStep::Close)) {
+    for _unit in index.window_units(&Window::new(0, 0, xy_end, xy_end, DisplayStep::Close)) {
         unit_counter += 1;
     }
 

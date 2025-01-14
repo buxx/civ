@@ -207,7 +207,7 @@ mod test {
             PRODUCTION_FRAMES_PER_TONS,
         },
         geo::{GeoContext, WorldPoint},
-        rules::RuleSet,
+        rules::{RuleSet, RuleSetType},
     };
 
     use crate::task::{Concern, Task};
@@ -241,6 +241,14 @@ mod test {
                     UnitType::Warriors => CityProductionTons(8),
                 },
             }
+        }
+
+        fn type_(&self) -> RuleSetType {
+            RuleSetType::Testing
+        }
+
+        fn can_be_startup(&self, _tile: &common::world::Tile) -> bool {
+            true
         }
     }
 

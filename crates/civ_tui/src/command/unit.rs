@@ -2,7 +2,10 @@ use std::thread;
 
 use common::{
     game::unit::{TaskType, UnitTaskType},
-    network::message::{ClientToServerInGameMessage, ClientToServerUnitMessage},
+    network::message::{
+        ClientToServerGameMessage, ClientToServerInGameMessage, ClientToServerMessage,
+        ClientToServerUnitMessage,
+    },
 };
 use uuid::Uuid;
 
@@ -72,12 +75,12 @@ pub fn settle(context: CommandContext, unit_id: Uuid, city_name: &str) -> Result
         return Ok(());
     }
 
-    context
-        .to_server_sender
-        .send(ClientToServerInGameMessage::Unit(
+    context.to_server_sender.send(ClientToServerMessage::Game(
+        ClientToServerGameMessage::InGame(ClientToServerInGameMessage::Unit(
             unit.id(),
             ClientToServerUnitMessage::Settle(city_name.to_string()),
-        ))?;
+        )),
+    ))?;
 
     Ok(())
 }

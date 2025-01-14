@@ -4,8 +4,9 @@ use std::{
     time::Duration,
 };
 
-use common::network::message::{
-    ClientToServerEnveloppe, ClientToServerInGameMessage, ServerToClientMessage,
+use common::network::{
+    message::{ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage},
+    Client,
 };
 use crossbeam::channel::{Receiver, Sender};
 use message_io::{
@@ -26,9 +27,10 @@ enum Signal {
 
 pub struct Network {
     client_id: Uuid,
+    player_id: Uuid,
     context: Context,
     state: Arc<RwLock<State>>,
-    to_server_receiver: Receiver<ClientToServerInGameMessage>,
+    to_server_receiver: Receiver<ClientToServerMessage>,
     from_server_sender: Sender<ServerToClientMessage>,
     handler: NodeHandler<Signal>,
     node_listener: Option<NodeListener<Signal>>,
@@ -39,10 +41,11 @@ pub struct Network {
 impl Network {
     pub fn new(
         client_id: Uuid,
+        player_id: Uuid,
         server_address: &str,
         context: Context,
         state: Arc<RwLock<State>>,
-        to_server_receiver: Receiver<ClientToServerInGameMessage>,
+        to_server_receiver: Receiver<ClientToServerMessage>,
         from_server_sender: Sender<ServerToClientMessage>,
     ) -> io::Result<Self> {
         let (handler, node_listener) = node::split();
@@ -53,6 +56,7 @@ impl Network {
 
         Ok(Self {
             client_id,
+            player_id,
             context,
             state,
             to_server_receiver,
@@ -83,9 +87,13 @@ impl Network {
                     state.set_connected(established);
 
                     // Inform server about our uuid
-                    let message =
-                        bincode::serialize(&ClientToServerEnveloppe::Hello(self.client_id))
-                            .unwrap();
+                    let message = bincode::serialize(&ClientToServerMessage::Network(
+                        ClientToServerNetworkMessage::Hello(Client::new(
+                            self.client_id,
+                            self.player_id,
+                        )),
+                    ))
+                    .unwrap();
                     self.handler.network().send(endpoint, &message);
                 }
                 NetEvent::Accepted(_, _) => {}
@@ -106,9 +114,7 @@ impl Network {
                 match signal {
                     Signal::SendClientToServerMessages => {
                         while let Ok(message) = self.to_server_receiver.try_recv() {
-                            let data =
-                                bincode::serialize(&ClientToServerEnveloppe::InGame(message))
-                                    .unwrap();
+                            let data = bincode::serialize(&message).unwrap();
                             self.handler.network().send(self.server_endpoint, &data);
                         }
                         self.handler

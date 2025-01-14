@@ -1,14 +1,22 @@
-use bon::Builder;
+use bon::{builder, Builder};
 use common::{
     game::{
         city::{CityProduct, CityProduction},
+        nation::flag::Flag,
         unit::UnitType,
         GameFrame, GAME_FRAMES_PER_SECOND,
     },
-    network::message::{
-        ClientToServerCityMessage, ClientToServerInGameMessage, ClientToServerUnitMessage,
-        NotificationLevel, ServerToClientInGameMessage, ServerToClientMessage,
+    geo::GeoContext,
+    network::{
+        message::{
+            ClientToServerCityMessage, ClientToServerEstablishmentMessage,
+            ClientToServerGameMessage, ClientToServerInGameMessage, ClientToServerUnitMessage,
+            NotificationLevel, ServerToClientEstablishmentMessage, ServerToClientInGameMessage,
+            ServerToClientMessage,
+        },
+        Client,
     },
+    space::window::SetWindow,
     task::{CreateTaskError, GamePlayReason},
 };
 use crossbeam::channel::{unbounded, Receiver, Sender};
@@ -23,8 +31,13 @@ use uuid::Uuid;
 
 use crate::{
     context::Context,
-    effect::{self, Effect, StateEffect, TaskEffect},
-    game::task::settle::Settle,
+    effect::{self, Action, ClientEffect, Effect, StateEffect, TaskEffect, UnitEffect},
+    game::{
+        access::Access,
+        placer::{Placer, PlacerBox, RandomPlacer},
+        task::settle::Settle,
+        unit::Unit,
+    },
     request::SetWindowRequestDealer,
     state::{NoLongerExist, State, StateError},
     task::{
@@ -39,7 +52,7 @@ pub struct RunnerContext {
     pub context: Context,
     pub state: Arc<RwLock<State>>,
     pub world: Arc<RwLock<WorldReader>>,
-    pub from_clients_receiver: Receiver<(Uuid, ClientToServerInGameMessage)>,
+    pub from_clients_receiver: Receiver<(Client, ClientToServerGameMessage)>,
     pub to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
 }
 
@@ -48,7 +61,7 @@ impl RunnerContext {
         context: Context,
         state: Arc<RwLock<State>>,
         world: Arc<RwLock<WorldReader>>,
-        from_clients_receiver: Receiver<(Uuid, ClientToServerInGameMessage)>,
+        from_clients_receiver: Receiver<(Client, ClientToServerGameMessage)>,
         to_client_sender: Sender<(Uuid, ServerToClientMessage)>,
     ) -> Self {
         Self {
@@ -98,20 +111,28 @@ pub struct Runner {
     last_stat: Instant,
     #[builder(default = vec![])]
     workers_channels: Vec<(Sender<()>, Receiver<Vec<Effect>>)>,
+    #[builder(default = Box::new(RandomPlacer))]
+    placer: PlacerBox,
 }
 
 #[derive(Debug, Error)]
 pub enum RunnerError {
     #[error("Deal with client request error: {0}")]
     DealClientRequest(DealClientRequestError),
+    #[error("Unexpected error: {0}")]
+    Unexpected(String),
+    #[error("Obsolete action: {0}")]
+    NoLongerExist(String),
 }
 
 #[derive(Debug, Error)]
 pub enum DealClientRequestError {
     #[error("Unexpected error: {0}")]
     Unexpected(String),
-    #[error("Unfeasible: {0 }")]
+    #[error("Unfeasible: {0}")]
     Unfeasible(String),
+    #[error("Unauthorized")]
+    Unauthorized,
 }
 
 impl Runner {
@@ -120,6 +141,13 @@ impl Runner {
             .state
             .read()
             .expect("Assume state is always accessible")
+    }
+
+    pub(super) fn world(&self) -> RwLockReadGuard<WorldReader> {
+        self.context
+            .world
+            .read()
+            .expect("Assume world is always accessible")
     }
 
     pub fn state_mut(&self) -> RwLockWriteGuard<State> {
@@ -198,8 +226,8 @@ impl Runner {
     fn clients(&mut self) -> Vec<Effect> {
         let mut effects = vec![];
 
-        while let Ok((client_id, message)) = self.context.from_clients_receiver.try_recv() {
-            match self.client(client_id, message) {
+        while let Ok((client, message)) = self.context.from_clients_receiver.try_recv() {
+            match self.client(&client, message) {
                 Ok(effects_) => effects.extend(effects_),
                 Err(error) => match error {
                     RunnerError::DealClientRequest(error) => match error {
@@ -207,7 +235,7 @@ impl Runner {
                             self.context
                                 .to_client_sender
                                 .send((
-                                    client_id,
+                                    *client.client_id(),
                                     ServerToClientMessage::InGame(
                                         ServerToClientInGameMessage::Notification(
                                             NotificationLevel::Error,
@@ -220,7 +248,26 @@ impl Runner {
                         DealClientRequestError::Unexpected(message) => {
                             error!("Error during processing client request: {}", message)
                         }
+                        DealClientRequestError::Unauthorized => self
+                            .context
+                            .to_client_sender
+                            .send((
+                                *client.client_id(),
+                                ServerToClientMessage::InGame(
+                                    ServerToClientInGameMessage::Notification(
+                                        NotificationLevel::Error,
+                                        "Unauthorized".to_string(),
+                                    ),
+                                ),
+                            ))
+                            .unwrap(),
                     },
+                    RunnerError::Unexpected(message) => {
+                        error!("Error during processing client request: {}", message)
+                    }
+                    RunnerError::NoLongerExist(message) => {
+                        debug!("Process client request about obsolete matter: {}", message)
+                    }
                 },
             };
         }
@@ -299,24 +346,81 @@ impl Runner {
 
     fn client(
         &self,
-        client_id: Uuid,
-        message: ClientToServerInGameMessage,
+        client: &Client,
+        message: ClientToServerGameMessage,
     ) -> Result<Vec<Effect>, RunnerError> {
+        let state = self.state();
         match message {
-            ClientToServerInGameMessage::SetWindow(window) => {
-                //
-                SetWindowRequestDealer::new(self.context.clone(), client_id).deal(&window)
-            }
-            ClientToServerInGameMessage::Unit(uuid, message) => {
-                //
-                self.refresh_unit_on(&uuid, message)
-            }
-            ClientToServerInGameMessage::City(uuid, message) => {
-                //
-                self.refresh_city_on(&uuid, message)
+            ClientToServerGameMessage::Establishment(message) => match message {
+                ClientToServerEstablishmentMessage::TakePlace(flag) => {
+                    //
+                    self.player_take_place(client, &flag)
+                }
+            },
+            ClientToServerGameMessage::InGame(message) => {
+                let flag = state.client_flag(client)?;
+                if !Access::new(&self.context).can(flag, &message) {
+                    return Err(RunnerError::DealClientRequest(
+                        DealClientRequestError::Unauthorized,
+                    ));
+                };
+
+                match message {
+                    ClientToServerInGameMessage::SetWindow(window) => {
+                        //
+                        Ok(vec![Effect::Action(Action::UpdateClientWindow(
+                            *client, window,
+                        ))])
+                    }
+                    ClientToServerInGameMessage::Unit(uuid, message) => {
+                        //
+                        self.refresh_unit_on(&uuid, message)
+                    }
+                    ClientToServerInGameMessage::City(uuid, message) => {
+                        //
+                        self.refresh_city_on(&uuid, message)
+                    }
+                }
             }
         }
     }
+
+    fn player_take_place(&self, client: &Client, flag: &Flag) -> Result<Vec<Effect>, RunnerError> {
+        let rules = self.context.context.rules();
+        let world = self.world();
+        let state = self.state();
+
+        let point = self.placer.startup(rules, &state, &world).map_err(|e| {
+            RunnerError::DealClientRequest(DealClientRequestError::Unfeasible(e.to_string()))
+        })?;
+
+        // TODO: move code of unit generation and make it depend on ruleset
+        let settler_id = Uuid::new_v4();
+        let settler = Unit::builder()
+            .id(settler_id)
+            .type_(UnitType::Settlers)
+            .geo(GeoContext::builder().point(point).build())
+            .flag(*flag)
+            .build();
+
+        let server_resume = self.state().server_resume(rules);
+        let client_window = SetWindow::new(point.x, point.y, point.x + 1, point.y + 1);
+        Ok(vec![
+            Effect::State(StateEffect::Unit(settler_id, UnitEffect::New(settler))),
+            Effect::State(StateEffect::Client(
+                *client,
+                ClientEffect::PlayerTookPlace(*flag),
+            )),
+            Effect::Action(Action::UpdateClientWindow(*client, client_window)),
+            Effect::Shines(vec![(
+                ServerToClientMessage::Establishment(
+                    ServerToClientEstablishmentMessage::ServerResume(server_resume, Some(*flag)),
+                ),
+                vec![*client.client_id()],
+            )]),
+        ])
+    }
+
     fn refresh_unit_on(
         &self,
         uuid: &Uuid,
@@ -427,6 +531,14 @@ impl From<CreateTaskError> for RunnerError {
         }
     }
 }
+impl From<StateError> for RunnerError {
+    fn from(value: StateError) -> Self {
+        match value {
+            StateError::NotFound(reason) => RunnerError::Unexpected(reason.to_string()),
+            StateError::NoLongerExist(reason) => RunnerError::NoLongerExist(reason.to_string()),
+        }
+    }
+}
 
 impl From<StateError> for CreateTaskError {
     fn from(value: StateError) -> Self {
@@ -439,6 +551,9 @@ impl From<StateError> for CreateTaskError {
                 NoLongerExist::Unit(_) => {
                     CreateTaskError::GamePlay(GamePlayReason::UnitNoLongerExist)
                 }
+                NoLongerExist::Player(_) => {
+                    CreateTaskError::GamePlay(GamePlayReason::PlayerNoLongerExist)
+                }
             },
         }
     }
@@ -450,35 +565,88 @@ mod test {
 
     use common::{
         game::{
+            city::CityProductionTons,
             nation::flag::Flag,
+            server::ServerResume,
             slice::{ClientUnit, GameSlice},
             tasks::client::{settle::ClientSettle, ClientTask, ClientTaskType},
-            unit::UnitType,
+            unit::{TaskType, UnitType},
             GameFrame,
         },
         geo::{Geo, GeoContext, WorldPoint},
         network::message::ClientStateMessage,
-        rules::std1::Std1RuleSet,
+        rules::{RuleSet, RuleSetType},
         space::window::{DisplayStep, SetWindow, Window},
         world::{partial::PartialWorld, TerrainType, Tile},
     };
 
     use crate::{
         effect::{self},
-        game::unit::Unit,
+        game::{placer::PlacerError, unit::Unit},
         FromClientsChannels, ToClientsChannels,
     };
 
     use super::*;
     use rstest::*;
 
+    #[derive(Clone)]
+    struct TestRuleSet;
+
+    impl RuleSet for TestRuleSet {
+        fn tasks(&self) -> Vec<TaskType> {
+            unreachable!()
+        }
+
+        fn unit_can(&self, _: &UnitType) -> Vec<TaskType> {
+            unreachable!()
+        }
+
+        fn settle_duration(&self, _: &UnitType) -> GameFrame {
+            GameFrame(100)
+        }
+
+        fn can_settle(&self, _: &UnitType) -> bool {
+            true
+        }
+
+        fn required_tons(&self, product: &CityProduct) -> CityProductionTons {
+            match product {
+                CityProduct::Unit(unit_type) => match unit_type {
+                    UnitType::Settlers => CityProductionTons(40),
+                    UnitType::Warriors => CityProductionTons(8),
+                },
+            }
+        }
+
+        fn type_(&self) -> RuleSetType {
+            RuleSetType::Testing
+        }
+
+        fn can_be_startup(&self, _tile: &common::world::Tile) -> bool {
+            true
+        }
+    }
+
+    struct TestPlacer;
+
+    impl<'a> Placer<'a> for TestPlacer {
+        fn startup(
+            &self,
+            _rules: &'a common::rules::RuleSetBox,
+            _state: &'a RwLockReadGuard<State>,
+            _world: &'a RwLockReadGuard<WorldReader>,
+        ) -> Result<WorldPoint, PlacerError> {
+            Ok(WorldPoint::new(0, 0))
+        }
+    }
+
     struct TestingRunnerContext {
-        from_clients_sender: Sender<(Uuid, ClientToServerInGameMessage)>,
-        from_clients_receiver: Receiver<(Uuid, ClientToServerInGameMessage)>,
+        from_clients_sender: Sender<(Client, ClientToServerGameMessage)>,
+        from_clients_receiver: Receiver<(Client, ClientToServerGameMessage)>,
         to_clients_sender: Sender<(Uuid, ServerToClientMessage)>,
         to_clients_receiver: Receiver<(Uuid, ServerToClientMessage)>,
         units: Vec<Unit>,
-        rule_set: Std1RuleSet,
+        rule_set: TestRuleSet,
     }
 
     impl TestingRunnerContext {
@@ -492,7 +660,7 @@ mod test {
                 to_clients_sender,
                 to_clients_receiver,
                 units: vec![],
-                rule_set: Std1RuleSet,
+                rule_set: TestRuleSet,
             }
         }
 
@@ -533,99 +701,125 @@ mod test {
             Runner::builder()
                 .tick_base_period(9999)
                 .context(context)
+                .placer(Box::new(TestPlacer))
                 .build()
         }
     }
 
-    #[fixture]
-    fn settler() -> Unit {
-        Unit::builder()
-            .geo(GeoContext::builder().point(WorldPoint::new(0, 0)).build())
-            .id(Uuid::new_v4())
-            .type_(UnitType::Settlers)
-            .flag(Flag::Abkhazia)
-            .build()
-    }
-
     #[rstest]
-    fn test_settle(settler: Unit) {
+    fn test_settle() {
         // GIVEN
-        let mut testing = TestingRunnerContext::new().units(vec![settler.clone()]);
+        let mut testing = TestingRunnerContext::new();
+        let player_id = Uuid::new_v4();
         let client_id = Uuid::new_v4();
-        let settler_id = settler.id();
         let city_name = "CityName".to_string();
-        let client_settler = ClientUnit::builder()
-            .id(settler_id)
-            .geo(*settler.geo())
-            .type_(*settler.type_())
-            .flag(Flag::Abkhazia)
-            .build();
-        let expected_client_unit = ClientUnit::builder()
-            .id(settler_id)
-            .geo(*settler.geo())
-            .flag(Flag::Abkhazia)
-            .type_(*settler.type_())
-            .task(ClientTask::new(
-                ClientTaskType::Settle(ClientSettle::new(city_name.clone())),
-                GameFrame(0),
-                GameFrame(100),
-            ))
-            .build();
         let mut runner = testing.build();
 
-        let set_window = ClientToServerInGameMessage::SetWindow(SetWindow::new(0, 0, 1, 1));
-        let create_task = ClientToServerInGameMessage::Unit(
-            settler_id,
-            ClientToServerUnitMessage::Settle(city_name.clone()),
+        let place = ClientToServerGameMessage::Establishment(
+            ClientToServerEstablishmentMessage::TakePlace(Flag::Abkhazia),
         );
 
         let expected_set_window =
             ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
                 ClientStateMessage::SetWindow(Window::new(0, 0, 1, 1, DisplayStep::Close)),
             ));
-        let expected_game_set_slice = ServerToClientMessage::InGame(
-            ServerToClientInGameMessage::State(ClientStateMessage::SetGameSlice(GameSlice::new(
-                PartialWorld::new(
-                    WorldPoint::new(0, 0),
-                    1,
-                    1,
-                    vec![
-                        Tile::new(TerrainType::GrassLand),
-                        Tile::new(TerrainType::GrassLand),
-                        Tile::new(TerrainType::GrassLand),
-                        Tile::new(TerrainType::GrassLand),
-                    ],
-                ),
-                vec![],
-                vec![client_settler],
-            ))),
+        let expected_game_slice_world = PartialWorld::new(
+            WorldPoint::new(0, 0),
+            1,
+            1,
+            vec![
+                Tile::new(TerrainType::GrassLand),
+                Tile::new(TerrainType::GrassLand),
+                Tile::new(TerrainType::GrassLand),
+                Tile::new(TerrainType::GrassLand),
+            ],
         );
+
+        let server_resume = ServerResume::new(RuleSetType::Testing, vec![]);
+        let expected_server_resume = ServerToClientMessage::Establishment(
+            ServerToClientEstablishmentMessage::ServerResume(server_resume, Some(Flag::Abkhazia)),
+        );
+
+        // WHEN/THEN
+        testing
+            .from_clients_sender
+            .send((Client::new(client_id, player_id), place))
+            .unwrap();
+        runner.do_one_iteration();
+
+        assert_eq!(testing.to_clients_receiver.len(), 4);
+
+        let message1 = testing.to_clients_receiver.try_recv();
+        assert!(matches!(
+            message1,
+            Ok((
+                _,
+                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                    ClientStateMessage::SetUnit(_)
+                ))
+            ))
+        ));
+
+        let message2 = testing.to_clients_receiver.try_recv();
+        assert_eq!(message2, Ok((client_id, expected_set_window)));
+
+        let message3 = testing.to_clients_receiver.try_recv();
+        assert!(matches!(
+            message3,
+            Ok((
+                _,
+                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                    ClientStateMessage::SetGameSlice(_)
+                ))
+            ))
+        ));
+        let received_unit = if let Ok((
+            _,
+            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                ClientStateMessage::SetGameSlice(received_game_slice),
+            )),
+        )) = message3
+        {
+            assert_eq!(received_game_slice.world(), &expected_game_slice_world);
+            assert_eq!(received_game_slice.cities(), &vec![]);
+            assert_eq!(received_game_slice.units().len(), 1);
+            received_game_slice.units().first().unwrap().clone()
+        } else {
+            unreachable!()
+        };
+
+        assert_eq!(received_unit.type_(), &UnitType::Settlers);
+        assert_eq!(received_unit.geo().point(), &WorldPoint::new(0, 0));
+
+        let message4 = testing.to_clients_receiver.try_recv();
+        assert_eq!(message4, Ok((client_id, expected_server_resume)));
+
+        let create_task = ClientToServerGameMessage::InGame(ClientToServerInGameMessage::Unit(
+            received_unit.id(),
+            ClientToServerUnitMessage::Settle(city_name.clone()),
+        ));
+        testing
+            .from_clients_sender
+            .send((Client::new(client_id, player_id), create_task))
+            .unwrap();
+        runner.do_one_iteration();
+
+        let expected_client_unit = ClientUnit::builder()
+            .id(received_unit.id())
+            .geo(*received_unit.geo())
+            .flag(Flag::Abkhazia)
+            .type_(*received_unit.type_())
+            .task(ClientTask::new(
+                ClientTaskType::Settle(ClientSettle::new(city_name.clone())),
+                GameFrame(0),
+                GameFrame(100),
+            ))
+            .build();
         let expected_set_unit = ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
             ClientStateMessage::SetUnit(expected_client_unit),
         ));
 
-        // WHEN
-        testing
-            .from_clients_sender
-            .send((client_id, set_window))
-            .unwrap();
-        runner.do_one_iteration();
-        testing
-            .from_clients_sender
-            .send((client_id, create_task))
-            .unwrap();
-        runner.do_one_iteration();
-
-        // THEN
-        assert_eq!(testing.to_clients_receiver.len(), 3);
-
-        let message1 = testing.to_clients_receiver.try_recv();
-        assert_eq!(message1, Ok((client_id, expected_set_window)));
-
-        let message2 = testing.to_clients_receiver.try_recv();
-        assert_eq!(message2, Ok((client_id, expected_game_set_slice)));
-
-        let message3 = testing.to_clients_receiver.try_recv();
-        assert_eq!(message3, Ok((client_id, expected_set_unit)));
+        let message5 = testing.to_clients_receiver.try_recv();
+        assert_eq!(message5, Ok((client_id, expected_set_unit)));
     }
 }

@@ -1,4 +1,5 @@
 pub mod nation;
+pub mod server;
 pub mod tasks;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Sub};

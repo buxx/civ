@@ -1,13 +1,20 @@
 pub mod clients;
 
 use clients::Clients;
-use common::game::GameFrame;
+use common::{
+    game::{nation::flag::Flag, server::ServerResume, GameFrame},
+    network::Client,
+    rules::RuleSetBox,
+    space::window::{DisplayStep, Window},
+};
 use index::Index;
 use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
+    effect::{
+        Action, CityEffect, ClientEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect,
+    },
     game::{city::City, unit::Unit},
     task::TaskBox,
 };
@@ -59,8 +66,8 @@ impl State {
                     StateEffect::IncrementGameFrame => {
                         self.increment_frame();
                     }
-                    StateEffect::Client(uuid, effect) => {
-                        self.clients.apply(*uuid, effect);
+                    StateEffect::Client(client, effect) => {
+                        self.clients.apply(client, effect);
                     }
                     StateEffect::Task(uuid, effect) => match effect {
                         TaskEffect::Push(task) => self.tasks.push(task.clone()),
@@ -102,6 +109,21 @@ impl State {
                         self.testing += 1;
                     }
                 },
+                Effect::Action(action) => match action {
+                    Action::UpdateClientWindow(client, set_window) => {
+                        let window = Window::new(
+                            set_window.start_x(),
+                            set_window.start_y(),
+                            set_window.end_x(),
+                            set_window.end_y(),
+                            DisplayStep::from_shape(set_window.shape()),
+                        );
+                        self.clients
+                            .apply(client, &ClientEffect::SetWindow(window))
+                            .unwrap();
+                    }
+                },
+                Effect::Shines(_) => {}
             }
         }
 
@@ -214,6 +236,21 @@ impl State {
     pub fn testing(&self) -> u64 {
         self.testing
     }
+
+    pub fn client_flag(&self, client: &Client) -> Result<&Flag, StateError> {
+        Ok(self
+            .clients
+            .player_state(client.player_id())
+            .ok_or(StateError::NoLongerExist(NoLongerExist::Player(
+                *client.player_id(),
+            )))?
+            .flag())
+    }
+
+    pub fn server_resume(&self, rules: &RuleSetBox) -> ServerResume {
+        let flags = self.clients.flags();
+        ServerResume::new(rules.clone().into(), flags)
+    }
 }
 
 #[derive(Error, Debug)]
@@ -230,6 +267,8 @@ pub enum NoLongerExist {
     City(Uuid),
     #[error("No unit for uuid {0}")]
     Unit(Uuid),
+    #[error("No player state for uuid {0}")]
+    Player(Uuid),
 }
 
 #[derive(Error, Debug)]

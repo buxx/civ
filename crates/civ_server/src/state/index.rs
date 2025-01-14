@@ -78,7 +78,11 @@ impl Index {
         }
     }
 
-    pub fn xy_cities(&self, window: &Window) -> Vec<Uuid> {
+    pub fn xy_cities(&self, point: &WorldPoint) -> Option<&Uuid> {
+        self.xy_cities.get(point)
+    }
+
+    pub fn window_cities(&self, window: &Window) -> Vec<Uuid> {
         if !window.step().include_cities() {
             return vec![];
         }
@@ -95,8 +99,11 @@ impl Index {
         cities
     }
 
-    pub fn xy_units(&self, window: &Window) -> Vec<Uuid> {
-        // TODO: prevent from client spoofing ? (used in bench)
+    pub fn xy_units(&self, point: &WorldPoint) -> Option<&Vec<Uuid>> {
+        self.xy_units.get(point)
+    }
+
+    pub fn window_units(&self, window: &Window) -> Vec<Uuid> {
         if !window.step().include_units() {
             return vec![];
         }
@@ -162,6 +169,8 @@ impl Index {
                     },
                     StateEffect::Testing => {}
                 },
+                Effect::Shines(_) => {}
+                Effect::Action(_) => {}
             }
         }
 

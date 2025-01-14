@@ -1,8 +1,10 @@
 use common::{
-    network::message::{ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage},
+    network::{
+        message::{ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage},
+        Client,
+    },
     space::window::{DisplayStep, SetWindow, Window},
 };
-use uuid::Uuid;
 
 use crate::{
     effect::{ClientEffect, Effect, StateEffect},
@@ -10,14 +12,14 @@ use crate::{
     runner::{RunnerContext, RunnerError},
 };
 
-pub struct SetWindowRequestDealer {
+pub struct SetWindowRequestDealer<'a> {
     context: RunnerContext,
-    client_id: Uuid,
+    client: &'a Client,
 }
 
-impl SetWindowRequestDealer {
-    pub fn new(context: RunnerContext, client_id: Uuid) -> Self {
-        Self { context, client_id }
+impl<'a> SetWindowRequestDealer<'a> {
+    pub fn new(context: RunnerContext, client: &'a Client) -> Self {
+        Self { context, client }
     }
 
     pub fn deal(&self, set_window: &SetWindow) -> Result<Vec<Effect>, RunnerError> {
@@ -36,7 +38,7 @@ impl SetWindowRequestDealer {
                 .read()
                 .expect("Consider world as always readable"),
         )
-        .game_slice(&self.client_id, &window);
+        .game_slice(self.client, &window);
 
         for message in [
             ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
@@ -48,12 +50,12 @@ impl SetWindowRequestDealer {
         ] {
             self.context
                 .to_client_sender
-                .send((self.client_id, message))
+                .send((*self.client.client_id(), message))
                 .unwrap();
         }
 
         Ok(vec![Effect::State(StateEffect::Client(
-            self.client_id,
+            *self.client,
             ClientEffect::SetWindow(window),
         ))])
     }

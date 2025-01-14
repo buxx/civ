@@ -1,3 +1,4 @@
+use common::network::Client;
 use message_io::network::Endpoint;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -5,22 +6,22 @@ use uuid::Uuid;
 #[derive(Default)]
 pub struct Clients {
     endpoints: HashMap<Uuid, Endpoint>,
-    clients: HashMap<Endpoint, Uuid>,
+    clients: HashMap<Endpoint, Client>,
 }
 
 impl Clients {
-    pub fn insert(&mut self, client_id: Uuid, endpoint: Endpoint) {
-        self.endpoints.insert(client_id, endpoint);
-        self.clients.insert(endpoint, client_id);
+    pub fn insert(&mut self, client: Client, endpoint: Endpoint) {
+        self.endpoints.insert(*client.client_id(), endpoint);
+        self.clients.insert(endpoint, client);
     }
 
     pub fn remove(&mut self, endpoint: &Endpoint) {
-        if let Some(client_id) = self.clients.remove(endpoint) {
-            self.endpoints.remove(&client_id);
+        if let Some(client) = self.clients.remove(endpoint) {
+            self.endpoints.remove(client.client_id());
         }
     }
 
-    pub fn client_id(&self, endpoint: &Endpoint) -> Option<&Uuid> {
+    pub fn client_for_endpoint(&self, endpoint: &Endpoint) -> Option<&Client> {
         self.clients.get(endpoint)
     }
 

@@ -1,5 +1,7 @@
 use common::{
     game::{
+        nation::flag::Flag,
+        server::ServerResume,
         slice::{ClientCity, ClientUnit},
         GameFrame,
     },
@@ -15,6 +17,8 @@ use crate::error::PublicError;
 pub struct State {
     client_id: Uuid,
     connected: bool,
+    server: Option<ServerResume>,
+    flag: Option<Flag>,
     window: Option<Window>,
     errors: Vec<PublicError>,
     frame: Option<GameFrame>,
@@ -28,6 +32,8 @@ impl State {
         Self {
             client_id,
             connected: false,
+            server: None,
+            flag: None,
             window: None,
             errors: vec![],
             frame: None,
@@ -123,6 +129,22 @@ impl State {
 
     pub fn world(&self) -> Option<&PartialWorld> {
         self.world.as_ref()
+    }
+
+    pub fn server(&self) -> Option<&ServerResume> {
+        self.server.as_ref()
+    }
+
+    pub fn set_server(&mut self, server: Option<ServerResume>) {
+        self.server = server;
+    }
+
+    pub fn flag(&self) -> Option<Flag> {
+        self.flag
+    }
+
+    pub fn set_flag(&mut self, flag: Option<Flag>) {
+        self.flag = flag;
     }
 }
 

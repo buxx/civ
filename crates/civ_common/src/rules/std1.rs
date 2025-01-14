@@ -1,15 +1,22 @@
-use crate::game::{
-    city::{CityProduct, CityProductionTons},
-    unit::{TaskType, UnitTaskType, UnitType},
-    GameFrame, GAME_FRAMES_PER_SECOND,
+use crate::{
+    game::{
+        city::{CityProduct, CityProductionTons},
+        unit::{TaskType, UnitTaskType, UnitType},
+        GameFrame, GAME_FRAMES_PER_SECOND,
+    },
+    world::{TerrainType, Tile},
 };
 
-use super::RuleSet;
+use super::{RuleSet, RuleSetType};
 
 #[derive(Clone)]
 pub struct Std1RuleSet;
 
 impl RuleSet for Std1RuleSet {
+    fn type_(&self) -> RuleSetType {
+        RuleSetType::Std1
+    }
+
     fn tasks(&self) -> Vec<TaskType> {
         vec![TaskType::Unit(UnitTaskType::Settle)]
     }
@@ -42,5 +49,17 @@ impl RuleSet for Std1RuleSet {
                 UnitType::Warriors => CityProductionTons(8),
             },
         }
+    }
+
+    fn can_be_startup(&self, tile: &Tile) -> bool {
+        match tile.type_ {
+            TerrainType::GrassLand | TerrainType::Plain => true,
+        }
+    }
+}
+
+impl From<Std1RuleSet> for RuleSetType {
+    fn from(_: Std1RuleSet) -> Self {
+        RuleSetType::Std1
     }
 }

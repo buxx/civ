@@ -18,6 +18,8 @@ pub enum GamePlayReason {
     CityNoLongerExist,
     #[error("Unit no longer exist")]
     UnitNoLongerExist,
+    #[error("Player no longer exist")]
+    PlayerNoLongerExist,
 }
 
 #[derive(Error, Debug)]

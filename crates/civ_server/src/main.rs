@@ -38,16 +38,6 @@ fn main() -> Result<(), Error> {
     let rules = Std1RuleSet;
     let mut state = State::default();
     let world_source = PathBuf::from("./world");
-    // HACK
-    let uuid = Uuid::new_v4();
-    state.apply(&vec![effect::new_unit(
-        Unit::builder()
-            .id(uuid)
-            .type_(UnitType::Settlers)
-            .geo(GeoContext::builder().point(WorldPoint::new(0, 0)).build())
-            .flag(Flag::Abkhazia)
-            .build(),
-    )]);
 
     info!("Read world ...");
     let world = WorldReader::from(world_source)?;

@@ -1,9 +1,10 @@
+pub mod establishment;
 use crate::{
     context::Context,
     state::{State, StateError},
 };
 use clap::{Args, Parser, Subcommand};
-use common::network::message::{ClientToServerInGameMessage, ServerToClientMessage};
+use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use crossbeam::channel::{Receiver, SendError, Sender};
 use std::{
     sync::{Arc, RwLock},
@@ -41,6 +42,9 @@ pub enum SubCommand {
     Exit,
     Status,
     Errors,
+    TakePlace {
+        flag: String,
+    },
     Window {
         #[clap(subcommand)]
         subcommand: WindowSubCommand,
@@ -84,7 +88,7 @@ pub struct CommandContext {
     pub context: Context,
     pub state: Arc<RwLock<State>>,
     pub from_server_receiver: Receiver<ServerToClientMessage>,
-    pub to_server_sender: Sender<ClientToServerInGameMessage>,
+    pub to_server_sender: Sender<ClientToServerMessage>,
 }
 
 impl CommandContext {
@@ -92,7 +96,7 @@ impl CommandContext {
         context: Context,
         state: Arc<RwLock<State>>,
         from_server_receiver: Receiver<ServerToClientMessage>,
-        to_server_sender: Sender<ClientToServerInGameMessage>,
+        to_server_sender: Sender<ClientToServerMessage>,
     ) -> Self {
         Self {
             context,
@@ -110,7 +114,15 @@ pub enum CommandError {
     #[error("Unit no more available")]
     UnitNoMoreAvailable,
     #[error("Unexpected closed channel: {0}")]
-    Unexpected(#[from] SendError<ClientToServerInGameMessage>),
+    Unexpected(#[from] SendError<ClientToServerMessage>),
+    #[error("Invalid user input: {0}")]
+    InvalidInput(InvalidInputError),
+}
+
+#[derive(Error, Debug)]
+pub enum InvalidInputError {
+    #[error("Invalid flag: {0}")]
+    InvalidFlag(String),
 }
 
 impl From<StateError> for CommandError {

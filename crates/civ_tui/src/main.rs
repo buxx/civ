@@ -1,10 +1,12 @@
+use clap::Parser;
 use std::{
+    str::FromStr,
     sync::{Arc, RwLock},
     thread,
 };
 
 use common::{
-    network::message::{ClientToServerInGameMessage, ServerToClientMessage},
+    network::message::{ClientToServerMessage, ServerToClientMessage},
     rules::std1::Std1RuleSet,
 };
 use context::Context;
@@ -24,20 +26,37 @@ mod state;
 
 #[derive(Error, Debug)]
 enum Error {
+    #[error("Invalid player id: {0}")]
+    PlayerId(uuid::Error),
     #[error("Network prepare error: {0}")]
     PrepareNetwork(String),
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Arguments {
+    /// Server address
+    #[arg(short, long, default_value = "127.0.0.1:9876")]
+    address: String,
+
+    /// Player unique id
+    #[arg(short, long)]
+    player: Option<String>,
 }
 
 fn main() -> Result<(), Error> {
     let env = env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info");
     env_logger::init_from_env(env);
+    let args = Arguments::parse();
 
     let client_id = Uuid::new_v4();
+    let player_id = Uuid::from_str(&args.player.unwrap_or(Uuid::new_v4().to_string()))
+        .map_err(|e| Error::PlayerId(e))?;
     let context = Context::new(Box::new(Std1RuleSet));
     let state = Arc::new(RwLock::new(State::new(client_id)));
     let (to_server_sender, to_server_receiver): (
-        Sender<ClientToServerInGameMessage>,
-        Receiver<ClientToServerInGameMessage>,
+        Sender<ClientToServerMessage>,
+        Receiver<ClientToServerMessage>,
     ) = unbounded();
     let (from_server_sender, from_server_receiver): (
         Sender<ServerToClientMessage>,
@@ -46,7 +65,8 @@ fn main() -> Result<(), Error> {
 
     let network = Network::new(
         client_id,
-        "127.0.0.1:9876",
+        player_id,
+        &args.address,
         context.clone(),
         Arc::clone(&state),
         to_server_receiver,

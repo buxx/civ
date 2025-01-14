@@ -7,8 +7,8 @@ use std::{
 use bon::Builder;
 use clap::Parser;
 use common::network::message::{
-    ClientToServerInGameMessage, NotificationLevel, ServerToClientInGameMessage,
-    ServerToClientMessage,
+    ClientToServerMessage, NotificationLevel, ServerToClientEstablishmentMessage,
+    ServerToClientInGameMessage, ServerToClientMessage,
 };
 use crossbeam::channel::{Receiver, Sender};
 
@@ -26,7 +26,7 @@ pub struct Runner {
     context: Context,
     state: Arc<RwLock<State>>,
     from_server_receiver: Receiver<ServerToClientMessage>,
-    to_server_sender: Sender<ClientToServerInGameMessage>,
+    to_server_sender: Sender<ClientToServerMessage>,
 }
 
 impl Runner {
@@ -38,6 +38,15 @@ impl Runner {
             while let Ok(message) = from_server_receiver.recv() {
                 let mut state = state.write().expect("Assume state is always accessible");
                 match message {
+                    ServerToClientMessage::Establishment(message) => match message {
+                        ServerToClientEstablishmentMessage::ServerResume(server_resume, flag) => {
+                            state.set_server(Some(server_resume));
+                            state.set_flag(flag);
+                        }
+                        ServerToClientEstablishmentMessage::TakePlaceRefused(
+                            take_place_refused_reason,
+                        ) => todo!(),
+                    },
                     ServerToClientMessage::InGame(ServerToClientInGameMessage::State(message)) => {
                         state.apply(message);
                     }
@@ -95,6 +104,9 @@ impl Runner {
                     }
                     SubCommand::Errors => {
                         command::errors::errors(self.into());
+                    }
+                    SubCommand::TakePlace { flag } => {
+                        command::establishment::place(self.into(), &flag)?
                     }
                     SubCommand::Window { subcommand } => {
                         match subcommand {

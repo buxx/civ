@@ -1,4 +1,7 @@
-use common::space::window::Window;
+use common::game::nation::flag::Flag;
+use common::network::message::ServerToClientMessage;
+use common::network::Client;
+use common::space::window::{SetWindow, Window};
 use uuid::Uuid;
 
 use crate::game::{city::City, unit::Unit};
@@ -7,18 +10,28 @@ use crate::task::{Concern, TaskBox};
 
 #[derive(Debug, Clone)]
 pub enum Effect {
+    /// Effect which will modify the state
     State(StateEffect),
+    /// Effect which only product reflects
+    Shines(Vec<(ServerToClientMessage, Vec<Uuid>)>),
+    /// Effect which product immediate action
+    Action(Action),
 }
 
 #[derive(Debug, Clone)]
 pub enum StateEffect {
     IncrementGameFrame,
-    Client(Uuid, ClientEffect),
+    Client(Client, ClientEffect),
     Tasks(TasksEffect),
-    Task(Uuid, TaskEffect),
-    City(Uuid, CityEffect),
-    Unit(Uuid, UnitEffect),
+    Task(Uuid, TaskEffect), // TaskId
+    City(Uuid, CityEffect), // CityId
+    Unit(Uuid, UnitEffect), // UnitId
     Testing,
+}
+
+#[derive(Debug, Clone)]
+pub enum Action {
+    UpdateClientWindow(Client, SetWindow),
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +49,7 @@ pub enum TasksEffect {
 
 #[derive(Debug, Clone)]
 pub enum ClientEffect {
+    PlayerTookPlace(Flag),
     SetWindow(Window),
 }
 

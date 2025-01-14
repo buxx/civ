@@ -14,11 +14,16 @@ pub fn status(context: CommandContext) {
         .world()
         .map(|w| w.tiles().len().to_string())
         .unwrap_or("n/a".to_string());
+    let flag_str = state
+        .flag()
+        .map(|f| f.to_string())
+        .unwrap_or("n/a".to_string());
 
     println!("client_id: {}", state.client_id());
     println!("connected: {}", state.connected());
+    println!("flag: {}", flag_str);
     println!("errors: {}", state.errors().len());
-    println!("window: {} ({}t)", window_str, tiles_str);
+    println!("window: {} ({})", window_str, tiles_str);
     println!(
         "cities: {}",
         state
