@@ -54,7 +54,7 @@ fn main() -> Result<(), Error> {
 
     let client_id = ClientId::default();
     let player_id = PlayerId::from_str(&args.player.unwrap_or(PlayerId::default().to_string()))
-        .map_err(|e| Error::PlayerId(e))?;
+        .map_err(Error::PlayerId)?;
     let context = Context::new(Box::new(Std1RuleSet));
     let state = Arc::new(RwLock::new(State::new(client_id)));
     let (to_server_sender, to_server_receiver): (

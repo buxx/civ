@@ -143,7 +143,7 @@ impl Index {
                     StateEffect::Task(_, effect) => match effect {
                         TaskEffect::Push(task) => self.apply_new_task(task),
                         TaskEffect::Finished(task) => {
-                            self.apply_remove_task(&task.context().id(), &task.concern())
+                            self.apply_remove_task(task.context().id(), &task.concern())
                         }
                         TaskEffect::Remove(uuid, concern) => self.apply_remove_task(uuid, concern),
                     },
