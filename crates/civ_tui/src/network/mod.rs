@@ -27,7 +27,7 @@ enum Signal {
     CheckStopIsRequired,
 }
 
-pub struct Network {
+pub struct NetworkClient {
     client_id: ClientId,
     player_id: PlayerId,
     context: Context,
@@ -40,7 +40,7 @@ pub struct Network {
 }
 
 // TODO: heartbeat
-impl Network {
+impl NetworkClient {
     pub fn new(
         client_id: ClientId,
         player_id: PlayerId,

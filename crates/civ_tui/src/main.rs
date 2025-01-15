@@ -15,7 +15,7 @@ use common::{
 };
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
-use network::Network;
+use network::NetworkClient;
 use runner::Runner;
 use state::State;
 use thiserror::Error;
@@ -66,7 +66,7 @@ fn main() -> Result<(), Error> {
         Receiver<ServerToClientMessage>,
     ) = unbounded();
 
-    let network = Network::new(
+    let network = NetworkClient::new(
         client_id,
         player_id,
         &args.address,
