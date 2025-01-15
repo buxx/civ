@@ -5,6 +5,28 @@ use std::{
 
 use super::unit::UnitType;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct CityId(pub Uuid);
+
+impl CityId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl Default for CityId {
+    fn default() -> Self {
+        Self(Uuid::new_v4())
+    }
+}
+
+impl Display for CityId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0.to_string())
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 pub struct CityProductionTons(pub u64);

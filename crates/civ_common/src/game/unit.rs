@@ -1,8 +1,30 @@
 use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use super::city::CityProductionTons;
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct UnitId(pub Uuid);
+
+impl UnitId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl Default for UnitId {
+    fn default() -> Self {
+        Self(Uuid::new_v4())
+    }
+}
+
+impl Display for UnitId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0.to_string())
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum UnitType {

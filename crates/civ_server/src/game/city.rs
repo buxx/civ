@@ -3,13 +3,12 @@ use std::sync::RwLockReadGuard;
 use bon::Builder;
 use common::{
     game::{
-        city::{CityExploitation, CityProduction},
+        city::{CityExploitation, CityId, CityProduction},
         nation::flag::Flag,
         slice::ClientCity,
     },
     geo::Geo,
 };
-use uuid::Uuid;
 
 use common::geo::GeoContext;
 
@@ -19,7 +18,7 @@ use super::IntoClientModel;
 
 #[derive(Debug, Builder, Clone)]
 pub struct City {
-    id: Uuid,
+    id: CityId,
     flag: Flag,
     name: String,
     geo: GeoContext,
@@ -29,7 +28,7 @@ pub struct City {
 }
 
 impl City {
-    pub fn id(&self) -> &Uuid {
+    pub fn id(&self) -> &CityId {
         &self.id
     }
 

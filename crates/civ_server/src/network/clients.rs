@@ -1,11 +1,10 @@
-use common::network::Client;
+use common::network::{Client, ClientId};
 use message_io::network::Endpoint;
 use std::collections::HashMap;
-use uuid::Uuid;
 
 #[derive(Default)]
 pub struct Clients {
-    endpoints: HashMap<Uuid, Endpoint>,
+    endpoints: HashMap<ClientId, Endpoint>,
     clients: HashMap<Endpoint, Client>,
 }
 
@@ -25,7 +24,7 @@ impl Clients {
         self.clients.get(endpoint)
     }
 
-    pub fn endpoint(&self, client_id: &Uuid) -> Option<&Endpoint> {
+    pub fn endpoint(&self, client_id: &ClientId) -> Option<&Endpoint> {
         self.endpoints.get(client_id)
     }
 

@@ -6,7 +6,11 @@ use std::{
 };
 
 use common::{
-    network::message::{ClientToServerMessage, ServerToClientMessage},
+    game::PlayerId,
+    network::{
+        message::{ClientToServerMessage, ServerToClientMessage},
+        ClientId,
+    },
     rules::std1::Std1RuleSet,
 };
 use context::Context;
@@ -15,7 +19,6 @@ use network::Network;
 use runner::Runner;
 use state::State;
 use thiserror::Error;
-use uuid::Uuid;
 
 mod command;
 mod context;
@@ -49,8 +52,8 @@ fn main() -> Result<(), Error> {
     env_logger::init_from_env(env);
     let args = Arguments::parse();
 
-    let client_id = Uuid::new_v4();
-    let player_id = Uuid::from_str(&args.player.unwrap_or(Uuid::new_v4().to_string()))
+    let client_id = ClientId::default();
+    let player_id = PlayerId::from_str(&args.player.unwrap_or(PlayerId::default().to_string()))
         .map_err(|e| Error::PlayerId(e))?;
     let context = Context::new(Box::new(Std1RuleSet));
     let state = Arc::new(RwLock::new(State::new(client_id)));

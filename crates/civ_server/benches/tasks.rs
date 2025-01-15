@@ -8,7 +8,7 @@ use civ_server::{
     effect::{Effect, StateEffect},
     runner::{Runner, RunnerContext},
     state::State,
-    task::{Concern, Task, TaskBox, TaskContext, TaskError, Then},
+    task::{Concern, Task, TaskBox, TaskContext, TaskError, TaskId, Then},
     world::reader::WorldReader,
     FromClientsChannels, ToClientsChannels,
 };
@@ -102,7 +102,7 @@ fn runner_with_fibonacci_tasks(tasks_count: usize, complexity: u64, iterations: 
     for _ in 0..tasks_count {
         state.tasks_mut().push(Box::new(FibonacciTask::new(
             TaskContext::builder()
-                .id(Uuid::new_v4())
+                .id(TaskId::default())
                 .start(GameFrame(0))
                 .end(GameFrame(1_000_000_000))
                 .build(),

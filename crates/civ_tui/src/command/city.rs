@@ -1,6 +1,6 @@
 use std::thread;
 
-use uuid::Uuid;
+use common::game::city::CityId;
 
 use super::{CommandContext, CommandError, FOLLOW_INTERVAL};
 
@@ -17,7 +17,7 @@ pub fn cities(context: CommandContext) -> Result<(), CommandError> {
     Ok(())
 }
 
-pub fn city(context: CommandContext, id: Uuid, follow: bool) -> Result<(), CommandError> {
+pub fn city(context: CommandContext, id: &CityId, follow: bool) -> Result<(), CommandError> {
     let state = context
         .state
         .read()

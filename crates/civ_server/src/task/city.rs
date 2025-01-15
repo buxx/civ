@@ -1,7 +1,7 @@
 use bon::Builder;
 use common::{
     game::{
-        city::{CityExploitation, CityProduct, CityProduction, CityProductionTons},
+        city::{CityExploitation, CityId, CityProduct, CityProduction, CityProductionTons},
         nation::flag::Flag,
         slice::ClientCityTasks,
         GameFrame, FRAME_PRODUCTION_TONS_RATIO, PRODUCTION_FRAMES_PER_TONS,
@@ -9,14 +9,13 @@ use common::{
     geo::{Geo, GeoContext},
     rules::RuleSetBox,
 };
-use uuid::Uuid;
 
 use crate::{
     game::{city::City, task::production::CityProductionTask},
     runner::RunnerContext,
 };
 
-use super::{Task, TaskBox, TaskContext, TaskError};
+use super::{Task, TaskBox, TaskContext, TaskError, TaskId};
 
 #[derive(Builder)]
 pub struct CityGenerator<'a> {
@@ -36,7 +35,7 @@ pub enum BuildCityFromChange {
 }
 
 impl BuildCityFrom<'_> {
-    pub fn id(&self) -> Option<&Uuid> {
+    pub fn id(&self) -> Option<&CityId> {
         match self {
             BuildCityFrom::Scratch(_, _, _) => None,
             BuildCityFrom::Change(city, _) => Some(city.id()),
@@ -75,7 +74,7 @@ impl BuildCityFrom<'_> {
 impl CityGenerator<'_> {
     pub fn generate(&self) -> Result<City, TaskError> {
         let default_production = self.context.default_production();
-        let city_id = self.from.id().copied().unwrap_or(Uuid::new_v4());
+        let city_id = self.from.id().copied().unwrap_or(CityId::default());
         let tasks = CityTasks::new(production_task(
             self.context.context.rules(),
             self.game_frame,
@@ -112,7 +111,7 @@ fn production_task(
     rules: &RuleSetBox,
     game_frame: &GameFrame,
     from: &BuildCityFrom,
-    city_id: &Uuid,
+    city_id: &CityId,
     default_product: &CityProduct,
 ) -> CityProductionTask {
     let (previous, current): FromProduction = match from {
@@ -151,7 +150,7 @@ fn production_task(
     CityProductionTask::builder()
         .context(
             TaskContext::builder()
-                .id(Uuid::new_v4())
+                .id(TaskId::default())
                 .start(*game_frame)
                 .end(*game_frame + required_frames)
                 .build(),
@@ -258,7 +257,7 @@ mod test {
         let game_frame = GameFrame(0);
         let rule_set: RuleSetBox = Box::new(TestRuleSet);
         let city_geo = GeoContext::builder().point(WorldPoint::new(0, 0)).build();
-        let city_id = Uuid::new_v4();
+        let city_id = CityId::default();
         let expected_end = PRODUCTION_FRAMES_PER_TONS * 40;
 
         // WHEN
@@ -282,7 +281,7 @@ mod test {
         let game_frame = GameFrame(24_000);
         let rule_set: RuleSetBox = Box::new(TestRuleSet);
         let city_geo = GeoContext::builder().point(WorldPoint::new(0, 0)).build();
-        let city_id = Uuid::new_v4();
+        let city_id = CityId::default();
         let city = City::builder()
             .geo(city_geo)
             .id(city_id)
@@ -295,7 +294,7 @@ mod test {
                 CityProductionTask::builder()
                     .context(
                         TaskContext::builder()
-                            .id(Uuid::new_v4())
+                            .id(TaskId::default())
                             .start(GameFrame(0))
                             .end(GameFrame(240_000))
                             .build(),
@@ -337,7 +336,7 @@ mod test {
         let game_frame = GameFrame(120_000);
         let rule_set: RuleSetBox = Box::new(TestRuleSet);
         let city_geo = GeoContext::builder().point(WorldPoint::new(0, 0)).build();
-        let city_id = Uuid::new_v4();
+        let city_id = CityId::default();
         let city = City::builder()
             .geo(city_geo)
             .id(city_id)
@@ -348,7 +347,7 @@ mod test {
                 CityProductionTask::builder()
                     .context(
                         TaskContext::builder()
-                            .id(Uuid::new_v4())
+                            .id(TaskId::default())
                             .start(GameFrame(0))
                             .end(GameFrame(240_000))
                             .build(),

@@ -1,26 +1,30 @@
 use std::collections::HashMap;
 
-use common::{game::nation::flag::Flag, geo::GeoContext, network::Client, space::window::Window};
+use common::{
+    game::{nation::flag::Flag, PlayerId},
+    geo::GeoContext,
+    network::{Client, ClientId},
+    space::window::Window,
+};
 use thiserror::Error;
-use uuid::Uuid;
 
 use crate::effect::ClientEffect;
 
-// FIXME: replace all Uuid by super types
+// FIXME: contain client and player related. rename ? split ?
 #[derive(Default)]
 pub struct Clients {
     count: usize,
-    client_windows: Vec<(Uuid, Window)>,
+    client_windows: Vec<(ClientId, Window)>,
     // this must be restored after a backup
-    states: HashMap<Uuid, ClientState>, // PlayerId, ClientState
+    states: HashMap<PlayerId, ClientState>,
 }
 
 #[derive(Debug, Error)]
 pub enum ClientsError {
     #[error("Unknown client {0}")]
-    UnknownClient(Uuid),
+    UnknownClient(ClientId),
     #[error("Unknown player {0}")]
-    UnknownPlayer(Uuid),
+    UnknownPlayer(PlayerId),
 }
 
 impl Clients {
@@ -51,7 +55,7 @@ impl Clients {
         Ok(())
     }
 
-    pub fn concerned(&self, geo: &GeoContext) -> Vec<Uuid> {
+    pub fn concerned(&self, geo: &GeoContext) -> Vec<ClientId> {
         self.client_windows
             .iter()
             .filter_map(|(client, window)| {
@@ -64,16 +68,20 @@ impl Clients {
             .collect()
     }
 
-    pub fn client_ids(&self) -> Vec<Uuid> {
-        self.states.keys().copied().collect()
+    pub fn client_ids(&self) -> Vec<ClientId> {
+        self.client_windows.iter().map(|(i, _)| *i).collect()
     }
 
-    pub fn player_state(&self, player_id: &Uuid) -> Option<&ClientState> {
+    pub fn player_state(&self, player_id: &PlayerId) -> Option<&ClientState> {
         self.states.get(player_id)
     }
 
     pub fn flags(&self) -> Vec<Flag> {
         self.states.values().map(|s| *s.flag()).collect()
+    }
+
+    pub fn states(&self) -> &HashMap<PlayerId, ClientState> {
+        &self.states
     }
 }
 

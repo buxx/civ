@@ -1,12 +1,13 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use thiserror::Error;
 
 use crate::{
     game::{
-        city::{CityExploitation, CityProduction},
+        city::{CityExploitation, CityId, CityProduction},
         nation::flag::Flag,
         server::ServerResume,
         slice::{ClientCity, ClientUnit, GameSlice},
+        unit::UnitId,
         GameFrame,
     },
     space::window::{SetWindow, Window},
@@ -47,8 +48,8 @@ pub enum ClientToServerEstablishmentMessage {
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerInGameMessage {
     SetWindow(SetWindow),
-    Unit(Uuid, ClientToServerUnitMessage),
-    City(Uuid, ClientToServerCityMessage),
+    Unit(UnitId, ClientToServerUnitMessage),
+    City(CityId, ClientToServerCityMessage),
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -71,7 +72,6 @@ pub enum ServerToClientMessage {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum ServerToClientEstablishmentMessage {
     ServerResume(ServerResume, Option<Flag>), // None flag mean player not placed
-    // FIXME BS NOW: return that instead generic error
     TakePlaceRefused(TakePlaceRefusedReason),
 }
 
@@ -87,12 +87,13 @@ pub enum ClientStateMessage {
     SetWindow(Window),
     SetGameSlice(GameSlice),
     SetCity(ClientCity),
-    RemoveCity(Uuid),
+    RemoveCity(CityId),
     SetUnit(ClientUnit),
-    RemoveUnit(Uuid),
+    RemoveUnit(UnitId),
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Error, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum TakePlaceRefusedReason {
+    #[error("Flag {0} already taken")]
     FlagAlreadyTaken(Flag),
 }

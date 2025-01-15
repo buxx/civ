@@ -2,13 +2,13 @@ use civ_server::{
     effect::{CityEffect, Effect, StateEffect, UnitEffect},
     game::{city::City, task::production::CityProductionTask, unit::Unit},
     state::index::Index,
-    task::{city::CityTasks, TaskContext},
+    task::{city::CityTasks, TaskContext, TaskId},
 };
 use common::{
     game::{
-        city::{CityExploitation, CityProduction, CityProductionTons},
+        city::{CityExploitation, CityId, CityProduction, CityProductionTons},
         nation::flag::Flag,
-        unit::UnitType,
+        unit::{UnitId, UnitType},
         GameFrame,
     },
     geo::{GeoContext, WorldPoint},
@@ -19,7 +19,7 @@ use uuid::Uuid;
 
 fn build_unit(i: usize) -> Unit {
     Unit::builder()
-        .id(Uuid::new_v4())
+        .id(UnitId::default())
         .geo(
             GeoContext::builder()
                 .point(WorldPoint::new(i as u64, i as u64))
@@ -51,7 +51,7 @@ fn inject_units(index: &mut Index, unit_count: usize, cities: &[City]) -> Vec<Un
 }
 
 fn build_city(i: usize) -> City {
-    let city_uuid = Uuid::new_v4();
+    let city_uuid = CityId::default();
     City::builder()
         .id(city_uuid)
         .name("CityName".to_string())
@@ -69,7 +69,7 @@ fn build_city(i: usize) -> City {
                         .city(city_uuid)
                         .context(
                             TaskContext::builder()
-                                .id(Uuid::new_v4())
+                                .id(TaskId::default())
                                 .start(GameFrame(0))
                                 .end(GameFrame(1))
                                 .build(),

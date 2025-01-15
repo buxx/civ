@@ -2,13 +2,12 @@ use common::{
     geo::Geo,
     network::{
         message::{ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage},
-        Client,
+        Client, ClientId,
     },
     space::window::{DisplayStep, SetWindow, Window},
 };
 use log::error;
 use thiserror::Error;
-use uuid::Uuid;
 
 use crate::{
     effect::{Action, CityEffect, Effect, StateEffect, UnitEffect},
@@ -41,7 +40,7 @@ impl Runner {
     fn reflect(
         &self,
         effect: &Effect,
-    ) -> Result<Vec<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+    ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
         match effect {
             Effect::Shines(reflects) => Ok(reflects.clone()),
             Effect::State(effect) => match effect {
@@ -79,7 +78,7 @@ impl Runner {
 
     fn increment_game_frame_reflects(
         &self,
-    ) -> Result<Vec<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+    ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
         let client_ids = self.state().clients().client_ids();
         let frame = *self.state().frame();
         Ok(vec![(
@@ -93,7 +92,7 @@ impl Runner {
     fn set_city_reflects(
         &self,
         city: &City,
-    ) -> Result<Vec<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+    ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
         let state = self.state();
         let clients = state.clients().concerned(city.geo());
         if !clients.is_empty() {
@@ -111,7 +110,7 @@ impl Runner {
     fn removed_city_reflects(
         &self,
         city: &City,
-    ) -> Result<Vec<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+    ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
         let state = self.state();
         let clients = state.clients().concerned(city.geo());
         if !clients.is_empty() {
@@ -129,7 +128,7 @@ impl Runner {
     fn set_unit_reflects(
         &self,
         unit: &Unit,
-    ) -> Result<Vec<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+    ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
         let state = self.state();
         let clients = state.clients().concerned(unit.geo());
         if !clients.is_empty() {
@@ -147,13 +146,13 @@ impl Runner {
     fn removed_unit_reflects(
         &self,
         unit: &Unit,
-    ) -> Result<Vec<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+    ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
         let state = self.state();
         let clients = state.clients().concerned(unit.geo());
         if !clients.is_empty() {
             return Ok(vec![(
                 ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                    ClientStateMessage::RemoveUnit(unit.id()),
+                    ClientStateMessage::RemoveUnit(*unit.id()),
                 )),
                 clients,
             )]);
@@ -166,7 +165,7 @@ impl Runner {
         &self,
         client: &Client,
         window: &SetWindow,
-    ) -> Result<Vec<(ServerToClientMessage, Vec<Uuid>)>, ReflectError> {
+    ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
         let window = Window::new(
             window.start_x(),
             window.start_y(),

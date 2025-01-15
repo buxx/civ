@@ -9,7 +9,6 @@ use common::{
     geo::{Geo, GeoContext},
     task::{CantSettleReason, CreateTaskError, GamePlayReason},
 };
-use uuid::Uuid;
 
 use crate::{
     context::Context,
@@ -18,8 +17,8 @@ use crate::{
     runner::RunnerContext,
     state::State,
     task::{
-        unit::UnitTaskWrapper, CityName, Concern, Task, TaskBox, TaskContext, TaskError, Then,
-        ThenTransformUnitIntoCity, WithUnit,
+        unit::UnitTaskWrapper, CityName, Concern, Task, TaskBox, TaskContext, TaskError, TaskId,
+        Then, ThenTransformUnitIntoCity, WithUnit,
     },
 };
 
@@ -33,7 +32,7 @@ pub struct Settle {
 
 impl Settle {
     pub fn new(
-        task_id: Uuid,
+        task_id: TaskId,
         context: Context,
         state: RwLockReadGuard<State>,
         settler: Unit,
@@ -102,7 +101,7 @@ impl Task for Settle {
     }
 
     fn concern(&self) -> Concern {
-        Concern::Unit(self.settler.id())
+        Concern::Unit(*self.settler.id())
     }
 }
 

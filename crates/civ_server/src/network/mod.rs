@@ -3,7 +3,7 @@ use common::network::message::{
     ClientToServerGameMessage, ClientToServerMessage, ClientToServerNetworkMessage,
     ServerToClientEstablishmentMessage, ServerToClientMessage,
 };
-use common::network::Client;
+use common::network::{Client, ClientId};
 use crossbeam::channel::{Receiver, Sender};
 use log::info;
 use message_io::network::{NetEvent, Transport};
@@ -11,10 +11,8 @@ use message_io::node::{self, NodeHandler, NodeListener};
 use std::io;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
-use uuid::Uuid;
 
 use crate::context::Context;
-use crate::effect::ClientEffect;
 use crate::state::State;
 
 mod clients;
@@ -31,7 +29,7 @@ pub struct Network {
     context: Context,
     state: Arc<RwLock<State>>,
     from_clients_sender: Sender<(Client, ClientToServerGameMessage)>,
-    to_client_receiver: Receiver<(Uuid, ServerToClientMessage)>,
+    to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
     handler: NodeHandler<Signal>,
     node_listener: NodeListener<Signal>,
     clients: Clients,
@@ -45,7 +43,7 @@ impl Network {
         state: Arc<RwLock<State>>,
         listen_addr: &str,
         from_clients_sender: Sender<(Client, ClientToServerGameMessage)>,
-        to_client_receiver: Receiver<(Uuid, ServerToClientMessage)>,
+        to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
     ) -> io::Result<Self> {
         let (handler, node_listener) = node::split::<Signal>();
         handler

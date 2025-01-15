@@ -1,10 +1,9 @@
 use bon::Builder;
 use common::game::{
-    city::CityProductionTons,
+    city::{CityId, CityProductionTons},
     tasks::client::city::production::ClientCityProductionTask,
     unit::{CityTaskType, TaskType},
 };
-use uuid::Uuid;
 
 use crate::{
     effect::Effect,
@@ -15,7 +14,7 @@ use crate::{
 #[derive(Debug, Builder, Clone)]
 pub struct CityProductionTask {
     context: TaskContext,
-    city: Uuid,
+    city: CityId,
     tons: CityProductionTons,
 }
 

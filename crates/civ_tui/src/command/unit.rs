@@ -1,13 +1,12 @@
 use std::thread;
 
 use common::{
-    game::unit::{TaskType, UnitTaskType},
+    game::unit::{TaskType, UnitId, UnitTaskType},
     network::message::{
         ClientToServerGameMessage, ClientToServerInGameMessage, ClientToServerMessage,
         ClientToServerUnitMessage,
     },
 };
-use uuid::Uuid;
 
 use super::{CommandContext, CommandError, FOLLOW_INTERVAL};
 
@@ -24,7 +23,7 @@ pub fn units(context: CommandContext) -> Result<(), CommandError> {
     Ok(())
 }
 
-pub fn detail(context: CommandContext, id: Uuid, follow: bool) -> Result<(), CommandError> {
+pub fn detail(context: CommandContext, id: &UnitId, follow: bool) -> Result<(), CommandError> {
     let state = context
         .state
         .read()
@@ -54,7 +53,11 @@ pub fn detail(context: CommandContext, id: Uuid, follow: bool) -> Result<(), Com
     Ok(())
 }
 
-pub fn settle(context: CommandContext, unit_id: Uuid, city_name: &str) -> Result<(), CommandError> {
+pub fn settle(
+    context: CommandContext,
+    unit_id: &UnitId,
+    city_name: &str,
+) -> Result<(), CommandError> {
     let state = context
         .state
         .read()
@@ -77,7 +80,7 @@ pub fn settle(context: CommandContext, unit_id: Uuid, city_name: &str) -> Result
 
     context.to_server_sender.send(ClientToServerMessage::Game(
         ClientToServerGameMessage::InGame(ClientToServerInGameMessage::Unit(
-            unit.id(),
+            *unit.id(),
             ClientToServerUnitMessage::Settle(city_name.to_string()),
         )),
     ))?;

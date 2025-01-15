@@ -1,16 +1,10 @@
 use civ_server::context::Context;
-use civ_server::game::unit::Unit;
 use civ_server::network::Network;
 use civ_server::runner::{Runner, RunnerContext};
 use civ_server::state::State;
 use civ_server::world::reader::{WorldReader, WorldReaderError};
-use civ_server::{effect, FromClientsChannels, ToClientsChannels};
-use common::game::nation::flag::Flag;
-use common::{
-    game::unit::UnitType,
-    geo::{GeoContext, WorldPoint},
-    rules::std1::Std1RuleSet,
-};
+use civ_server::{FromClientsChannels, ToClientsChannels};
+use common::rules::std1::Std1RuleSet;
 use crossbeam::channel::unbounded;
 use log::info;
 use std::{
@@ -19,7 +13,6 @@ use std::{
     thread,
 };
 use thiserror::Error;
-use uuid::Uuid;
 
 pub const TICK_BASE_PERIOD: u64 = 60;
 
@@ -36,7 +29,7 @@ fn main() -> Result<(), Error> {
     env_logger::init_from_env(env);
 
     let rules = Std1RuleSet;
-    let mut state = State::default();
+    let state = State::default();
     let world_source = PathBuf::from("./world");
 
     info!("Read world ...");

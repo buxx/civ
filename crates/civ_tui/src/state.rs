@@ -5,17 +5,16 @@ use common::{
         slice::{ClientCity, ClientUnit},
         GameFrame,
     },
-    network::message::ClientStateMessage,
+    network::{message::ClientStateMessage, ClientId},
     space::window::Window,
     world::partial::PartialWorld,
 };
 use thiserror::Error;
-use uuid::Uuid;
 
 use crate::error::PublicError;
 
 pub struct State {
-    client_id: Uuid,
+    client_id: ClientId,
     connected: bool,
     server: Option<ServerResume>,
     flag: Option<Flag>,
@@ -28,7 +27,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(client_id: Uuid) -> Self {
+    pub fn new(client_id: ClientId) -> Self {
         Self {
             client_id,
             connected: false,
@@ -43,8 +42,8 @@ impl State {
         }
     }
 
-    pub fn client_id(&self) -> Uuid {
-        self.client_id
+    pub fn client_id(&self) -> &ClientId {
+        &self.client_id
     }
 
     pub fn window(&self) -> Option<&Window> {
@@ -93,9 +92,9 @@ impl State {
                     cities.push(city)
                 }
             }
-            ClientStateMessage::RemoveCity(uuid) => {
+            ClientStateMessage::RemoveCity(city_id) => {
                 if let Some(cities) = &mut self.cities {
-                    cities.retain(|c| c.id() != uuid)
+                    cities.retain(|c| c.id() != &city_id)
                 }
             }
             ClientStateMessage::SetUnit(unit) => {
@@ -107,9 +106,9 @@ impl State {
                     }
                 }
             }
-            ClientStateMessage::RemoveUnit(uuid) => {
+            ClientStateMessage::RemoveUnit(unit_id) => {
                 if let Some(units) = &mut self.units {
-                    units.retain(|u| u.id() != uuid)
+                    units.retain(|u| u.id() != &unit_id)
                 }
             }
         }

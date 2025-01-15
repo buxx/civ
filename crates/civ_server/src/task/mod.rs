@@ -1,11 +1,16 @@
 use bon::Builder;
 use city::{BuildCityFrom, CityGenerator};
 use common::{
-    game::{unit::TaskType, GameFrame},
+    game::{
+        city::CityId,
+        unit::{TaskType, UnitId},
+        GameFrame,
+    },
     geo::Geo,
 };
 use core::fmt::Debug;
 use dyn_clone::DynClone;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -18,6 +23,15 @@ use crate::{
 
 pub mod city;
 pub mod unit;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct TaskId(pub Uuid);
+
+impl Default for TaskId {
+    fn default() -> Self {
+        Self(Uuid::new_v4())
+    }
+}
 
 pub type TaskBox = Box<dyn Task + Send + Sync>;
 
@@ -34,8 +48,8 @@ dyn_clone::clone_trait_object!(Task);
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Concern {
     Nothing,
-    Unit(Uuid),
-    City(Uuid),
+    Unit(UnitId),
+    City(CityId),
 }
 
 impl Debug for TaskBox {
@@ -97,24 +111,10 @@ pub trait ThenTransformUnitIntoCity: WithUnit + CityName + Geo {
             .generate()
     }
 }
-
-// pub trait CityTask: DynClone + Task {
-//     fn city_task_type(&self) -> CityTaskType;
-//     // See https://users.rust-lang.org/t/reconsider-trait-as-another/123488/5
-//     fn into_task(&self) -> TaskBox;
-// }
-// dyn_clone::clone_trait_object!(CityTask);
-
-// pub trait UnitTask: DynClone + Task {
-//     fn unit_task_type(&self) -> UnitTaskType;
-//     // See https://users.rust-lang.org/t/reconsider-trait-as-another/123488/5
-//     fn into_task(&self) -> TaskBox;
-// }
-// dyn_clone::clone_trait_object!(UnitTask);
-
 #[derive(Debug, Builder, Clone, PartialEq)]
+
 pub struct TaskContext {
-    id: Uuid,
+    id: TaskId,
     start: GameFrame,
     end: GameFrame,
 }
@@ -124,8 +124,8 @@ impl TaskContext {
         frame >= self.end
     }
 
-    pub fn id(&self) -> Uuid {
-        self.id
+    pub fn id(&self) -> &TaskId {
+        &self.id
     }
 
     pub fn start(&self) -> GameFrame {

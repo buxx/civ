@@ -2,21 +2,22 @@ pub mod clients;
 
 use clients::Clients;
 use common::{
-    game::{nation::flag::Flag, server::ServerResume, GameFrame},
+    game::{
+        city::CityId, nation::flag::Flag, server::ServerResume, unit::UnitId, GameFrame, PlayerId,
+    },
     network::Client,
     rules::RuleSetBox,
     space::window::{DisplayStep, Window},
 };
 use index::Index;
 use thiserror::Error;
-use uuid::Uuid;
 
 use crate::{
     effect::{
         Action, CityEffect, ClientEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect,
     },
     game::{city::City, unit::Unit},
-    task::TaskBox,
+    task::{TaskBox, TaskId},
 };
 
 pub mod index;
@@ -67,7 +68,7 @@ impl State {
                         self.increment_frame();
                     }
                     StateEffect::Client(client, effect) => {
-                        self.clients.apply(client, effect);
+                        self.clients.apply(client, effect).unwrap();
                     }
                     StateEffect::Task(uuid, effect) => match effect {
                         TaskEffect::Push(task) => self.tasks.push(task.clone()),
@@ -77,7 +78,7 @@ impl State {
                     StateEffect::Tasks(effect) => match effect {
                         TasksEffect::Remove(tasks) => {
                             remove_tasks
-                                .extend(tasks.iter().map(|(i, _)| i).collect::<Vec<&Uuid>>());
+                                .extend(tasks.iter().map(|(i, _)| i).collect::<Vec<&TaskId>>());
                         }
                         TasksEffect::Add(tasks) => self.tasks.extend(tasks.clone()),
                     },
@@ -94,15 +95,15 @@ impl State {
                             self.cities.retain(|city| city.id() != uuid);
                         }
                     },
-                    StateEffect::Unit(uuid, effect) => match effect {
+                    StateEffect::Unit(unit_id, effect) => match effect {
                         UnitEffect::New(unit) => {
                             self.units.push(unit.clone());
                         }
                         UnitEffect::Remove(_) => {
-                            self.units.retain(|unit| unit.id() != *uuid);
+                            self.units.retain(|unit| unit.id() != unit_id);
                         }
                         UnitEffect::Replace(unit) => {
-                            *self.find_unit_mut(uuid).unwrap() = unit.clone();
+                            *self.find_unit_mut(unit_id).unwrap() = unit.clone();
                         }
                     },
                     StateEffect::Testing => {
@@ -130,7 +131,7 @@ impl State {
         if !remove_tasks.is_empty() {
             // TODO: this is not a good performance way (idea: transport tasks index in tick)
             self.tasks
-                .retain(|task| !remove_tasks.contains(&&task.context().id()));
+                .retain(|task| !remove_tasks.contains(&task.context().id()));
         }
 
         // Update index must be after because based on &self.cities and &self.units
@@ -141,80 +142,80 @@ impl State {
         &self.cities
     }
 
-    pub fn city(&self, index: usize, uuid: &Uuid) -> Result<&City, StateError> {
+    pub fn city(&self, index: usize, city_id: &CityId) -> Result<&City, StateError> {
         if let Some(city) = self.cities.get(index) {
-            if city.id() == uuid {
+            if city.id() == city_id {
                 return Ok(city);
             }
         }
 
-        Err(StateError::NotFound(NotFound::City(index, *uuid)))
+        Err(StateError::NotFound(NotFound::City(index, *city_id)))
     }
 
-    pub fn city_mut(&mut self, index: usize, uuid: &Uuid) -> Result<&mut City, StateError> {
+    pub fn city_mut(&mut self, index: usize, city_id: &CityId) -> Result<&mut City, StateError> {
         if let Some(city) = self.cities.get_mut(index) {
-            if city.id() == uuid {
+            if city.id() == city_id {
                 return Ok(city);
             }
         }
 
-        Err(StateError::NotFound(NotFound::City(index, *uuid)))
+        Err(StateError::NotFound(NotFound::City(index, *city_id)))
     }
 
-    pub fn find_city(&self, uuid: &Uuid) -> Result<&City, StateError> {
+    pub fn find_city(&self, city_id: &CityId) -> Result<&City, StateError> {
         let unit_index = self
             .index()
             .uuid_cities()
-            .get(uuid)
-            .ok_or(StateError::NoLongerExist(NoLongerExist::City(*uuid)))?;
-        self.city(*unit_index, uuid)
+            .get(city_id)
+            .ok_or(StateError::NoLongerExist(NoLongerExist::City(*city_id)))?;
+        self.city(*unit_index, city_id)
     }
 
-    pub fn find_city_mut(&mut self, uuid: &Uuid) -> Result<&mut City, StateError> {
+    pub fn find_city_mut(&mut self, city_id: &CityId) -> Result<&mut City, StateError> {
         let unit_index = self
             .index()
             .uuid_cities()
-            .get(uuid)
-            .ok_or(StateError::NoLongerExist(NoLongerExist::City(*uuid)))?;
-        self.city_mut(*unit_index, uuid)
+            .get(city_id)
+            .ok_or(StateError::NoLongerExist(NoLongerExist::City(*city_id)))?;
+        self.city_mut(*unit_index, city_id)
     }
 
-    pub fn unit(&self, index: usize, uuid: &Uuid) -> Result<&Unit, StateError> {
+    pub fn unit(&self, index: usize, unit_id: &UnitId) -> Result<&Unit, StateError> {
         if let Some(unit) = self.units.get(index) {
-            if &unit.id() == uuid {
+            if unit.id() == unit_id {
                 return Ok(unit);
             }
         }
 
-        Err(StateError::NotFound(NotFound::Unit(index, *uuid)))
+        Err(StateError::NotFound(NotFound::Unit(index, *unit_id)))
     }
 
-    pub fn unit_mut(&mut self, index: usize, uuid: &Uuid) -> Result<&mut Unit, StateError> {
+    pub fn unit_mut(&mut self, index: usize, unit_id: &UnitId) -> Result<&mut Unit, StateError> {
         if let Some(unit) = self.units.get_mut(index) {
-            if &unit.id() == uuid {
+            if unit.id() == unit_id {
                 return Ok(unit);
             }
         }
 
-        Err(StateError::NotFound(NotFound::Unit(index, *uuid)))
+        Err(StateError::NotFound(NotFound::Unit(index, *unit_id)))
     }
 
-    pub fn find_unit(&self, uuid: &Uuid) -> Result<&Unit, StateError> {
+    pub fn find_unit(&self, unit_id: &UnitId) -> Result<&Unit, StateError> {
         let unit_index = self
             .index()
             .uuid_units()
-            .get(uuid)
-            .ok_or(StateError::NoLongerExist(NoLongerExist::Unit(*uuid)))?;
-        self.unit(*unit_index, uuid)
+            .get(unit_id)
+            .ok_or(StateError::NoLongerExist(NoLongerExist::Unit(*unit_id)))?;
+        self.unit(*unit_index, unit_id)
     }
 
-    pub fn find_unit_mut(&mut self, uuid: &Uuid) -> Result<&mut Unit, StateError> {
+    pub fn find_unit_mut(&mut self, unit_id: &UnitId) -> Result<&mut Unit, StateError> {
         let unit_index = self
             .index()
             .uuid_units()
-            .get(uuid)
-            .ok_or(StateError::NoLongerExist(NoLongerExist::Unit(*uuid)))?;
-        self.unit_mut(*unit_index, uuid)
+            .get(unit_id)
+            .ok_or(StateError::NoLongerExist(NoLongerExist::Unit(*unit_id)))?;
+        self.unit_mut(*unit_index, unit_id)
     }
 
     pub fn units(&self) -> &[Unit] {
@@ -264,17 +265,17 @@ pub enum StateError {
 #[derive(Error, Debug)]
 pub enum NoLongerExist {
     #[error("No city for uuid {0}")]
-    City(Uuid),
+    City(CityId),
     #[error("No unit for uuid {0}")]
-    Unit(Uuid),
+    Unit(UnitId),
     #[error("No player state for uuid {0}")]
-    Player(Uuid),
+    Player(PlayerId),
 }
 
 #[derive(Error, Debug)]
 pub enum NotFound {
     #[error("No city for index {0} and uuid {1}")]
-    City(usize, Uuid),
+    City(usize, CityId),
     #[error("No unit for index {0} and uuid {1}")]
-    Unit(usize, Uuid),
+    Unit(usize, UnitId),
 }

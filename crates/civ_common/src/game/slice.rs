@@ -1,14 +1,13 @@
 use bon::Builder;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use crate::{geo::GeoContext, world::partial::PartialWorld};
 
 use super::{
-    city::{CityExploitation, CityProduction},
+    city::{CityExploitation, CityId, CityProduction},
     nation::flag::Flag,
     tasks::client::{city::production::ClientCityProductionTask, ClientTask},
-    unit::UnitType,
+    unit::{UnitId, UnitType},
     GameFrame,
 };
 
@@ -43,7 +42,7 @@ impl GameSlice {
 
 #[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ClientCity {
-    id: Uuid,
+    id: CityId,
     flag: Flag,
     name: String,
     geo: GeoContext,
@@ -53,8 +52,8 @@ pub struct ClientCity {
 }
 
 impl ClientCity {
-    pub fn id(&self) -> Uuid {
-        self.id
+    pub fn id(&self) -> &CityId {
+        &self.id
     }
 
     pub fn name(&self) -> &str {
@@ -91,7 +90,7 @@ impl ClientCityTasks {
 
 #[derive(Serialize, Deserialize, Clone, Builder, Debug, PartialEq)]
 pub struct ClientUnit {
-    id: Uuid,
+    id: UnitId,
     flag: Flag,
     type_: UnitType,
     geo: GeoContext,
@@ -99,8 +98,8 @@ pub struct ClientUnit {
 }
 
 impl ClientUnit {
-    pub fn id(&self) -> Uuid {
-        self.id
+    pub fn id(&self) -> &UnitId {
+        &self.id
     }
 
     pub fn flag(&self) -> &Flag {

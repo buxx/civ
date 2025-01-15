@@ -1,9 +1,8 @@
 use common::network::{
     message::{ClientToServerGameMessage, ServerToClientMessage},
-    Client,
+    Client, ClientId,
 };
 use crossbeam::channel::{Receiver, Sender};
-use uuid::Uuid;
 
 pub mod context;
 pub mod effect;
@@ -22,6 +21,6 @@ pub type FromClientsChannels = (
     Receiver<(Client, ClientToServerGameMessage)>,
 );
 pub type ToClientsChannels = (
-    Sender<(Uuid, ServerToClientMessage)>,
-    Receiver<(Uuid, ServerToClientMessage)>,
+    Sender<(ClientId, ServerToClientMessage)>,
+    Receiver<(ClientId, ServerToClientMessage)>,
 );

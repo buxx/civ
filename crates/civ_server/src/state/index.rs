@@ -1,28 +1,27 @@
 use std::collections::HashMap;
 
 use common::{
-    game::nation::flag::Flag,
+    game::{city::CityId, nation::flag::Flag, unit::UnitId},
     geo::{Geo, WorldPoint},
     space::window::Window,
 };
-use uuid::Uuid;
 
 use crate::{
     effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
     game::{city::City, unit::Unit},
-    task::{Concern, TaskBox},
+    task::{Concern, TaskBox, TaskId},
 };
 
 #[derive(Default)]
 pub struct Index {
-    cities_index: HashMap<Uuid, usize>,
-    units_index: HashMap<Uuid, usize>,
-    xy_cities: HashMap<WorldPoint, Uuid>,
-    xy_units: HashMap<WorldPoint, Vec<Uuid>>,
-    flag_cities: HashMap<Flag, Uuid>,
-    flag_units: HashMap<Flag, Vec<Uuid>>,
-    city_tasks: HashMap<Uuid, Vec<Uuid>>,
-    unit_tasks: HashMap<Uuid, Vec<Uuid>>,
+    cities_index: HashMap<CityId, usize>,
+    units_index: HashMap<UnitId, usize>,
+    xy_cities: HashMap<WorldPoint, CityId>,
+    xy_units: HashMap<WorldPoint, Vec<UnitId>>,
+    flag_cities: HashMap<Flag, CityId>,
+    flag_units: HashMap<Flag, Vec<UnitId>>,
+    city_tasks: HashMap<CityId, Vec<TaskId>>,
+    unit_tasks: HashMap<UnitId, Vec<TaskId>>,
 }
 
 impl Index {
@@ -44,15 +43,15 @@ impl Index {
         self.flag_units.clear();
 
         for (i, unit) in units.iter().enumerate() {
-            self.units_index.insert(unit.id(), i);
+            self.units_index.insert(*unit.id(), i);
             self.xy_units
                 .entry(*unit.geo().point())
                 .or_default()
-                .push(unit.id());
+                .push(*unit.id());
             self.flag_units
                 .entry(*unit.flag())
                 .or_default()
-                .push(unit.id());
+                .push(*unit.id());
         }
     }
 
@@ -67,22 +66,22 @@ impl Index {
                     .unit_tasks
                     .entry(uuid)
                     .or_default()
-                    .push(task.context().id()),
+                    .push(*task.context().id()),
                 Concern::City(uuid) => self
                     .city_tasks
                     .entry(uuid)
                     .or_default()
-                    .push(task.context().id()),
+                    .push(*task.context().id()),
                 Concern::Nothing => {}
             }
         }
     }
 
-    pub fn xy_cities(&self, point: &WorldPoint) -> Option<&Uuid> {
+    pub fn xy_cities(&self, point: &WorldPoint) -> Option<&CityId> {
         self.xy_cities.get(point)
     }
 
-    pub fn window_cities(&self, window: &Window) -> Vec<Uuid> {
+    pub fn window_cities(&self, window: &Window) -> Vec<CityId> {
         if !window.step().include_cities() {
             return vec![];
         }
@@ -99,11 +98,11 @@ impl Index {
         cities
     }
 
-    pub fn xy_units(&self, point: &WorldPoint) -> Option<&Vec<Uuid>> {
+    pub fn xy_units(&self, point: &WorldPoint) -> Option<&Vec<UnitId>> {
         self.xy_units.get(point)
     }
 
-    pub fn window_units(&self, window: &Window) -> Vec<Uuid> {
+    pub fn window_units(&self, window: &Window) -> Vec<UnitId> {
         if !window.step().include_units() {
             return vec![];
         }
@@ -164,7 +163,7 @@ impl Index {
                             self.xy_units
                                 .entry(*unit.geo().point())
                                 .or_default()
-                                .retain(|id| id != &unit.id());
+                                .retain(|id| id != unit.id());
                         }
                     },
                     StateEffect::Testing => {}
@@ -189,17 +188,17 @@ impl Index {
                 .unit_tasks
                 .entry(uuid)
                 .or_default()
-                .push(task.context().id()),
+                .push(*task.context().id()),
             Concern::City(uuid) => self
                 .city_tasks
                 .entry(uuid)
                 .or_default()
-                .push(task.context().id()),
+                .push(*task.context().id()),
             Concern::Nothing => {}
         }
     }
 
-    fn apply_remove_task(&mut self, task_id: &Uuid, concern: &Concern) {
+    fn apply_remove_task(&mut self, task_id: &TaskId, concern: &Concern) {
         match concern {
             Concern::Unit(uuid) => self
                 .unit_tasks
@@ -215,26 +214,26 @@ impl Index {
         }
     }
 
-    pub fn uuid_cities(&self) -> &HashMap<Uuid, usize> {
+    pub fn uuid_cities(&self) -> &HashMap<CityId, usize> {
         &self.cities_index
     }
 
-    pub fn uuid_cities_mut(&mut self) -> &mut HashMap<Uuid, usize> {
+    pub fn uuid_cities_mut(&mut self) -> &mut HashMap<CityId, usize> {
         &mut self.cities_index
     }
 
-    pub fn uuid_units(&self) -> &HashMap<Uuid, usize> {
+    pub fn uuid_units(&self) -> &HashMap<UnitId, usize> {
         &self.units_index
     }
 
-    pub fn city_tasks(&self, city_id: &Uuid) -> Vec<Uuid> {
+    pub fn city_tasks(&self, city_id: &CityId) -> Vec<TaskId> {
         match self.city_tasks.get(city_id) {
             Some(uuids) => uuids.to_vec(),
             None => vec![],
         }
     }
 
-    pub fn unit_tasks(&self, unit_id: &Uuid) -> Vec<Uuid> {
+    pub fn unit_tasks(&self, unit_id: &UnitId) -> Vec<TaskId> {
         match self.unit_tasks.get(unit_id) {
             Some(uuids) => uuids.to_vec(),
             None => vec![],

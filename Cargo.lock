@@ -251,6 +251,8 @@ dependencies = [
  "rayon",
  "ron",
  "rstest",
+ "serde",
+ "serde_json",
  "thiserror 2.0.6",
  "uuid",
  "zmq",

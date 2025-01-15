@@ -4,16 +4,18 @@ use std::{
     time::Duration,
 };
 
-use common::network::{
-    message::{ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage},
-    Client,
+use common::{
+    game::PlayerId,
+    network::{
+        message::{ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage},
+        Client, ClientId,
+    },
 };
 use crossbeam::channel::{Receiver, Sender};
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node::{self, NodeHandler, NodeListener},
 };
-use uuid::Uuid;
 
 use crate::{context::Context, state::State};
 
@@ -26,8 +28,8 @@ enum Signal {
 }
 
 pub struct Network {
-    client_id: Uuid,
-    player_id: Uuid,
+    client_id: ClientId,
+    player_id: PlayerId,
     context: Context,
     state: Arc<RwLock<State>>,
     to_server_receiver: Receiver<ClientToServerMessage>,
@@ -40,8 +42,8 @@ pub struct Network {
 // TODO: heartbeat
 impl Network {
     pub fn new(
-        client_id: Uuid,
-        player_id: Uuid,
+        client_id: ClientId,
+        player_id: PlayerId,
         server_address: &str,
         context: Context,
         state: Arc<RwLock<State>>,

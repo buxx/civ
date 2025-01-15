@@ -1,10 +1,9 @@
 use common::{
-    game::nation::flag::Flag,
+    game::{city::CityId, nation::flag::Flag, unit::UnitId},
     network::message::{
         ClientToServerCityMessage, ClientToServerInGameMessage, ClientToServerUnitMessage,
     },
 };
-use uuid::Uuid;
 
 use crate::runner::RunnerContext;
 
@@ -32,16 +31,16 @@ impl<'a> Access<'a> {
         }
     }
 
-    fn unit_is_owned_by_client(&self, uuid: &Uuid, flag: &Flag) -> bool {
-        if let Ok(unit) = self.context.state().find_unit(uuid) {
+    fn unit_is_owned_by_client(&self, unit_id: &UnitId, flag: &Flag) -> bool {
+        if let Ok(unit) = self.context.state().find_unit(unit_id) {
             unit.flag() == flag
         } else {
             false
         }
     }
 
-    fn city_is_owned_by_client(&self, uuid: &Uuid, flag: &Flag) -> bool {
-        if let Ok(unit) = self.context.state().find_unit(uuid) {
+    fn city_is_owned_by_client(&self, city_id: &CityId, flag: &Flag) -> bool {
+        if let Ok(unit) = self.context.state().find_city(city_id) {
             unit.flag() == flag
         } else {
             false

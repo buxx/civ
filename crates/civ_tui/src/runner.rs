@@ -6,9 +6,12 @@ use std::{
 
 use bon::Builder;
 use clap::Parser;
-use common::network::message::{
-    ClientToServerMessage, NotificationLevel, ServerToClientEstablishmentMessage,
-    ServerToClientInGameMessage, ServerToClientMessage,
+use common::{
+    game::{city::CityId, unit::UnitId},
+    network::message::{
+        ClientToServerMessage, NotificationLevel, ServerToClientEstablishmentMessage,
+        ServerToClientInGameMessage, ServerToClientMessage,
+    },
 };
 use crossbeam::channel::{Receiver, Sender};
 
@@ -31,7 +34,6 @@ pub struct Runner {
 
 impl Runner {
     pub fn run(&mut self) {
-        // TODO clean
         let from_server_receiver = self.from_server_receiver.clone();
         let state = Arc::clone(&self.state);
         thread::spawn(move || {
@@ -43,9 +45,9 @@ impl Runner {
                             state.set_server(Some(server_resume));
                             state.set_flag(flag);
                         }
-                        ServerToClientEstablishmentMessage::TakePlaceRefused(
-                            take_place_refused_reason,
-                        ) => todo!(),
+                        ServerToClientEstablishmentMessage::TakePlaceRefused(reason) => {
+                            state.push_error(PublicError::CantTakePlace(reason))
+                        }
                     },
                     ServerToClientMessage::InGame(ServerToClientInGameMessage::State(message)) => {
                         state.apply(message);
@@ -122,20 +124,24 @@ impl Runner {
                     }
                     SubCommand::Cities => command::city::cities(self.into())?,
                     SubCommand::City { id, follow } => {
-                        command::city::city(self.into(), id, follow)?
+                        command::city::city(self.into(), &CityId::new(id), follow)?
                     }
                     SubCommand::Units => command::unit::units(self.into())?,
                     SubCommand::Unit { id, subcommand } => {
                         match subcommand {
                             Some(command) => match command {
                                 UnitSubCommand::Detail { follow } => {
-                                    command::unit::detail(self.into(), id, follow)?
+                                    command::unit::detail(self.into(), &UnitId::new(id), follow)?
                                 }
                                 UnitSubCommand::Settle { city_name } => {
-                                    command::unit::settle(self.into(), id, &city_name)?;
+                                    command::unit::settle(
+                                        self.into(),
+                                        &UnitId::new(id),
+                                        &city_name,
+                                    )?;
                                 }
                             },
-                            None => command::unit::detail(self.into(), id, false)?,
+                            None => command::unit::detail(self.into(), &UnitId::new(id), false)?,
                         };
                     }
                 };
