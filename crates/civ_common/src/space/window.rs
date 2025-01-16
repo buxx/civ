@@ -106,9 +106,12 @@ impl SetWindow {
     }
 
     pub fn shape(&self) -> u64 {
-        // TODO: Check somewhere start is inferior to end ...
+        if self.end_y > self.start_y || self.end_x > self.start_x {
+            return 0;
+        }
+
         let width = self.end_y - self.start_y;
-        let height = self.end_x - self.start_y;
+        let height = self.end_x - self.start_x;
         width * height
     }
 }

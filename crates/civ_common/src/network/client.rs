@@ -1,10 +1,13 @@
 use std::{
     io,
-    sync::{Arc, RwLock},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     time::Duration,
 };
 
-use common::{
+use crate::{
     game::PlayerId,
     network::{
         message::{ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage},
@@ -17,8 +20,6 @@ use message_io::{
     node::{self, NodeHandler, NodeListener},
 };
 
-use crate::{context::Context, state::State};
-
 const SEND_INTERVAL: Duration = Duration::from_millis(25);
 const CHECK_STOP_INTERVAL: Duration = Duration::from_millis(250);
 
@@ -30,8 +31,8 @@ enum Signal {
 pub struct NetworkClient {
     client_id: ClientId,
     player_id: PlayerId,
-    context: Context,
-    state: Arc<RwLock<State>>,
+    stop: Arc<AtomicBool>,
+    connected: Arc<AtomicBool>,
     to_server_receiver: Receiver<ClientToServerMessage>,
     from_server_sender: Sender<ServerToClientMessage>,
     handler: NodeHandler<Signal>,
@@ -45,8 +46,8 @@ impl NetworkClient {
         client_id: ClientId,
         player_id: PlayerId,
         server_address: &str,
-        context: Context,
-        state: Arc<RwLock<State>>,
+        stop: Arc<AtomicBool>,
+        connected: Arc<AtomicBool>,
         to_server_receiver: Receiver<ClientToServerMessage>,
         from_server_sender: Sender<ServerToClientMessage>,
     ) -> io::Result<Self> {
@@ -59,8 +60,8 @@ impl NetworkClient {
         Ok(Self {
             client_id,
             player_id,
-            context,
-            state,
+            stop,
+            connected,
             to_server_receiver,
             from_server_sender,
             handler,
@@ -82,11 +83,7 @@ impl NetworkClient {
         node_listener.for_each(move |event| match event {
             node::NodeEvent::Network(event) => match event {
                 NetEvent::Connected(endpoint, established) => {
-                    let mut state = self
-                        .state
-                        .write()
-                        .expect("Assume state is always accessible");
-                    state.set_connected(established);
+                    self.connected.swap(established, Ordering::Relaxed);
 
                     // Inform server about our uuid
                     let message = bincode::serialize(&ClientToServerMessage::Network(
@@ -101,14 +98,10 @@ impl NetworkClient {
                 NetEvent::Accepted(_, _) => {}
                 NetEvent::Message(_endpoint, input_data) => {
                     let message: ServerToClientMessage = bincode::deserialize(input_data).unwrap();
-                    self.from_server_sender.send(message).unwrap();
+                    self.from_server_sender.send(message);
                 }
                 NetEvent::Disconnected(_) => {
-                    let mut state = self
-                        .state
-                        .write()
-                        .expect("Assume state is always accessible");
-                    state.set_connected(false);
+                    self.connected.swap(false, Ordering::Relaxed);
                     self.handler.stop();
                 }
             },
@@ -124,7 +117,7 @@ impl NetworkClient {
                             .send_with_timer(Signal::SendClientToServerMessages, SEND_INTERVAL);
                     }
                     Signal::CheckStopIsRequired => {
-                        if self.context.stop_is_required() {
+                        if self.stop.load(Ordering::Relaxed) {
                             self.handler.stop();
                         }
                         self.handler

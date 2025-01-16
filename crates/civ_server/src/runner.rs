@@ -347,6 +347,8 @@ impl Runner {
         client: &Client,
         message: ClientToServerGameMessage,
     ) -> Result<Vec<Effect>, RunnerError> {
+        debug!("Received client request: {:?}", message);
+
         let state = self.state();
         match message {
             ClientToServerGameMessage::Establishment(message) => match message {
