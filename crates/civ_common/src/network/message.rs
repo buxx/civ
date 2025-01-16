@@ -34,30 +34,30 @@ pub enum ClientToServerNetworkMessage {
     Goodbye,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientToServerGameMessage {
     Establishment(ClientToServerEstablishmentMessage),
     InGame(ClientToServerInGameMessage),
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientToServerEstablishmentMessage {
     TakePlace(Flag),
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientToServerInGameMessage {
     SetWindow(SetWindow),
     Unit(UnitId, ClientToServerUnitMessage),
     City(CityId, ClientToServerCityMessage),
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientToServerUnitMessage {
     Settle(String), // CityName
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientToServerCityMessage {
     SetProduction(CityProduction),
     SetExploitation(CityExploitation),
@@ -96,4 +96,15 @@ pub enum ClientStateMessage {
 pub enum TakePlaceRefusedReason {
     #[error("Flag {0} already taken")]
     FlagAlreadyTaken(Flag),
+}
+
+impl ServerToClientMessage {
+    pub fn log_ignore(&self) -> bool {
+        matches!(
+            self,
+            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                ClientStateMessage::SetGameFrame(_),
+            ))
+        )
+    }
 }

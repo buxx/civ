@@ -1,23 +1,18 @@
 [package]
-name = "civ_tui"
+name = "civ_proofing"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "tui"
+name = "proofing"
 path = "src/main.rs"
 
 [dependencies]
 civ_common = { path = "../civ_common" }
+clap = { version = "4.5.23", features = ["derive"] }
 env_logger.workspace = true
 log.workspace = true
-bon.workspace = true
-uuid.workspace = true
 crossbeam.workspace = true
-zmq.workspace = true
-bincode.workspace = true
 thiserror.workspace = true
-clap = { version = "4.5.23", features = ["derive"] }
-shellwords = "1.1.0"
 strum.workspace = true
 strum_macros.workspace = true

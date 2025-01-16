@@ -220,9 +220,11 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "bon",
+ "crossbeam",
  "dyn-clone",
  "env_logger",
  "log",
+ "message-io",
  "ron",
  "rstest",
  "serde",
@@ -231,6 +233,20 @@ dependencies = [
  "strum_macros 0.26.4",
  "thiserror 2.0.6",
  "uuid",
+]
+
+[[package]]
+name = "civ_proofing"
+version = "0.1.0"
+dependencies = [
+ "civ_common",
+ "clap",
+ "crossbeam",
+ "env_logger",
+ "log",
+ "strum 0.26.3",
+ "strum_macros 0.26.4",
+ "thiserror 2.0.6",
 ]
 
 [[package]]
@@ -269,7 +285,6 @@ dependencies = [
  "crossbeam",
  "env_logger",
  "log",
- "message-io",
  "shellwords",
  "strum 0.26.3",
  "strum_macros 0.26.4",

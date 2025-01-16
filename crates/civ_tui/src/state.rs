@@ -15,7 +15,6 @@ use crate::error::PublicError;
 
 pub struct State {
     client_id: ClientId,
-    connected: bool,
     server: Option<ServerResume>,
     flag: Option<Flag>,
     window: Option<Window>,
@@ -30,7 +29,6 @@ impl State {
     pub fn new(client_id: ClientId) -> Self {
         Self {
             client_id,
-            connected: false,
             server: None,
             flag: None,
             window: None,
@@ -48,14 +46,6 @@ impl State {
 
     pub fn window(&self) -> Option<&Window> {
         self.window.as_ref()
-    }
-
-    pub fn connected(&self) -> bool {
-        self.connected
-    }
-
-    pub fn set_connected(&mut self, connected: bool) {
-        self.connected = connected;
     }
 
     pub fn set_window(&mut self, window: Option<Window>) {

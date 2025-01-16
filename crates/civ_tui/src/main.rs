@@ -1,13 +1,14 @@
 use clap::Parser;
 use std::{
     str::FromStr,
-    sync::{Arc, RwLock},
+    sync::{atomic::AtomicBool, Arc, RwLock},
     thread,
 };
 
 use common::{
     game::PlayerId,
     network::{
+        client::NetworkClient,
         message::{ClientToServerMessage, ServerToClientMessage},
         ClientId,
     },
@@ -15,7 +16,6 @@ use common::{
 };
 use context::Context;
 use crossbeam::channel::{unbounded, Receiver, Sender};
-use network::NetworkClient;
 use runner::Runner;
 use state::State;
 use thiserror::Error;
@@ -23,7 +23,6 @@ use thiserror::Error;
 mod command;
 mod context;
 mod error;
-mod network;
 mod runner;
 mod state;
 
@@ -52,10 +51,12 @@ fn main() -> Result<(), Error> {
     env_logger::init_from_env(env);
     let args = Arguments::parse();
 
+    let stop = Arc::new(AtomicBool::new(false));
+    let connected = Arc::new(AtomicBool::new(false));
     let client_id = ClientId::default();
     let player_id = PlayerId::from_str(&args.player.unwrap_or(PlayerId::default().to_string()))
         .map_err(Error::PlayerId)?;
-    let context = Context::new(Box::new(Std1RuleSet));
+    let context = Context::new(stop.clone(), connected.clone(), Box::new(Std1RuleSet));
     let state = Arc::new(RwLock::new(State::new(client_id)));
     let (to_server_sender, to_server_receiver): (
         Sender<ClientToServerMessage>,
@@ -70,8 +71,8 @@ fn main() -> Result<(), Error> {
         client_id,
         player_id,
         &args.address,
-        context.clone(),
-        Arc::clone(&state),
+        stop.clone(),
+        connected.clone(),
         to_server_receiver,
         from_server_sender,
     )
