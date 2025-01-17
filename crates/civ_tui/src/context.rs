@@ -8,13 +8,15 @@ use common::rules::RuleSetBox;
 #[derive(Clone)]
 pub struct Context {
     stop: Arc<AtomicBool>,
+    connected: Arc<AtomicBool>,
     rule_set: RuleSetBox,
 }
 
 impl Context {
-    pub fn new(rule_set: RuleSetBox) -> Self {
+    pub fn new(stop: Arc<AtomicBool>, connected: Arc<AtomicBool>, rule_set: RuleSetBox) -> Self {
         Self {
-            stop: Arc::new(AtomicBool::new(false)),
+            stop,
+            connected,
             rule_set,
         }
     }
@@ -25,6 +27,10 @@ impl Context {
 
     pub fn require_stop(&self) {
         self.stop.swap(true, Ordering::Relaxed);
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.connected.load(Ordering::Relaxed)
     }
 
     pub fn rule_set(&self) -> &RuleSetBox {

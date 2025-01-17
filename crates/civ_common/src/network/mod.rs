@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 use crate::game::PlayerId;
 
+pub mod client;
 pub mod message;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]

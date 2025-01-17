@@ -20,7 +20,7 @@ pub fn status(context: CommandContext) {
         .unwrap_or("n/a".to_string());
 
     println!("client_id: {}", state.client_id());
-    println!("connected: {}", state.connected());
+    println!("connected: {}", context.context.is_connected());
     println!("flag: {}", flag_str);
     println!("errors: {}", state.errors().len());
     println!("window: {} ({})", window_str, tiles_str);

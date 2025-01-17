@@ -6,7 +6,7 @@ use common::{
     },
     space::window::{DisplayStep, SetWindow, Window},
 };
-use log::error;
+use log::{debug, error};
 use thiserror::Error;
 
 use crate::{
@@ -23,6 +23,9 @@ impl Runner {
                 Ok(reflects) => {
                     for (message, client_ids) in reflects {
                         for client_id in client_ids {
+                            if !message.log_ignore() {
+                                debug!("Send message to client ({client_id}): {:?}", message);
+                            }
                             self.context
                                 .to_client_sender
                                 .send((client_id, message.clone()))

@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString};
+use strum_macros::{Display, EnumIter, EnumString};
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Hash, Eq, Display, EnumString)]
+#[derive(
+    Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Hash, Eq, Display, EnumString, EnumIter,
+)]
 pub enum Flag {
     Abkhazia,
     Aborigines,
