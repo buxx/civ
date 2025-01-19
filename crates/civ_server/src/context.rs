@@ -5,15 +5,19 @@ use std::sync::{
 
 use common::rules::RuleSetBox;
 
+use crate::config::ServerConfig;
+
 #[derive(Clone)]
 pub struct Context {
+    config: ServerConfig,
     rules: RuleSetBox,
     stop: Arc<AtomicBool>,
 }
 
 impl Context {
-    pub fn new(rules: RuleSetBox) -> Self {
+    pub fn new(rules: RuleSetBox, config: ServerConfig) -> Self {
         Self {
+            config,
             rules,
             stop: Arc::new(AtomicBool::new(false)),
         }
@@ -29,5 +33,9 @@ impl Context {
 
     pub fn rules(&self) -> &RuleSetBox {
         &self.rules
+    }
+
+    pub fn config(&self) -> &ServerConfig {
+        &self.config
     }
 }

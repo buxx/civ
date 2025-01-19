@@ -7,6 +7,7 @@
         "rstest",
         "serde",
         "shellwords",
+        "typetag",
         "uuids"
     ],
     "editor.formatOnSaveMode": "file"

@@ -1,9 +1,13 @@
+use civ_server::config::ServerConfig;
 use civ_server::context::Context;
 use civ_server::network::Network;
 use civ_server::runner::{Runner, RunnerContext};
 use civ_server::state::State;
+use civ_server::task::snapshot::SnapshotTask;
+use civ_server::task::{TaskBox, TaskContext, TaskId};
 use civ_server::world::reader::{WorldReader, WorldReaderError};
 use civ_server::{FromClientsChannels, ToClientsChannels};
+use common::game::GameFrame;
 use common::rules::std1::Std1RuleSet;
 use crossbeam::channel::unbounded;
 use log::info;
@@ -28,15 +32,33 @@ fn main() -> Result<(), Error> {
     let env = env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info");
     env_logger::init_from_env(env);
 
+    // TODO: by args
+    let config = ServerConfig::new(Some(PathBuf::from("./snapshot.civ")));
+    let mut tasks: Vec<TaskBox> = vec![];
+
+    // TODO: move this code ?
+    if let Some(snapshot_to) = config.snapshot_to() {
+        // TODO: each in args too
+        tasks.push(Box::new(SnapshotTask::new(
+            TaskContext::builder()
+                .id(TaskId::default())
+                .start(GameFrame(0))
+                .end(GameFrame(100))
+                .build(),
+            snapshot_to.clone(),
+            GameFrame(100),
+        )));
+    }
+
     let rules = Std1RuleSet;
-    let state = State::default();
+    let state = State::default().with_tasks(tasks);
     let world_source = PathBuf::from("./world");
 
     info!("Read world ...");
     let world = WorldReader::from(world_source)?;
     info!("Read world ... OK ({} tiles)", world.shape());
 
-    let context = Context::new(Box::new(rules));
+    let context = Context::new(Box::new(rules), config);
     let state = Arc::new(RwLock::new(state));
     let world = Arc::new(RwLock::new(world));
     let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();

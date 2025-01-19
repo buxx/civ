@@ -17,6 +17,7 @@ use crate::{
         Action, CityEffect, ClientEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect,
     },
     game::{city::City, unit::Unit},
+    snapshot::Snapshot,
     task::{TaskBox, TaskId},
 };
 
@@ -52,6 +53,11 @@ impl State {
             units,
             testing,
         }
+    }
+
+    pub fn with_tasks(mut self, tasks: Vec<TaskBox>) -> Self {
+        self.tasks = tasks;
+        self
     }
 
     pub fn frame(&self) -> &GameFrame {
@@ -271,6 +277,10 @@ impl State {
     pub fn server_resume(&self, rules: &RuleSetBox) -> ServerResume {
         let flags = self.clients.flags();
         ServerResume::new(rules.clone().into(), flags)
+    }
+
+    pub fn snapshot(&self) -> Snapshot {
+        Snapshot::from(self)
     }
 }
 

@@ -45,6 +45,7 @@ impl Display for UnitType {
 pub enum TaskType {
     City(CityTaskType),
     Unit(UnitTaskType),
+    System(SystemTaskType),
     Testing,
 }
 
@@ -58,12 +59,18 @@ pub enum CityTaskType {
     Production(CityProductionTons),
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum SystemTaskType {
+    Snapshot,
+}
+
 impl Display for TaskType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             TaskType::Unit(UnitTaskType::Settle) => f.write_str("Settle"),
             TaskType::City(CityTaskType::Production(_)) => f.write_str("Production"),
             TaskType::Testing => f.write_str("Testing"),
+            TaskType::System(SystemTaskType::Snapshot) => f.write_str("Snapshot"),
         }
     }
 }

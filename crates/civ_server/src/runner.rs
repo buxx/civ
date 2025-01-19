@@ -596,6 +596,7 @@ mod test {
     };
 
     use crate::{
+        config::ServerConfig,
         effect::{self},
         game::{
             placer::{Placer, PlacerError},
@@ -705,7 +706,8 @@ mod test {
                 state.apply(&vec![effect::new_unit(unit)]);
             }
 
-            let context = Context::new(Box::new(self.rule_set.clone()));
+            let config = ServerConfig::new(None);
+            let context = Context::new(Box::new(self.rule_set.clone()), config);
             let state = Arc::new(RwLock::new(state));
 
             let context = RunnerContext::new(

@@ -1,3 +1,4 @@
+pub mod snapshot;
 use bon::Builder;
 use city::{BuildCityFrom, CityGenerator};
 use common::{

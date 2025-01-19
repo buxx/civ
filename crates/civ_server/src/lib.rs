@@ -4,6 +4,7 @@ use common::network::{
 };
 use crossbeam::channel::{Receiver, Sender};
 
+pub mod config;
 pub mod context;
 pub mod effect;
 pub mod game;
