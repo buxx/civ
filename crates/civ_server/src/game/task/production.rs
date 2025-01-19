@@ -4,14 +4,17 @@ use common::game::{
     tasks::client::city::production::ClientCityProductionTask,
     unit::{CityTaskType, TaskType},
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
     effect::Effect,
     runner::RunnerContext,
-    task::{Concern, Task, TaskBox, TaskContext, TaskError, Then},
+    task::{
+        Concern, Task, TaskBox, TaskContext, TaskError, Then,
+    },
 };
 
-#[derive(Debug, Builder, Clone)]
+#[derive(Debug, Builder, Clone, Serialize, Deserialize)]
 pub struct CityProductionTask {
     context: TaskContext,
     city: CityId,
@@ -24,6 +27,7 @@ impl CityProductionTask {
     }
 }
 
+#[typetag::serde]
 impl Task for CityProductionTask {
     fn type_(&self) -> TaskType {
         TaskType::City(CityTaskType::Production(self.tons))
@@ -35,6 +39,10 @@ impl Task for CityProductionTask {
 
     fn context(&self) -> &TaskContext {
         &self.context
+    }
+
+    fn boxed(&self) -> TaskBox {
+        Box::new(self.clone())
     }
 }
 

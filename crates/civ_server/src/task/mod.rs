@@ -16,7 +16,11 @@ use uuid::Uuid;
 
 use crate::{
     effect::{self, Effect},
-    game::{city::City, unit::Unit},
+    game::{
+        city::City,
+        task::{production::CityProductionTask, settle::Settle},
+        unit::Unit,
+    },
     runner::RunnerContext,
     state::StateError,
 };
@@ -35,6 +39,7 @@ impl Default for TaskId {
 
 pub type TaskBox = Box<dyn Task + Send + Sync>;
 
+#[typetag::serde(tag = "type")]
 pub trait Task: DynClone + Then {
     fn type_(&self) -> TaskType;
     fn concern(&self) -> Concern;
@@ -42,6 +47,7 @@ pub trait Task: DynClone + Then {
         vec![]
     }
     fn context(&self) -> &TaskContext;
+    fn boxed(&self) -> TaskBox;
 }
 dyn_clone::clone_trait_object!(Task);
 
@@ -111,7 +117,7 @@ pub trait ThenTransformUnitIntoCity: WithUnit + CityName + Geo {
             .generate()
     }
 }
-#[derive(Debug, Builder, Clone, PartialEq)]
+#[derive(Debug, Builder, Clone, PartialEq, Serialize, Deserialize)]
 
 pub struct TaskContext {
     id: TaskId,
@@ -141,4 +147,17 @@ impl TaskContext {
         let current = frame.0 - self.start.0;
         current as f32 / total as f32
     }
+}
+
+pub enum TaskContainer {
+    Unit(UnitTaskContainer),
+    City(CityTaskContainer),
+    Empty,
+}
+pub enum UnitTaskContainer {
+    Settle(Settle),
+}
+
+pub enum CityTaskContainer {
+    Production(CityProductionTask),
 }

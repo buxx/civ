@@ -6,6 +6,7 @@ use common::{
     network::{Client, ClientId},
     space::window::Window,
 };
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::effect::ClientEffect;
@@ -15,7 +16,6 @@ use crate::effect::ClientEffect;
 pub struct Clients {
     count: usize,
     client_windows: Vec<(ClientId, Window)>,
-    // this must be restored after a backup
     states: HashMap<PlayerId, ClientState>,
 }
 
@@ -28,6 +28,17 @@ pub enum ClientsError {
 }
 
 impl Clients {
+    pub fn new(
+        client_windows: Vec<(ClientId, Window)>,
+        states: HashMap<PlayerId, ClientState>,
+    ) -> Self {
+        Self {
+            count: 0,
+            client_windows,
+            states,
+        }
+    }
+
     pub fn count(&self) -> usize {
         self.count
     }
@@ -83,8 +94,13 @@ impl Clients {
     pub fn states(&self) -> &HashMap<PlayerId, ClientState> {
         &self.states
     }
+
+    pub fn client_windows(&self) -> &[(ClientId, Window)] {
+        &self.client_windows
+    }
 }
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ClientState {
     flag: Flag,
     window: Option<Window>,

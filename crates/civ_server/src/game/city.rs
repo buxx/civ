@@ -11,12 +11,13 @@ use common::{
 };
 
 use common::geo::GeoContext;
+use serde::{Deserialize, Serialize};
 
 use crate::{state::State, task::city::CityTasks};
 
 use super::IntoClientModel;
 
-#[derive(Debug, Builder, Clone)]
+#[derive(Debug, Builder, Clone, Serialize, Deserialize)]
 pub struct City {
     id: CityId,
     flag: Flag,

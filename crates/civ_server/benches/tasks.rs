@@ -5,78 +5,16 @@ use std::{
 
 use civ_server::{
     context::Context,
-    effect::{Effect, StateEffect},
     runner::{Runner, RunnerContext},
     state::State,
-    task::{Concern, Task, TaskBox, TaskContext, TaskError, TaskId, Then},
+    task::{TaskContext, TaskId},
+    test::task::{fibonacci, FibonacciTask},
     world::reader::WorldReader,
     FromClientsChannels, ToClientsChannels,
 };
-use common::{
-    game::{unit::TaskType, GameFrame},
-    rules::std1::Std1RuleSet,
-};
+use common::{game::GameFrame, rules::std1::Std1RuleSet};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use crossbeam::channel::unbounded;
-use uuid::Uuid;
-
-#[inline]
-fn fibonacci(n: u64) -> u64 {
-    let mut a = 0;
-    let mut b = 1;
-
-    match n {
-        0 => b,
-        _ => {
-            for _ in 0..n {
-                let c = a + b;
-                a = b;
-                b = c;
-            }
-            b
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct FibonacciTask {
-    context: TaskContext,
-    complexity: u64,
-}
-
-impl FibonacciTask {
-    fn new(context: TaskContext, complexity: u64) -> Self {
-        Self {
-            context,
-            complexity,
-        }
-    }
-}
-
-impl Task for FibonacciTask {
-    fn type_(&self) -> TaskType {
-        TaskType::Testing
-    }
-
-    fn concern(&self) -> Concern {
-        Concern::Nothing
-    }
-
-    fn context(&self) -> &TaskContext {
-        &self.context
-    }
-
-    fn tick(&self, _frame: GameFrame) -> Vec<Effect> {
-        fibonacci(self.complexity);
-        vec![Effect::State(StateEffect::Testing)]
-    }
-}
-
-impl Then for FibonacciTask {
-    fn then(&self, _context: &RunnerContext) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError> {
-        Ok((vec![], vec![]))
-    }
-}
 
 fn runner(context: Context, state: Arc<RwLock<State>>) -> Runner {
     let world = WorldReader::new(PathBuf::new(), 0, 0, vec![]);

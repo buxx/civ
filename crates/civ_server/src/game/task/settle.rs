@@ -9,6 +9,7 @@ use common::{
     geo::{Geo, GeoContext},
     task::{CantSettleReason, CreateTaskError, GamePlayReason},
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
     context::Context,
@@ -22,7 +23,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Builder, Clone)]
+#[derive(Debug, Builder, Clone, Serialize, Deserialize)]
 pub struct Settle {
     context: TaskContext,
     geo: GeoContext,
@@ -91,6 +92,7 @@ impl Then for Settle {
     }
 }
 
+#[typetag::serde]
 impl Task for Settle {
     fn type_(&self) -> TaskType {
         TaskType::Unit(UnitTaskType::Settle)
@@ -102,6 +104,10 @@ impl Task for Settle {
 
     fn concern(&self) -> Concern {
         Concern::Unit(*self.settler.id())
+    }
+
+    fn boxed(&self) -> TaskBox {
+        Box::new(self.clone())
     }
 }
 

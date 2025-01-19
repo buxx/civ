@@ -1,10 +1,11 @@
 use common::game::tasks::client::ClientTask;
+use serde::{Deserialize, Serialize};
 
 use crate::game::task::settle::Settle as SettleTask;
 
 use super::{Task, TaskBox, TaskContext};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UnitTaskWrapper {
     Settle(SettleTask),
 }

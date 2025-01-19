@@ -11,8 +11,10 @@ pub mod network;
 pub mod reflect;
 pub mod request;
 pub mod runner;
+pub mod snapshot;
 pub mod state;
 pub mod task;
+pub mod test;
 pub mod utils;
 pub mod world;
 

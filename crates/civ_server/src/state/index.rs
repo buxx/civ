@@ -9,6 +9,7 @@ use common::{
 use crate::{
     effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
     game::{city::City, unit::Unit},
+    snapshot::Snapshot,
     task::{Concern, TaskBox, TaskId},
 };
 
@@ -55,7 +56,6 @@ impl Index {
         }
     }
 
-    // TODO: call when restored from backup
     pub fn reindex_tasks(&mut self, tasks: &Vec<TaskBox>) {
         self.city_tasks.clear();
         self.unit_tasks.clear();
@@ -238,5 +238,19 @@ impl Index {
             Some(uuids) => uuids.to_vec(),
             None => vec![],
         }
+    }
+}
+
+impl From<&Snapshot> for Index {
+    fn from(value: &Snapshot) -> Self {
+        let mut index = Self::default();
+
+        index.reindex_cities(value.cities());
+        index.reindex_units(value.units());
+
+        let tasks: Vec<TaskBox> = value.tasks().iter().map(|bx| bx.boxed()).collect();
+        index.reindex_tasks(&tasks);
+
+        index
     }
 }

@@ -25,6 +25,7 @@ ron.workspace = true
 rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+typetag.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true
@@ -36,6 +37,10 @@ harness = false
 
 [[bench]]
 name = "index"
+harness = false
+
+[[bench]]
+name = "snapshot"
 harness = false
 
 [profile.bench]

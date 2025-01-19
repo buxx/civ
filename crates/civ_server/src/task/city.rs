@@ -9,6 +9,7 @@ use common::{
     geo::{Geo, GeoContext},
     rules::RuleSetBox,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
     game::{city::City, task::production::CityProductionTask},
@@ -160,7 +161,7 @@ fn production_task(
         .build()
 }
 
-#[derive(Debug, Builder, Clone)]
+#[derive(Debug, Builder, Clone, Serialize, Deserialize)]
 pub struct CityTasks {
     production: CityProductionTask,
 }

@@ -1,34 +1,11 @@
 use civ_server::{
     effect::{CityEffect, Effect, StateEffect, UnitEffect},
-    game::{city::City, task::production::CityProductionTask, unit::Unit},
+    game::{city::City, unit::Unit},
     state::index::Index,
-    task::{city::CityTasks, TaskContext, TaskId},
+    test::{city::build_city, unit::build_unit},
 };
-use common::{
-    game::{
-        city::{CityExploitation, CityId, CityProduction, CityProductionTons},
-        nation::flag::Flag,
-        unit::{UnitId, UnitType},
-        GameFrame,
-    },
-    geo::{GeoContext, WorldPoint},
-    space::window::{DisplayStep, Window},
-};
+use common::space::window::{DisplayStep, Window};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use uuid::Uuid;
-
-fn build_unit(i: usize) -> Unit {
-    Unit::builder()
-        .id(UnitId::default())
-        .geo(
-            GeoContext::builder()
-                .point(WorldPoint::new(i as u64, i as u64))
-                .build(),
-        )
-        .type_(UnitType::Warriors)
-        .flag(Flag::Abkhazia)
-        .build()
-}
 
 fn inject_units(index: &mut Index, unit_count: usize, cities: &[City]) -> Vec<Unit> {
     let mut units = vec![];
@@ -39,7 +16,7 @@ fn inject_units(index: &mut Index, unit_count: usize, cities: &[City]) -> Vec<Un
 
         index.apply(
             &vec![Effect::State(StateEffect::Unit(
-                unit.id(),
+                *unit.id(),
                 UnitEffect::New(unit.clone()),
             ))],
             cities,
@@ -48,39 +25,6 @@ fn inject_units(index: &mut Index, unit_count: usize, cities: &[City]) -> Vec<Un
     }
 
     units
-}
-
-fn build_city(i: usize) -> City {
-    let city_uuid = CityId::default();
-    City::builder()
-        .id(city_uuid)
-        .name("CityName".to_string())
-        .geo(
-            GeoContext::builder()
-                .point(WorldPoint::new(i as u64, i as u64))
-                .build(),
-        )
-        .production(CityProduction::new(vec![]))
-        .exploitation(CityExploitation::new(CityProductionTons(1)))
-        .tasks(
-            CityTasks::builder()
-                .production(
-                    CityProductionTask::builder()
-                        .city(city_uuid)
-                        .context(
-                            TaskContext::builder()
-                                .id(TaskId::default())
-                                .start(GameFrame(0))
-                                .end(GameFrame(1))
-                                .build(),
-                        )
-                        .tons(CityProductionTons(1))
-                        .build(),
-                )
-                .build(),
-        )
-        .flag(Flag::Abkhazia)
-        .build()
 }
 
 fn inject_cities(index: &mut Index, city_count: usize, units: &[Unit]) -> Vec<City> {

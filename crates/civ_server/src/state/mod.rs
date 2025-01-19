@@ -34,6 +34,26 @@ pub struct State {
 }
 
 impl State {
+    pub fn new(
+        frame_i: GameFrame,
+        clients: Clients,
+        index: Index,
+        tasks: Vec<TaskBox>,
+        cities: Vec<City>,
+        units: Vec<Unit>,
+        testing: u64,
+    ) -> Self {
+        Self {
+            frame_i,
+            clients,
+            index,
+            tasks,
+            cities,
+            units,
+            testing,
+        }
+    }
+
     pub fn frame(&self) -> &GameFrame {
         &self.frame_i
     }
