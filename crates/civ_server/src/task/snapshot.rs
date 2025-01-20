@@ -3,10 +3,7 @@ use std::path::PathBuf;
 use super::{Concern, Task, TaskBox, TaskContext, TaskError, TaskId, Then};
 use crate::{effect::Effect, runner::RunnerContext};
 use bon::Builder;
-use common::game::{
-    unit::{SystemTaskType, TaskType},
-    GameFrame,
-};
+use common::game::unit::{SystemTaskType, TaskType};
 use log::info;
 use serde::{Deserialize, Serialize};
 
@@ -14,15 +11,13 @@ use serde::{Deserialize, Serialize};
 pub struct SnapshotTask {
     context: TaskContext,
     snapshot_to: PathBuf,
-    each: GameFrame,
 }
 
 impl SnapshotTask {
-    pub fn new(context: TaskContext, snapshot_to: PathBuf, each: GameFrame) -> Self {
+    pub fn new(context: TaskContext, snapshot_to: PathBuf) -> Self {
         Self {
             context,
             snapshot_to,
-            each,
         }
     }
 }
@@ -54,16 +49,16 @@ impl Then for SnapshotTask {
         info!("Snapshot to {}", self.snapshot_to.display());
         state.snapshot().dump(&self.snapshot_to).unwrap();
 
+        let each = self.context.end() - self.context.start();
         Ok((
             vec![],
             vec![Box::new(Self::new(
                 TaskContext::builder()
                     .id(TaskId::default())
                     .start(*frame)
-                    .end(*frame + self.each.0)
+                    .end(*frame + each.0)
                     .build(),
                 self.snapshot_to.clone(),
-                self.each,
             ))],
         ))
     }

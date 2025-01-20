@@ -1,3 +1,6 @@
+use std::path::PathBuf;
+
+use clap::Parser;
 use common::network::{
     message::{ClientToServerGameMessage, ServerToClientMessage},
     Client, ClientId,
@@ -27,3 +30,14 @@ pub type ToClientsChannels = (
     Sender<(ClientId, ServerToClientMessage)>,
     Receiver<(ClientId, ServerToClientMessage)>,
 );
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Args {
+    /// Path where load and save server snapshot
+    #[arg(short, long)]
+    snapshot: Option<PathBuf>,
+    /// Game frame interval count between two snapshot
+    #[arg(short, long, default_value = "120000")]
+    snapshot_interval: u64,
+}

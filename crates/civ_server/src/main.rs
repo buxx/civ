@@ -2,11 +2,14 @@ use civ_server::config::ServerConfig;
 use civ_server::context::Context;
 use civ_server::network::Network;
 use civ_server::runner::{Runner, RunnerContext};
+use civ_server::snapshot::Snapshot;
 use civ_server::state::State;
 use civ_server::task::snapshot::SnapshotTask;
-use civ_server::task::{TaskBox, TaskContext, TaskId};
+use civ_server::task::{TaskContext, TaskId};
 use civ_server::world::reader::{WorldReader, WorldReaderError};
-use civ_server::{FromClientsChannels, ToClientsChannels};
+use civ_server::{Args, FromClientsChannels, ToClientsChannels};
+use clap::Parser;
+use common::game::unit::{SystemTaskType, TaskType};
 use common::game::GameFrame;
 use common::rules::std1::Std1RuleSet;
 use crossbeam::channel::unbounded;
@@ -30,28 +33,28 @@ enum Error {
 
 fn main() -> Result<(), Error> {
     let env = env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info");
+    let args = Args::parse();
     env_logger::init_from_env(env);
 
-    // TODO: by args
-    let config = ServerConfig::new(Some(PathBuf::from("./snapshot.civ")));
-    let mut tasks: Vec<TaskBox> = vec![];
-
-    // TODO: move this code ?
-    if let Some(snapshot_to) = config.snapshot_to() {
-        // TODO: each in args too
-        tasks.push(Box::new(SnapshotTask::new(
-            TaskContext::builder()
-                .id(TaskId::default())
-                .start(GameFrame(0))
-                .end(GameFrame(100))
-                .build(),
-            snapshot_to.clone(),
-            GameFrame(100),
-        )));
-    }
+    let config = ServerConfig::from(args);
 
     let rules = Std1RuleSet;
-    let state = State::default().with_tasks(tasks);
+    // TODO: move this code ?
+    let state = match config.snapshot() {
+        Some(snapshot) => {
+            let snapshot_task = Box::new(SnapshotTask::new(
+                TaskContext::builder()
+                    .id(TaskId::default())
+                    .start(GameFrame(0))
+                    .end(*config.snapshot_interval())
+                    .build(),
+                snapshot.clone(),
+            ));
+            State::from(Snapshot::try_from(snapshot).unwrap())
+                .with_replaced_task_type(TaskType::System(SystemTaskType::Snapshot), snapshot_task)
+        }
+        None => State::default(),
+    };
     let world_source = PathBuf::from("./world");
 
     info!("Read world ...");

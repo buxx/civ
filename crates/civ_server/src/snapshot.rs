@@ -86,6 +86,14 @@ impl From<&State> for Snapshot {
     }
 }
 
+impl TryFrom<&PathBuf> for Snapshot {
+    type Error = SnapshotError;
+
+    fn try_from(value: &PathBuf) -> Result<Self, Self::Error> {
+        Ok(bincode::deserialize(&fs::read(value)?)?)
+    }
+}
+
 impl From<Snapshot> for State {
     fn from(value: Snapshot) -> Self {
         let index = Index::from(&value);

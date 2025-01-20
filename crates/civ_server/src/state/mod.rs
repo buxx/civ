@@ -3,7 +3,11 @@ pub mod clients;
 use clients::Clients;
 use common::{
     game::{
-        city::CityId, nation::flag::Flag, server::ServerResume, unit::UnitId, GameFrame, PlayerId,
+        city::CityId,
+        nation::flag::Flag,
+        server::ServerResume,
+        unit::{TaskType, UnitId},
+        GameFrame, PlayerId,
     },
     network::Client,
     rules::RuleSetBox,
@@ -281,6 +285,13 @@ impl State {
 
     pub fn snapshot(&self) -> Snapshot {
         Snapshot::from(self)
+    }
+
+    /// Replace found task by given considering its type as differentiators.
+    pub fn with_replaced_task_type(mut self, type_: TaskType, task: TaskBox) -> State {
+        self.tasks.retain(|t| t.type_() != type_);
+        self.tasks.push(task);
+        self
     }
 }
 
