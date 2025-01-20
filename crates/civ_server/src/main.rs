@@ -2,7 +2,7 @@ use civ_server::config::ServerConfig;
 use civ_server::context::Context;
 use civ_server::network::Network;
 use civ_server::runner::{Runner, RunnerContext};
-use civ_server::snapshot::Snapshot;
+use civ_server::snapshot::{Snapshot, SnapshotError};
 use civ_server::state::State;
 use civ_server::task::snapshot::SnapshotTask;
 use civ_server::task::{TaskContext, TaskId};
@@ -14,6 +14,7 @@ use common::game::GameFrame;
 use common::rules::std1::Std1RuleSet;
 use crossbeam::channel::unbounded;
 use log::info;
+use std::io;
 use std::{
     path::PathBuf,
     sync::{Arc, RwLock},
@@ -25,6 +26,8 @@ pub const TICK_BASE_PERIOD: u64 = 60;
 
 #[derive(Error, Debug)]
 enum Error {
+    #[error("Snapshot load/save error: {0}")]
+    Snapshot(#[from] SnapshotError),
     #[error("Network prepare error: {0}")]
     PrepareNetwork(String),
     #[error("World error: {0}")]
@@ -41,17 +44,31 @@ fn main() -> Result<(), Error> {
     let rules = Std1RuleSet;
     // TODO: move this code ?
     let state = match config.snapshot() {
-        Some(snapshot) => {
+        Some(snapshot_path) => {
             let snapshot_task = Box::new(SnapshotTask::new(
                 TaskContext::builder()
                     .id(TaskId::default())
                     .start(GameFrame(0))
                     .end(*config.snapshot_interval())
                     .build(),
-                snapshot.clone(),
+                snapshot_path.clone(),
             ));
-            State::from(Snapshot::try_from(snapshot).unwrap())
-                .with_replaced_task_type(TaskType::System(SystemTaskType::Snapshot), snapshot_task)
+
+            match Snapshot::try_from(snapshot_path) {
+                Ok(snapshot) => State::from(snapshot),
+                Err(SnapshotError::Io(error)) => match error.kind() {
+                    io::ErrorKind::NotFound => {
+                        info!(
+                            "No snapshot found at {}: create empty state",
+                            snapshot_path.display()
+                        );
+                        State::default()
+                    }
+                    _ => return Err(Error::from(SnapshotError::Io(error))),
+                },
+                Err(error) => return Err(Error::from(error)),
+            }
+            .with_replaced_task_type(TaskType::System(SystemTaskType::Snapshot), snapshot_task)
         }
         None => State::default(),
     };
