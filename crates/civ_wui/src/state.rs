@@ -15,3 +15,11 @@ pub enum InGame {
     Map,
     World,
 }
+
+pub struct StatePlugin;
+
+impl Plugin for StatePlugin {
+    fn build(&self, app: &mut App) {
+        app.init_state::<AppState>().add_sub_state::<InGame>();
+    }
+}

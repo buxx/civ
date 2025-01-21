@@ -3,3 +3,5 @@
 *~
 /world
 /snapshot.civ
+wasm/wui_bg.wasm
+wasm/wui.js

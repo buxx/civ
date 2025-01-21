@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "bincode",
+        "despawn",
         "fibonacci",
         "nanos",
         "reindex",
@@ -8,7 +9,8 @@
         "serde",
         "shellwords",
         "typetag",
-        "uuids"
+        "uuids",
+        "wayland"
     ],
     "editor.formatOnSaveMode": "file"
 }
