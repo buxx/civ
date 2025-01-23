@@ -46,9 +46,7 @@ impl Network {
         to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
     ) -> io::Result<Self> {
         let (handler, node_listener) = node::split::<Signal>();
-        handler
-            .network()
-            .listen(Transport::FramedTcp, listen_addr)?;
+        handler.network().listen(Transport::Ws, listen_addr)?;
 
         info!("Network server running at {}", listen_addr);
         Ok(Self {
