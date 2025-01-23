@@ -40,4 +40,10 @@ pub struct Args {
     /// Game frame interval count between two snapshot
     #[arg(short, long, default_value = "120000")]
     snapshot_interval: u64,
+    /// TCP listen address
+    #[arg(short, long, default_value = "127.0.0.1:9876")]
+    tcp_listen_address: String,
+    /// WebSocket listen address
+    #[arg(short, long, default_value = "127.0.0.1:9877")]
+    ws_listen_address: String,
 }

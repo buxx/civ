@@ -9,9 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     effect::Effect,
     runner::RunnerContext,
-    task::{
-        Concern, Task, TaskBox, TaskContext, TaskError, Then,
-    },
+    task::{Concern, Task, TaskBox, TaskContext, TaskError, Then},
 };
 
 #[derive(Debug, Builder, Clone, Serialize, Deserialize)]

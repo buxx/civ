@@ -706,7 +706,7 @@ mod test {
                 state.apply(&vec![effect::new_unit(unit)]);
             }
 
-            let config = ServerConfig::new(None, GameFrame(0));
+            let config = ServerConfig::new(None, GameFrame(0), "".to_string(), "".to_string());
             let context = Context::new(Box::new(self.rule_set.clone()), config);
             let state = Arc::new(RwLock::new(state));
 

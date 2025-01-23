@@ -22,7 +22,7 @@ impl Display for ClientId {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct Client(ClientId, PlayerId); // ClientId, PlayerId
 
 impl Client {
