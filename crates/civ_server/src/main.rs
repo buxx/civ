@@ -78,7 +78,7 @@ fn main() -> Result<(), Error> {
     let world = WorldReader::from(world_source)?;
     info!("Read world ... OK ({} tiles)", world.shape());
 
-    let context = Context::new(Box::new(rules), config);
+    let context = Context::new(Box::new(rules), config.clone());
     let state = Arc::new(RwLock::new(state));
     let world = Arc::new(RwLock::new(world));
     let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
@@ -87,7 +87,8 @@ fn main() -> Result<(), Error> {
     let network = Network::new(
         context.clone(),
         Arc::clone(&state),
-        "127.0.0.1:9876",
+        config.tcp_listen_address(),
+        config.ws_listen_address(),
         from_clients_sender,
         to_clients_receiver,
     )

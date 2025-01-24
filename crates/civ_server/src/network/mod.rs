@@ -41,14 +41,18 @@ impl Network {
     pub fn new(
         context: Context,
         state: Arc<RwLock<State>>,
-        listen_addr: &str,
+        tcp_listen_addr: &str,
+        ws_listen_addr: &str,
         from_clients_sender: Sender<(Client, ClientToServerGameMessage)>,
         to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
     ) -> io::Result<Self> {
         let (handler, node_listener) = node::split::<Signal>();
-        handler.network().listen(Transport::Ws, listen_addr)?;
+        handler
+            .network()
+            .listen(Transport::FramedTcp, tcp_listen_addr)?;
+        handler.network().listen(Transport::Ws, ws_listen_addr)?;
 
-        info!("Network server running at {}", listen_addr);
+        info!("Network server running at {}", tcp_listen_addr);
         Ok(Self {
             context,
             state,
