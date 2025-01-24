@@ -1,6 +1,8 @@
 {
     "cSpell.words": [
+        "Arraybuffer",
         "bincode",
+        "CBOR",
         "despawn",
         "fibonacci",
         "nanos",
@@ -10,7 +12,8 @@
         "shellwords",
         "typetag",
         "uuids",
-        "wayland"
+        "wayland",
+        "wsocket"
     ],
     "editor.formatOnSaveMode": "file"
 }

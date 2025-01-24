@@ -1,15 +1,8 @@
 use async_std::channel::{Receiver, Sender};
 use bevy::prelude::*;
 use bevy_async_task::AsyncTaskRunner;
-use common::{
-    game::PlayerId,
-    network::{
-        message::{ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage},
-        Client, ClientId,
-    },
-};
+use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use futures::join;
-use wasm_bindgen::prelude::*;
 
 use std::time::Duration;
 
@@ -17,18 +10,6 @@ use async_wsocket::{
     futures_util::{SinkExt, StreamExt},
     ConnectionMode, Sink, Stream, Url, WsMessage,
 };
-
-const NONCE: u64 = 123456789;
-
-macro_rules! console_log {
-    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
-}
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-}
 
 #[derive(Resource)]
 pub struct ClientToServerReceiverResource(pub Receiver<ClientToServerMessage>);
@@ -57,7 +38,7 @@ async fn websocket(
     to_server_receiver: Receiver<ClientToServerMessage>,
     from_server_sender: Sender<ServerToClientMessage>,
 ) {
-    console_log!("Open ws on ws://127.0.0.1:9877");
+    info!("Open ws on ws://127.0.0.1:9877");
     let url = Url::parse("ws://127.0.0.1:9877").unwrap();
     let (tx, rx) = async_wsocket::connect(&url, &ConnectionMode::Direct, Duration::from_secs(120))
         .await
@@ -71,24 +52,28 @@ async fn websocket(
         listen_from(rx, from_server_sender)
     );
 
-    // console_log!("END: {:?}", rx.next().await);
-    console_log!("END");
+    // info!("END: {:?}", rx.next().await);
+    info!("END");
 }
 
 async fn listen_to(mut tx: Sink, to_server_receiver: Receiver<ClientToServerMessage>) {
     while let Ok(message) = to_server_receiver.recv().await {
-        console_log!("Send");
+        // info!("Send");
         let bytes = bincode::serialize(&message).unwrap();
         tx.send(WsMessage::Binary(bytes)).await.unwrap();
     }
+
+    error!("Exit to_server")
 }
 
 async fn listen_from(mut rx: Stream, from_server_sender: Sender<ServerToClientMessage>) {
     while let Some(msg) = rx.next().await {
         if let Ok(WsMessage::Binary(bytes)) = msg {
             let message: ServerToClientMessage = bincode::deserialize(&bytes).unwrap();
-            console_log!("Received {:?}", &message);
+            // info!("Received {:?}", &message);
             from_server_sender.send(message).await.unwrap();
         }
     }
+
+    error!("Exit listen_from")
 }

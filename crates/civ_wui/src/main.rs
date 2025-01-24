@@ -24,7 +24,7 @@ mod window;
 
 fn display_received(receiver: Res<ServerToClientReceiverResource>) {
     if let Ok(message) = receiver.0.try_recv() {
-        println!("received: {:?}", message);
+        info!("received: {:?}", message);
     }
 }
 
@@ -39,6 +39,7 @@ fn entrypoint() -> Result<(), JsValue> {
         Receiver<ServerToClientMessage>,
     ) = unbounded();
 
+    info!("Send Hello");
     to_server_sender
         .send_blocking(ClientToServerMessage::Network(
             ClientToServerNetworkMessage::Hello(Client::new(
