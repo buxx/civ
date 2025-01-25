@@ -36,10 +36,8 @@ bincode.workspace = true
 bevy_async_task = "0.4.0"
 async-wsocket = "0.12.0"
 async-std = "1.13.0"
-# wasm-bindgen-futures = "0.4.50"
 futures = "0.3.31"
-# ws_stream_wasm = "0.7.4"
-# pharos = "0.5.3"
+bevy_egui = "0.32"
 
 [profile.dev]
 opt-level = 1
