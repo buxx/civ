@@ -1,21 +1,18 @@
+use core::CorePlugin;
+
 use bevy::prelude::*;
-use network::{NetworkPlugin, ServerToClientReceiverResource};
+use network::NetworkPlugin;
 use wasm_bindgen::prelude::*;
 
 use menu::MenuPlugin;
 use state::StatePlugin;
 use window::window_plugin;
 
+mod core;
 mod menu;
 mod network;
 mod state;
 mod window;
-
-fn display_received(receiver: Res<ServerToClientReceiverResource>) {
-    if let Ok(message) = receiver.0.try_recv() {
-        info!("received: {:?}", message);
-    }
-}
 
 #[wasm_bindgen(start)]
 fn entrypoint() -> Result<(), JsValue> {
@@ -25,8 +22,8 @@ fn entrypoint() -> Result<(), JsValue> {
             StatePlugin,
             NetworkPlugin,
             MenuPlugin,
+            CorePlugin,
         ))
-        .add_systems(Update, display_received)
         .run();
 
     Ok(())

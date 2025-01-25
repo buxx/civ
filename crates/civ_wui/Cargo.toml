@@ -29,6 +29,8 @@ web-sys = { "version" = "0.3.77", features = [
     "WebSocket",
     "Location",
     "UrlSearchParams",
+    "Document",
+    "Window",
 ] }
 bincode.workspace = true
 bevy_async_task = "0.4.0"

@@ -5,6 +5,7 @@
         "CBOR",
         "despawn",
         "fibonacci",
+        "ingame",
         "nanos",
         "reindex",
         "rstest",

@@ -1,4 +1,4 @@
-use bevy::{prelude::*, window::WindowResolution};
+use bevy::prelude::*;
 
 pub fn window_plugin() -> WindowPlugin {
     WindowPlugin {

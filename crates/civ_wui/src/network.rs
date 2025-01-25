@@ -2,7 +2,8 @@ use async_std::channel::{unbounded, Receiver, Sender};
 use bevy::prelude::*;
 use bevy_async_task::AsyncTaskRunner;
 use common::network::message::{
-    ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage,
+    ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientEstablishmentMessage,
+    ServerToClientInGameMessage, ServerToClientMessage,
 };
 use futures::join;
 use web_sys::{window, UrlSearchParams};
@@ -30,6 +31,15 @@ pub struct ServerToClientReceiverResource(pub Receiver<ServerToClientMessage>);
 #[derive(Resource)]
 pub struct ServerToClientSenderResource(pub Sender<ServerToClientMessage>);
 
+#[derive(Event)]
+pub struct ServerMessage(pub ServerToClientMessage);
+
+#[derive(Event)]
+pub struct EstablishmentMessage(pub ServerToClientEstablishmentMessage);
+
+#[derive(Event)]
+pub struct InGameMessage(pub ServerToClientInGameMessage);
+
 pub struct NetworkPlugin;
 
 impl Plugin for NetworkPlugin {
@@ -47,7 +57,8 @@ impl Plugin for NetworkPlugin {
             .insert_resource(ServerToClientReceiverResource(from_server_receiver))
             .insert_resource(ClientToServerSenderResource(to_server_sender))
             .insert_resource(ClientToServerReceiverResource(to_server_receiver))
-            .add_systems(Startup, (setup_network, init_network).chain());
+            .add_systems(Startup, (setup_network, init_network).chain())
+            .add_systems(Update, react_server);
     }
 }
 
@@ -114,4 +125,10 @@ async fn listen_from(mut rx: Stream, from_server_sender: Sender<ServerToClientMe
     }
 
     info!("Websocket server message listener closed")
+}
+
+fn react_server(mut commands: Commands, receiver: Res<ServerToClientReceiverResource>) {
+    while let Ok(message) = receiver.0.try_recv() {
+        commands.trigger(ServerMessage(message));
+    }
 }
