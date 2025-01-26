@@ -2,7 +2,6 @@ pub mod gui;
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 
-use camera::spawn_camera;
 use despawn::despawn_menu;
 use gui::{manage_gui, FlagInput, PlayerIdInput};
 use manage::{react_connect, react_establishment, react_take_place};
@@ -10,7 +9,6 @@ use spawn::spawn_menu;
 
 use crate::state::AppState;
 
-pub mod camera;
 pub mod despawn;
 pub mod manage;
 pub mod spawn;
@@ -27,7 +25,6 @@ impl Plugin for MenuPlugin {
             .init_resource::<FlagInput>()
             .init_resource::<Connecting>()
             .init_resource::<TakingPlace>()
-            .add_systems(Startup, spawn_camera)
             .add_systems(OnEnter(AppState::Menu), spawn_menu)
             .add_systems(Update, manage_gui.run_if(in_state(AppState::Menu)))
             .add_systems(OnExit(AppState::Menu), despawn_menu)
