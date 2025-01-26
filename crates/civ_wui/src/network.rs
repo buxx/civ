@@ -57,7 +57,7 @@ impl Plugin for NetworkPlugin {
             .insert_resource(ServerToClientReceiverResource(from_server_receiver))
             .insert_resource(ClientToServerSenderResource(to_server_sender))
             .insert_resource(ClientToServerReceiverResource(to_server_receiver))
-            .add_systems(Startup, (setup_network, init_network).chain())
+            .add_systems(Startup, setup_network)
             .add_systems(Update, react_server);
     }
 }
@@ -71,15 +71,6 @@ fn setup_network(
         to_server_receiver.0.clone(),
         from_server_sender.0.clone(),
     ));
-}
-
-fn init_network(to_server_sender: Res<ClientToServerSenderResource>, client: Res<Client>) {
-    to_server_sender
-        .0
-        .send_blocking(ClientToServerMessage::Network(
-            ClientToServerNetworkMessage::Hello(client.clone()),
-        ))
-        .unwrap();
 }
 
 async fn websocket_client(

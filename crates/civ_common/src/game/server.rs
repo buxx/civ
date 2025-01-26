@@ -16,4 +16,12 @@ impl ServerResume {
     pub fn new(rules: RuleSetType, flags: Vec<Flag>) -> Self {
         Self { rules, flags }
     }
+
+    pub fn rules(&self) -> &RuleSetType {
+        &self.rules
+    }
+
+    pub fn flags(&self) -> &[Flag] {
+        &self.flags
+    }
 }

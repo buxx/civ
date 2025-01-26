@@ -60,8 +60,8 @@ impl Runner {
                             NotificationLevel::Error => {
                                 state.push_error(PublicError::ServerNotification(message));
                             }
-                            NotificationLevel::Warning => todo!(),
-                            NotificationLevel::Info => todo!(),
+                            NotificationLevel::Warning => {}
+                            NotificationLevel::Info => {}
                         };
                     }
                 }

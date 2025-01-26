@@ -1913,6 +1913,8 @@ dependencies = [
  "js-sys",
  "log",
  "rand",
+ "strum 0.26.3",
+ "strum_macros 0.26.4",
  "uuid",
  "wasm-bindgen",
  "web-sys",

@@ -34,7 +34,15 @@ impl Client {
         &self.0
     }
 
+    pub fn set_client_id(&mut self, value: ClientId) {
+        self.0 = value
+    }
+
     pub fn player_id(&self) -> &PlayerId {
         &self.1
+    }
+
+    pub fn set_player_id(&mut self, value: PlayerId) {
+        self.1 = value
     }
 }

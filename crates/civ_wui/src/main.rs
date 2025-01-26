@@ -1,6 +1,7 @@
 use core::CorePlugin;
 
 use bevy::prelude::*;
+use ingame::InGamePlugin;
 use network::NetworkPlugin;
 use wasm_bindgen::prelude::*;
 
@@ -9,6 +10,7 @@ use state::StatePlugin;
 use window::window_plugin;
 
 mod core;
+mod ingame;
 mod menu;
 mod network;
 mod state;
@@ -23,6 +25,7 @@ fn entrypoint() -> Result<(), JsValue> {
             NetworkPlugin,
             MenuPlugin,
             CorePlugin,
+            InGamePlugin,
         ))
         .run();
 

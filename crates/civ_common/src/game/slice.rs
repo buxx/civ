@@ -35,8 +35,16 @@ impl GameSlice {
         &self.cities
     }
 
+    pub fn cities_mut(&mut self) -> &mut Vec<ClientCity> {
+        &mut self.cities
+    }
+
     pub fn units(&self) -> &[ClientUnit] {
         &self.units
+    }
+
+    pub fn units_mut(&mut self) -> &mut Vec<ClientUnit> {
+        &mut self.units
     }
 }
 

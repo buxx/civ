@@ -20,7 +20,7 @@ pub enum InGame {
     World,
 }
 
-#[derive(Resource, Default, Deref)]
+#[derive(Resource, Default, Deref, DerefMut)]
 pub struct Client {
     _value: ClientBase,
 }
