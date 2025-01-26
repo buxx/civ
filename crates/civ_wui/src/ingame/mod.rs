@@ -1,7 +1,11 @@
 pub mod slice;
 use bevy::prelude::*;
-use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame};
+use common::game::{
+    slice::ClientCity, slice::ClientUnit, slice::GameSlice as BaseGameSlice,
+    GameFrame as BaseGameFrame,
+};
 use common::space::window::Window as BaseWindow;
+use common::world::Tile as BaseTile;
 use slice::react_game_slice_updated;
 
 pub struct InGamePlugin;
@@ -25,10 +29,10 @@ pub struct GameSlice(pub Option<BaseGameSlice>);
 pub struct GameWindow(pub Option<BaseWindow>);
 
 #[derive(Component)]
-pub struct Tile;
+pub struct Tile(BaseTile);
 
 #[derive(Component)]
-pub struct Unit;
+pub struct Unit(ClientUnit);
 
 #[derive(Component)]
-pub struct City;
+pub struct City(ClientCity);
