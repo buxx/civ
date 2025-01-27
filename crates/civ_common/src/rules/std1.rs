@@ -52,7 +52,7 @@ impl RuleSet for Std1RuleSet {
     }
 
     fn can_be_startup(&self, tile: &Tile) -> bool {
-        match tile.type_ {
+        match tile.type_() {
             TerrainType::GrassLand | TerrainType::Plain => true,
         }
     }

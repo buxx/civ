@@ -10,6 +10,7 @@ use common::{
         message::{ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage},
         Client, ClientId,
     },
+    space::window::Resolution,
 };
 use crossbeam::channel::{Receiver, Sender};
 use message_io::{
@@ -90,10 +91,10 @@ impl NetworkClient {
 
                     // Inform server about our uuid
                     let message = bincode::serialize(&ClientToServerMessage::Network(
-                        ClientToServerNetworkMessage::Hello(Client::new(
-                            self.client_id,
-                            self.player_id,
-                        )),
+                        ClientToServerNetworkMessage::Hello(
+                            Client::new(self.client_id, self.player_id),
+                            Resolution::new(1, 1),
+                        ),
                     ))
                     .unwrap();
                     self.handler.network().send(endpoint, &message);

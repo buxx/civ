@@ -5,6 +5,8 @@
         "CBOR",
         "despawn",
         "fibonacci",
+        "hashbrown",
+        "hexx",
         "ingame",
         "nanos",
         "reindex",
@@ -13,8 +15,9 @@
         "shellwords",
         "typetag",
         "uuids",
+        "uvec",
         "wayland",
         "wsocket"
     ],
-    "editor.formatOnSaveMode": "file"
+    "editor.formatOnSaveMode": "file",
 }

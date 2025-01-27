@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use common::network::{
-    message::{ClientToServerGameMessage, ServerToClientMessage},
+    message::{ClientToServerMessage, ServerToClientMessage},
     Client, ClientId,
 };
 use crossbeam::channel::{Receiver, Sender};
@@ -20,11 +20,10 @@ pub mod state;
 pub mod task;
 pub mod test;
 pub mod utils;
-pub mod world;
 
 pub type FromClientsChannels = (
-    Sender<(Client, ClientToServerGameMessage)>,
-    Receiver<(Client, ClientToServerGameMessage)>,
+    Sender<(Client, ClientToServerMessage)>,
+    Receiver<(Client, ClientToServerMessage)>,
 );
 pub type ToClientsChannels = (
     Sender<(ClientId, ServerToClientMessage)>,
@@ -38,7 +37,7 @@ pub struct Args {
     #[arg(short, long)]
     snapshot: Option<PathBuf>,
     /// Game frame interval count between two snapshot
-    #[arg(short, long, default_value = "120000")]
+    #[arg(long, default_value = "120000")]
     snapshot_interval: u64,
     /// TCP listen address
     #[arg(short, long, default_value = "127.0.0.1:9876")]

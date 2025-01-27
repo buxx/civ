@@ -40,9 +40,19 @@ futures = "0.3.31"
 bevy_egui = "0.32"
 strum.workspace = true
 strum_macros.workspace = true
+hexx = "0.20"
+glam.workspace = true
+wasm-cookies = "0.2.1"
+thiserror.workspace = true
+eval-macro.workspace = true
 
 [profile.dev]
 opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
+
+[features]
+default = []
+debug = []
+debug_tiles = ["debug"]

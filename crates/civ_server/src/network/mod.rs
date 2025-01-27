@@ -1,7 +1,6 @@
 use clients::Clients;
 use common::network::message::{
-    ClientToServerGameMessage, ClientToServerMessage, ClientToServerNetworkMessage,
-    ServerToClientEstablishmentMessage, ServerToClientMessage,
+    ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage,
 };
 use common::network::{Client, ClientId};
 use crossbeam::channel::{Receiver, Sender};
@@ -28,7 +27,7 @@ enum Signal {
 pub struct Network {
     context: Context,
     state: Arc<RwLock<State>>,
-    from_clients_sender: Sender<(Client, ClientToServerGameMessage)>,
+    from_clients_sender: Sender<(Client, ClientToServerMessage)>,
     to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
     handler: NodeHandler<Signal>,
     node_listener: NodeListener<Signal>,
@@ -43,7 +42,7 @@ impl Network {
         state: Arc<RwLock<State>>,
         tcp_listen_addr: &str,
         ws_listen_addr: &str,
-        from_clients_sender: Sender<(Client, ClientToServerGameMessage)>,
+        from_clients_sender: Sender<(Client, ClientToServerMessage)>,
         to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
     ) -> io::Result<Self> {
         let (handler, node_listener) = node::split::<Signal>();
@@ -80,39 +79,17 @@ impl Network {
                 NetEvent::Accepted(_, _) => {}
                 NetEvent::Message(endpoint, input_data) => {
                     let message: ClientToServerMessage = bincode::deserialize(input_data).unwrap();
-                    match message {
-                        ClientToServerMessage::Network(message) => match message {
-                            // FIXME: this Hello show we must write into state, probably we should
-                            // send message through from_clients_sender (bad name so) ?
-                            ClientToServerNetworkMessage::Hello(client) => {
-                                self.clients.insert(client, endpoint);
-                                self.state
-                                    .write()
-                                    .expect("Assume state is always accessible")
-                                    .clients_mut()
-                                    .set_count(self.clients.length());
-
-                                let state = self
-                                    .state
-                                    .read()
-                                    .expect("Consider state is always accessible");
-                                let server_resume = state.server_resume(self.context.rules());
-                                let player_flag = state
-                                    .clients()
-                                    .player_state(client.player_id())
-                                    .map(|s| s.flag())
-                                    .cloned();
-
-                                let message = ServerToClientMessage::Establishment(
-                                    ServerToClientEstablishmentMessage::ServerResume(
-                                        server_resume,
-                                        player_flag,
-                                    ),
-                                );
-                                let data = bincode::serialize(&message).unwrap();
-                                self.handler.network().send(endpoint, &data);
+                    match &message {
+                        ClientToServerMessage::Network(message_) => match &message_ {
+                            ClientToServerNetworkMessage::Hello(client, _) => {
+                                info!("DEBUG: client hello");
+                                self.clients.insert(*client, endpoint);
+                                self.from_clients_sender
+                                    .send((*client, message.clone()))
+                                    .unwrap();
                             }
                             ClientToServerNetworkMessage::Goodbye => {
+                                info!("DEBUG: client goodbye");
                                 self.clients.remove(&endpoint);
                                 self.state
                                     .write()
@@ -121,13 +98,17 @@ impl Network {
                                     .set_count(self.clients.length());
                             }
                         },
-                        ClientToServerMessage::Game(message) => {
+                        ClientToServerMessage::Game(_message) => {
+                            info!("DEBUG game clients: {:?}", self.clients);
                             let client = self.clients.client_for_endpoint(&endpoint).unwrap();
-                            self.from_clients_sender.send((*client, message)).unwrap();
+                            self.from_clients_sender
+                                .send((*client, message.clone()))
+                                .unwrap();
                         }
                     }
                 }
                 NetEvent::Disconnected(endpoint) => {
+                    info!("DEBUG: client disconnected");
                     self.clients.remove(&endpoint);
                     self.state
                         .write()

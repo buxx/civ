@@ -11,6 +11,17 @@ pub struct ServerConfig {
     ws_listen_address: String,
 }
 
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            snapshot: Default::default(),
+            snapshot_interval: GameFrame(120000),
+            tcp_listen_address: "127.0.0.1:9876".to_string(),
+            ws_listen_address: "127.0.0.1:9877".to_string(),
+        }
+    }
+}
+
 impl ServerConfig {
     pub fn new(
         snapshot: Option<PathBuf>,

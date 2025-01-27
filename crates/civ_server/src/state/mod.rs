@@ -18,7 +18,8 @@ use thiserror::Error;
 
 use crate::{
     effect::{
-        Action, CityEffect, ClientEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect,
+        Action, CityEffect, ClientEffect, ClientsEffect, Effect, StateEffect, TaskEffect,
+        TasksEffect, UnitEffect,
     },
     game::{city::City, unit::Unit},
     snapshot::Snapshot,
@@ -97,6 +98,11 @@ impl State {
                     StateEffect::IncrementGameFrame => {
                         self.increment_frame();
                     }
+                    StateEffect::Clients(effect) => match effect {
+                        ClientsEffect::Count => {
+                            self.clients.refresh_count();
+                        }
+                    },
                     StateEffect::Client(client, effect) => {
                         self.clients.apply(client, effect).unwrap();
                     }
@@ -142,13 +148,7 @@ impl State {
                 },
                 Effect::Action(action) => match action {
                     Action::UpdateClientWindow(client, set_window) => {
-                        let window = Window::new(
-                            set_window.start_x(),
-                            set_window.start_y(),
-                            set_window.end_x(),
-                            set_window.end_y(),
-                            DisplayStep::from_shape(set_window.shape()),
-                        );
+                        let window = Window::from(set_window.clone());
                         self.clients
                             .apply(client, &ClientEffect::SetWindow(window))
                             .unwrap();

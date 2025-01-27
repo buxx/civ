@@ -20,6 +20,12 @@ ron.workspace = true
 bincode.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
+glam.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true
+criterion = "0.5.1"
+
+[[bench]]
+name = "world"
+harness = false

@@ -1,10 +1,10 @@
 use std::sync::RwLockReadGuard;
 
-use common::{geo::WorldPoint, rules::RuleSetBox};
+use common::{geo::WorldPoint, rules::RuleSetBox, world::reader::WorldReader};
 use rand::Rng;
 use thiserror::Error;
 
-use crate::{state::State, world::reader::WorldReader};
+use crate::state::State;
 
 pub type PlacerBox = Box<dyn for<'a> Placer<'a> + Sync + Send>;
 

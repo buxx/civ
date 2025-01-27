@@ -3,7 +3,7 @@ use common::game::nation::flag::Flag;
 use common::game::unit::UnitId;
 use common::network::message::ServerToClientMessage;
 use common::network::{Client, ClientId};
-use common::space::window::{SetWindow, Window};
+use common::space::window::{SetWindow, Window, Resolution};
 
 use crate::game::{city::City, unit::Unit};
 
@@ -16,18 +16,25 @@ pub enum Effect {
     /// Effect which only product reflects
     Shines(Vec<(ServerToClientMessage, Vec<ClientId>)>),
     /// Effect which product immediate action
+    // FIXME BS NOW: should not be a simple StateEffect or Shines?
     Action(Action),
 }
 
 #[derive(Debug, Clone)]
 pub enum StateEffect {
     IncrementGameFrame,
+    Clients(ClientsEffect),
     Client(Client, ClientEffect),
     Tasks(TasksEffect),
     Task(TaskId, TaskEffect),
     City(CityId, CityEffect),
     Unit(UnitId, UnitEffect),
     Testing,
+}
+
+#[derive(Debug, Clone)]
+pub enum ClientsEffect {
+    Count,
 }
 
 #[derive(Debug, Clone)]
@@ -50,7 +57,8 @@ pub enum TasksEffect {
 
 #[derive(Debug, Clone)]
 pub enum ClientEffect {
-    PlayerTookPlace(Flag),
+    PlayerTookPlace(Flag, Window),
+    SetResolution(Resolution),
     SetWindow(Window),
 }
 

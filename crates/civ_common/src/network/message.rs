@@ -10,7 +10,7 @@ use crate::{
         unit::UnitId,
         GameFrame,
     },
-    space::window::{SetWindow, Window},
+    space::window::{SetWindow, Window, Resolution},
 };
 
 use super::Client;
@@ -30,7 +30,7 @@ pub enum ClientToServerMessage {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerNetworkMessage {
-    Hello(Client),
+    Hello(Client, Resolution),
     Goodbye,
 }
 
@@ -84,6 +84,7 @@ pub enum ServerToClientInGameMessage {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum ClientStateMessage {
     SetGameFrame(GameFrame),
+    // FIXME BS NOW: send when placed or when client say hello, with last known window
     SetWindow(Window),
     SetGameSlice(GameSlice),
     SetCity(ClientCity),

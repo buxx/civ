@@ -2,7 +2,7 @@ use common::network::{Client, ClientId};
 use message_io::network::Endpoint;
 use std::collections::HashMap;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Clients {
     endpoints: HashMap<ClientId, Endpoint>,
     clients: HashMap<Endpoint, Client>,

@@ -2,13 +2,13 @@ use std::sync::RwLockReadGuard;
 
 use common::{
     game::slice::{ClientCity, ClientUnit, GameSlice},
-    geo::WorldPoint,
+    geo::{ImaginaryWorldPoint, WorldPoint},
     network::Client,
     space::window::Window,
-    world::{partial::PartialWorld, Tile},
+    world::{partial::PartialWorld, reader::WorldReader, CtxTile, Tile},
 };
 
-use crate::{state::State, world::reader::WorldReader};
+use crate::state::State;
 
 use super::IntoClientModel;
 
@@ -32,10 +32,13 @@ impl<'a> Extractor<'a> {
     fn world(&self, window: &Window) -> PartialWorld {
         let tiles = self.world.window_tiles(window);
         PartialWorld::new(
-            WorldPoint::new(window.start_x(), window.start_y()),
-            window.end_x() - window.start_x(),
-            window.end_y() - window.start_y(),
-            tiles.into_iter().cloned().collect::<Vec<Tile>>(),
+            *window.start(),
+            (window.end().x - window.start().x + 1) as u64,
+            (window.end().y - window.start().y + 1) as u64,
+            tiles
+                .into_iter()
+                .map(|t| t.into())
+                .collect::<Vec<CtxTile<Tile>>>(),
         )
     }
 

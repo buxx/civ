@@ -4,9 +4,9 @@ use common::{
         message::{ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage},
         Client, ClientId,
     },
-    space::window::{DisplayStep, SetWindow, Window},
+    space::window::{SetWindow, Window},
 };
-use log::error;
+use log::{error, info};
 use thiserror::Error;
 
 use crate::{
@@ -45,6 +45,7 @@ impl Runner {
             Effect::Shines(reflects) => Ok(reflects.clone()),
             Effect::State(effect) => match effect {
                 StateEffect::Testing => Ok(vec![]),
+                StateEffect::Clients(_) => Ok(vec![]),
                 StateEffect::Client(_, _) => Ok(vec![]),
                 StateEffect::Task(_, _) => {
                     // Task are reflected into City & Unit in server side,
@@ -166,13 +167,7 @@ impl Runner {
         client: &Client,
         window: &SetWindow,
     ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
-        let window = Window::new(
-            window.start_x(),
-            window.start_y(),
-            window.end_x(),
-            window.end_y(),
-            DisplayStep::from_shape(window.shape()),
-        );
+        let window = Window::from(window.clone());
         let game_slice = Extractor::new(
             self.context.state(),
             self.context
@@ -181,6 +176,7 @@ impl Runner {
                 .expect("Consider world as always readable"),
         )
         .game_slice(client, &window);
+        info!("DEBUG::{:?}", &window);
 
         Ok(vec![
             (

@@ -20,7 +20,7 @@ pub fn set(context: CommandContext, start_x: u64, start_y: u64, end_x: u64, end_
         return;
     }
 
-    let window = SetWindow::new(start_x, start_y, end_x, end_y);
+    let window = SetWindow::new((start_x, start_y).into(), (end_x, end_y).into());
     context
         .to_server_sender
         .send(ClientToServerMessage::Game(

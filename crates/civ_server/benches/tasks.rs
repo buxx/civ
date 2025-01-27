@@ -4,15 +4,15 @@ use std::{
 };
 
 use civ_server::{
+    config::ServerConfig,
     context::Context,
     runner::{Runner, RunnerContext},
     state::State,
     task::{TaskContext, TaskId},
     test::task::{fibonacci, FibonacciTask},
-    world::reader::WorldReader,
     FromClientsChannels, ToClientsChannels,
 };
-use common::{game::GameFrame, rules::std1::Std1RuleSet};
+use common::{game::GameFrame, rules::std1::Std1RuleSet, world::reader::WorldReader};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use crossbeam::channel::unbounded;
 
@@ -35,7 +35,7 @@ fn runner(context: Context, state: Arc<RwLock<State>>) -> Runner {
 }
 
 fn runner_with_fibonacci_tasks(tasks_count: usize, complexity: u64, iterations: usize) {
-    let context = Context::new(Box::new(Std1RuleSet));
+    let context = Context::new(Box::new(Std1RuleSet), ServerConfig::default());
     let mut state = State::default();
     for _ in 0..tasks_count {
         state.tasks_mut().push(Box::new(FibonacciTask::new(

@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 
 use despawn::despawn_menu;
-use gui::{manage_gui, FlagInput, PlayerIdInput};
-use manage::{react_connect, react_establishment, react_take_place};
+use gui::{manage_gui, FlagInput, KeepConnectedInput, PlayerIdInput};
+use manage::{auto_login, react_connect, react_establishment, react_take_place};
 use spawn::spawn_menu;
 
 use crate::state::AppState;
@@ -21,11 +21,12 @@ pub struct Menu;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin)
-            .init_resource::<PlayerIdInput>()
+            .insert_resource(PlayerIdInput::from_cookies())
+            .insert_resource(KeepConnectedInput::from_cookies())
             .init_resource::<FlagInput>()
             .init_resource::<Connecting>()
             .init_resource::<TakingPlace>()
-            .add_systems(OnEnter(AppState::Menu), spawn_menu)
+            .add_systems(OnEnter(AppState::Menu), (spawn_menu, auto_login))
             .add_systems(Update, manage_gui.run_if(in_state(AppState::Menu)))
             .add_systems(OnExit(AppState::Menu), despawn_menu)
             .add_observer(react_connect)

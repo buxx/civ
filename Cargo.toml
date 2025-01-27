@@ -28,3 +28,5 @@ strum_macros = "0.26.4"
 rand = "0.8.5"
 typetag = "0.2.19"
 clap = { version = "4.5.23", features = ["derive"] }
+eval-macro = "0.5.0"
+glam = "0.29.2"

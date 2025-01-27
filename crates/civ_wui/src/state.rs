@@ -1,8 +1,11 @@
 use bevy::prelude::*;
+use bon::Builder;
 use common::{
-    game::{nation::flag::Flag, server::ServerResume},
+    game::{nation::flag::Flag, server::ServerResume, slice::GameSlice as BaseGameSlice},
     network::Client as ClientBase,
 };
+
+use crate::inject::{self, Injection};
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum AppState {
@@ -21,9 +24,10 @@ pub enum InGame {
 }
 
 #[derive(Resource, Default, Deref, DerefMut)]
-pub struct Client {
-    _value: ClientBase,
-}
+pub struct Client(pub ClientBase);
+
+#[derive(Resource, Default, Deref, DerefMut)]
+pub struct InjectionResource(pub Injection);
 
 #[derive(Resource, Default, Debug)]
 pub struct Server {
@@ -49,13 +53,19 @@ impl Server {
     }
 }
 
-pub struct StatePlugin;
+#[derive(Builder)]
+pub struct StatePlugin {
+    init_state: Option<AppState>,
+    #[builder(default)]
+    injection: Injection,
+}
 
 impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<AppState>()
+        app.insert_state(self.init_state.clone().unwrap_or_default())
             .add_sub_state::<InGame>()
-            .insert_resource(Client::default()) // TODO: player_id from cookie
+            .insert_resource(self.injection.clone())
+            .insert_resource(Client::default())
             .insert_resource(Server::default());
     }
 }

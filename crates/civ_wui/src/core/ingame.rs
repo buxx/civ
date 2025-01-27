@@ -7,7 +7,7 @@ use crate::{
     network::InGameMessage,
 };
 
-use super::GameSliceUpdated;
+use super::{GameSliceUpdated, GameWindowUpdated};
 
 // TODO: To improve performances, separate each state message in event to lock ResMut only when needed
 pub fn react_ingame(
@@ -22,12 +22,14 @@ pub fn react_ingame(
             ClientStateMessage::SetGameFrame(frame_) => {
                 frame.0 = Some(*frame_);
             }
+            // FIXME BS NOW: when first received, we must set camera translation
             ClientStateMessage::SetGameSlice(game_slice_) => {
                 game_slice.0 = Some(game_slice_.clone());
                 commands.trigger(GameSliceUpdated);
             }
             ClientStateMessage::SetWindow(window_) => {
                 window.0 = Some(window_.clone());
+                commands.trigger(GameWindowUpdated);
             }
             ClientStateMessage::SetCity(city) => {
                 if let Some(ref mut slice) = &mut (game_slice.0) {

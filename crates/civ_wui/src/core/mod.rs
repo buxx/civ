@@ -1,7 +1,9 @@
 pub mod window;
 use bevy::prelude::*;
 use camera::spawn_camera;
-use common::network::message::ServerToClientMessage;
+use common::network::message::{
+    ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage,
+};
 use establishment::react_establishment;
 use ingame::react_ingame;
 use window::react_game_window_updated;
@@ -41,6 +43,10 @@ fn react_server(trigger: Trigger<ServerMessage>, mut commands: Commands) {
         }
         ServerToClientMessage::InGame(message) => {
             //
+            match &message {
+                ServerToClientInGameMessage::State(ClientStateMessage::SetGameFrame(_)) => {}
+                _ => {}
+            }
             commands.trigger(InGameMessage(message.clone()))
         }
     }

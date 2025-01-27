@@ -6,7 +6,10 @@ use common::game::nation::flag::Flag;
 use strum::IntoEnumIterator;
 use uuid::Uuid;
 
-use crate::state::{Client, Server};
+use crate::{
+    state::{Client, Server},
+    utils::cookies::Cookies,
+};
 
 use super::{Connect, Connecting, TakePlace, TakingPlace};
 
@@ -16,6 +19,34 @@ pub struct PlayerIdInput(pub String);
 impl PlayerIdInput {
     pub fn new(value: String) -> Self {
         Self(value)
+    }
+
+    pub fn from_cookies() -> Self {
+        Self(
+            Cookies
+                .get_player_id()
+                .and_then(|i| Ok(i.and_then(|i| Some(i.to_string()))))
+                .unwrap_or(Some("".to_string()))
+                .unwrap_or("".to_string()),
+        )
+    }
+}
+#[derive(Resource, Deref, Default)]
+pub struct KeepConnectedInput(pub bool);
+
+impl KeepConnectedInput {
+    pub fn new(value: bool) -> Self {
+        Self(value)
+    }
+
+    pub fn from_cookies() -> Self {
+        Self(
+            Cookies
+                .get_keep_connected()
+                .and_then(|i| Ok(i))
+                .unwrap_or(Some(false))
+                .unwrap_or(false),
+        )
     }
 }
 
@@ -33,6 +64,7 @@ pub fn manage_gui(
     contexts: EguiContexts,
     context_settings: Query<(&mut EguiContextSettings, &Window)>,
     player_id: ResMut<PlayerIdInput>,
+    keep_connected: ResMut<KeepConnectedInput>,
     flag: ResMut<FlagInput>,
     _client: Res<Client>,
     server: Res<Server>,
@@ -47,6 +79,7 @@ pub fn manage_gui(
         connecting,
         taking_place,
         player_id,
+        keep_connected,
         flag,
     );
 }
@@ -64,6 +97,7 @@ fn draw_window(
     connecting: Res<Connecting>,
     taking_place: Res<TakingPlace>,
     mut player_id: ResMut<PlayerIdInput>,
+    mut keep_connected: ResMut<KeepConnectedInput>,
     mut flag: ResMut<FlagInput>,
 ) {
     egui::TopBottomPanel::top("menu").show(contexts.ctx_mut(), |ui| {
@@ -89,6 +123,7 @@ fn draw_window(
                 if ui.button("Connect").clicked() {
                     commands.trigger(Connect)
                 }
+                ui.checkbox(&mut keep_connected.0, "Keep connected");
             }
         });
 

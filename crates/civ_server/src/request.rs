@@ -3,7 +3,7 @@ use common::{
         message::{ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage},
         Client,
     },
-    space::window::{DisplayStep, SetWindow, Window},
+    space::window::{SetWindow, Window},
 };
 
 use crate::{
@@ -23,13 +23,7 @@ impl<'a> SetWindowRequestDealer<'a> {
     }
 
     pub fn deal(&self, set_window: &SetWindow) -> Result<Vec<Effect>, RunnerError> {
-        let window = Window::new(
-            set_window.start_x(),
-            set_window.start_y(),
-            set_window.end_x(),
-            set_window.end_y(),
-            DisplayStep::from_shape(set_window.shape()),
-        );
+        let window = Window::from(set_window.clone());
 
         let new_game_slice = Extractor::new(
             self.context.state(),

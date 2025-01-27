@@ -1,6 +1,6 @@
-use std::{fs, path::PathBuf};
-
 use common::world::{Chunk, TerrainType, Tile, World};
+use std::{fs, path::PathBuf};
+use weighted_rand::builder::{NewBuilder, WalkerTableBuilder};
 
 use crate::{writer::Writer, WorldGeneratorError};
 
@@ -42,12 +42,15 @@ impl Generator {
     fn generate_chunk(&self, chunk_x: u64, chunk_y: u64) -> Result<Chunk, WorldGeneratorError> {
         // TODO: write a real terrain generator ...
         let mut tiles = vec![];
+        let terrains = [TerrainType::GrassLand, TerrainType::Plain];
+        let index_weights = [25, 100];
+
+        let builder = WalkerTableBuilder::new(&index_weights);
+        let wa_table = builder.build();
 
         for _ in 0..self.world.chunk_size {
             for _ in 0..self.world.chunk_size {
-                tiles.push(Tile {
-                    type_: TerrainType::GrassLand,
-                });
+                tiles.push(Tile::new(terrains[wa_table.next()]));
             }
         }
 

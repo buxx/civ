@@ -87,9 +87,9 @@ impl Index {
         }
 
         let mut cities = vec![];
-        for x in window.start_x()..window.end_x() {
-            for y in window.start_y()..window.end_y() {
-                if let Some(uuid) = self.xy_cities.get(&WorldPoint::new(x, y)) {
+        for x in window.start().x..window.end().x {
+            for y in window.start().y..window.end().y {
+                if let Some(uuid) = self.xy_cities.get(&WorldPoint::new(x as u64, y as u64)) {
                     cities.push(*uuid);
                 }
             }
@@ -108,9 +108,9 @@ impl Index {
         }
 
         let mut units = vec![];
-        for x in window.start_x()..window.end_x() {
-            for y in window.start_y()..window.end_y() {
-                if let Some(uuids) = self.xy_units.get(&WorldPoint::new(x, y)) {
+        for x in window.start().x..window.end().x {
+            for y in window.start().y..window.end().y {
+                if let Some(uuids) = self.xy_units.get(&WorldPoint::new(x as u64, y as u64)) {
                     units.extend(uuids);
                 }
             }
@@ -167,6 +167,7 @@ impl Index {
                         }
                     },
                     StateEffect::Testing => {}
+                    StateEffect::Clients(_) => {}
                 },
                 Effect::Shines(_) => {}
                 Effect::Action(_) => {}

@@ -4,7 +4,10 @@ use civ_server::{
     state::index::Index,
     test::{city::build_city, unit::build_unit},
 };
-use common::space::window::{DisplayStep, Window};
+use common::{
+    geo::ImaginaryWorldPoint,
+    space::window::{DisplayStep, Window},
+};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn inject_units(index: &mut Index, unit_count: usize, cities: &[City]) -> Vec<Unit> {
@@ -74,10 +77,18 @@ fn index_xy_window(index: &Index, xy_end: u64) {
     let mut city_counter = 0;
     let mut unit_counter = 0;
 
-    for _city in index.window_cities(&Window::new(0, 0, xy_end, xy_end, DisplayStep::Close)) {
+    for _city in index.window_cities(&Window::new(
+        ImaginaryWorldPoint::new(0, 0),
+        ImaginaryWorldPoint::new(xy_end as i64, xy_end as i64),
+        DisplayStep::Close,
+    )) {
         city_counter += 1;
     }
-    for _unit in index.window_units(&Window::new(0, 0, xy_end, xy_end, DisplayStep::Close)) {
+    for _unit in index.window_units(&Window::new(
+        ImaginaryWorldPoint::new(0, 0),
+        ImaginaryWorldPoint::new(xy_end as i64, xy_end as i64),
+        DisplayStep::Close,
+    )) {
         unit_counter += 1;
     }
 

@@ -2,59 +2,92 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-use crate::geo::GeoContext;
+use crate::{
+    geo::{GeoContext, ImaginaryWorldPoint},
+    utils::Rectangle,
+};
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Resolution {
+    width: u64,
+    height: u64,
+}
+
+impl Resolution {
+    pub fn new(width: u64, height: u64) -> Self {
+        Self { width, height }
+    }
+
+    pub fn rectangle(&self) -> Rectangle<i32> {
+        let (left, right) = if self.width % 2 == 0 {
+            ((self.width / 2) as i32, (self.width / 2) as i32 - 1)
+        } else {
+            ((self.width / 2) as i32, (self.width / 2) as i32)
+        };
+
+        let (top, bottom) = if self.height % 2 == 0 {
+            ((self.height / 2) as i32, (self.height / 2) as i32 - 1)
+        } else {
+            ((self.height / 2) as i32, (self.height / 2) as i32)
+        };
+
+        Rectangle::from([left, right, top, bottom])
+    }
+}
+
+// TODO: only for tests ?
+impl Default for Resolution {
+    fn default() -> Self {
+        Self {
+            width: 32,
+            height: 32,
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Window {
-    // TODO: WorldPoint instead x, y ...
-    start_x: u64,
-    start_y: u64,
-    end_x: u64,
-    end_y: u64,
+    start: ImaginaryWorldPoint,
+    end: ImaginaryWorldPoint,
     step: DisplayStep,
 }
 
-impl Window {
-    pub fn new(start_x: u64, start_y: u64, end_x: u64, end_y: u64, step: DisplayStep) -> Self {
+impl Default for Window {
+    fn default() -> Self {
         Self {
-            start_x,
-            start_y,
-            end_x,
-            end_y,
-            step,
+            start: Default::default(),
+            end: Default::default(),
+            step: DisplayStep::Close,
         }
     }
+}
 
-    pub fn start_x(&self) -> u64 {
-        self.start_x
+impl Window {
+    pub fn new(start: ImaginaryWorldPoint, end: ImaginaryWorldPoint, step: DisplayStep) -> Self {
+        // TODO: check start is inferior to end
+        Self { start, end, step }
     }
 
-    pub fn start_y(&self) -> u64 {
-        self.start_y
+    pub fn start(&self) -> &ImaginaryWorldPoint {
+        &self.start
     }
 
-    pub fn end_x(&self) -> u64 {
-        self.end_x
-    }
-
-    pub fn end_y(&self) -> u64 {
-        self.end_y
+    pub fn end(&self) -> &ImaginaryWorldPoint {
+        &self.end
     }
 
     pub fn shape(&self) -> u64 {
-        // TODO: Check somewhere start is inferior to end ...
-        let width = self.end_y - self.start_y;
-        let height = self.end_x - self.start_y;
-        width * height
+        let width = self.end.x - self.start.x;
+        let height = self.end.y - self.start.y;
+        (width * height) as u64
     }
 
     pub fn contains(&self, geo: &GeoContext) -> bool {
-        let point = geo.point();
+        let point: ImaginaryWorldPoint = geo.point().clone().into();
 
-        point.x >= self.start_x
-            && point.x <= self.end_x
-            && point.y >= self.start_y
-            && point.y <= self.end_y
+        point.x >= self.start.x
+            && point.x <= self.end.x
+            && point.y >= self.start.y
+            && point.y <= self.end.y
     }
 
     pub fn step(&self) -> &DisplayStep {
@@ -65,51 +98,67 @@ impl Window {
 impl Display for Window {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!(
-            "{}:{} {}:{}",
-            self.start_x, self.start_y, self.end_x, self.end_y,
+            "{},{}↘{},{}",
+            self.start.x, self.start.y, self.end.x, self.end.y,
         ))
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+impl From<SetWindow> for Window {
+    fn from(value: SetWindow) -> Self {
+        Self::new(
+            *value.start(),
+            *value.end(),
+            DisplayStep::from_shape(value.shape()),
+        )
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct SetWindow {
-    start_x: u64,
-    start_y: u64,
-    end_x: u64,
-    end_y: u64,
+    start: ImaginaryWorldPoint,
+    end: ImaginaryWorldPoint,
 }
 
 impl SetWindow {
-    pub fn new(start_x: u64, start_y: u64, end_x: u64, end_y: u64) -> Self {
-        Self {
-            start_x,
-            start_y,
-            end_x,
-            end_y,
-        }
+    pub fn new(start: ImaginaryWorldPoint, end: ImaginaryWorldPoint) -> Self {
+        // TODO: Check start is inferior to end
+        Self { start, end }
     }
 
-    pub fn start_x(&self) -> u64 {
-        self.start_x
+    fn _from(point: ImaginaryWorldPoint, resolution: &Resolution) -> Self {
+        let start = ImaginaryWorldPoint::new(point.x, point.y);
+        let end = ImaginaryWorldPoint::new(
+            point.x + resolution.width as i64,
+            point.y + resolution.height as i64,
+        );
+        SetWindow::new(start, end)
     }
 
-    pub fn start_y(&self) -> u64 {
-        self.start_y
-    }
-
-    pub fn end_x(&self) -> u64 {
-        self.end_x
-    }
-
-    pub fn end_y(&self) -> u64 {
-        self.end_y
+    pub fn from_around(point: &ImaginaryWorldPoint, resolution: &Resolution) -> Self {
+        let rectangle = resolution.rectangle();
+        let start_x = point.x - rectangle.left as i64;
+        let start_y = point.y - rectangle.top as i64;
+        let end_x = point.x + rectangle.right as i64;
+        let end_y = point.y + rectangle.bottom as i64;
+        SetWindow::new(
+            ImaginaryWorldPoint::new(start_x, start_y),
+            ImaginaryWorldPoint::new(end_x, end_y),
+        )
     }
 
     pub fn shape(&self) -> u64 {
-        // TODO: Check somewhere start is inferior to end ...
-        let width = self.end_y - self.start_y;
-        let height = self.end_x - self.start_y;
-        width * height
+        let width = self.end.x - self.start.x;
+        let height = self.end.y - self.start.y;
+        (width * height) as u64
+    }
+
+    pub fn start(&self) -> &ImaginaryWorldPoint {
+        &self.start
+    }
+
+    pub fn end(&self) -> &ImaginaryWorldPoint {
+        &self.end
     }
 }
 
@@ -143,5 +192,45 @@ impl DisplayStep {
             DisplayStep::High => true,
             DisplayStep::Map => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::geo::ImaginaryWorldPoint;
+
+    use super::{Resolution, SetWindow};
+
+    #[test]
+    fn test_set_window_from_around() {
+        let (point, resolution) = (ImaginaryWorldPoint::new(4, 4), Resolution::new(9, 9));
+        let set_window = SetWindow::from_around(&point, &resolution);
+        assert_eq!(
+            set_window,
+            SetWindow::new(
+                ImaginaryWorldPoint::new(0, 0),
+                ImaginaryWorldPoint::new(8, 8)
+            )
+        );
+
+        let (point, resolution) = (ImaginaryWorldPoint::new(100, 100), Resolution::new(100, 10));
+        let set_window = SetWindow::from_around(&point, &resolution);
+        assert_eq!(
+            set_window,
+            SetWindow::new(
+                ImaginaryWorldPoint::new(50, 95),
+                ImaginaryWorldPoint::new(149, 104)
+            )
+        );
+
+        let (point, resolution) = (ImaginaryWorldPoint::new(0, 0), Resolution::new(9, 9));
+        let set_window = SetWindow::from_around(&point, &resolution);
+        assert_eq!(
+            set_window,
+            SetWindow::new(
+                ImaginaryWorldPoint::new(-4, -4),
+                ImaginaryWorldPoint::new(4, 4)
+            )
+        );
     }
 }

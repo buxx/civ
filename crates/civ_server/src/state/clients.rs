@@ -4,7 +4,7 @@ use common::{
     game::{nation::flag::Flag, PlayerId},
     geo::GeoContext,
     network::{Client, ClientId},
-    space::window::Window,
+    space::window::{Window, Resolution},
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -15,7 +15,9 @@ use crate::effect::ClientEffect;
 #[derive(Default)]
 pub struct Clients {
     count: usize,
-    client_windows: Vec<(ClientId, Window)>,
+    // FIXME BS NOW: il faut que la window soit cote PlayerId pour être restitue a la connexion
+    // FIXME BS NOW: move WindowResolution elsewhere (not stored) ? remove Window
+    clients: HashMap<ClientId, (Resolution, Window)>,
     states: HashMap<PlayerId, ClientState>,
 }
 
@@ -29,12 +31,12 @@ pub enum ClientsError {
 
 impl Clients {
     pub fn new(
-        client_windows: Vec<(ClientId, Window)>,
+        clients: HashMap<ClientId, (Resolution, Window)>,
         states: HashMap<PlayerId, ClientState>,
     ) -> Self {
         Self {
             count: 0,
-            client_windows,
+            clients,
             states,
         }
     }
@@ -49,17 +51,22 @@ impl Clients {
 
     pub fn apply(&mut self, client: &Client, effect: &ClientEffect) -> Result<(), ClientsError> {
         match effect {
-            ClientEffect::PlayerTookPlace(flag) => {
+            ClientEffect::PlayerTookPlace(flag, window) => {
                 self.states
-                    .insert(*client.player_id(), ClientState::new(*flag));
+                    .insert(*client.player_id(), ClientState::new(*flag, window.clone()));
             }
             ClientEffect::SetWindow(window) => {
-                self.client_windows
-                    .push((*client.client_id(), window.clone()));
-                self.states
-                    .get_mut(client.player_id())
-                    .ok_or(ClientsError::UnknownPlayer(*client.player_id()))?
-                    .set_window(Some(window.clone()));
+                if let Some(state) = self.states.get_mut(client.player_id()) {
+                    state.set_window(window.clone());
+                };
+            }
+            ClientEffect::SetResolution(resolution) => {
+                if let Some((resolution_, _)) = self.clients.get_mut(client.client_id()) {
+                    *resolution_ = resolution.clone();
+                } else {
+                    self.clients
+                        .insert(*client.client_id(), (resolution.clone(), Window::default()));
+                };
             }
         };
 
@@ -67,9 +74,9 @@ impl Clients {
     }
 
     pub fn concerned(&self, geo: &GeoContext) -> Vec<ClientId> {
-        self.client_windows
+        self.clients
             .iter()
-            .filter_map(|(client, window)| {
+            .filter_map(|(client, (_, window))| {
                 if window.contains(geo) {
                     Some(*client)
                 } else {
@@ -80,7 +87,7 @@ impl Clients {
     }
 
     pub fn client_ids(&self) -> Vec<ClientId> {
-        self.client_windows.iter().map(|(i, _)| *i).collect()
+        self.clients.keys().copied().collect()
     }
 
     pub fn player_state(&self, player_id: &PlayerId) -> Option<&ClientState> {
@@ -95,27 +102,35 @@ impl Clients {
         &self.states
     }
 
-    pub fn client_windows(&self) -> &[(ClientId, Window)] {
-        &self.client_windows
+    pub fn client_windows(&self) -> &HashMap<ClientId, (Resolution, Window)> {
+        &self.clients
+    }
+
+    pub fn refresh_count(&mut self) {
+        self.count = self.clients.len();
     }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ClientState {
     flag: Flag,
-    window: Option<Window>,
+    window: Window,
 }
 
 impl ClientState {
-    pub fn new(flag: Flag) -> Self {
-        Self { flag, window: None }
-    }
-
-    pub fn set_window(&mut self, window: Option<Window>) {
-        self.window = window;
+    pub fn new(flag: Flag, window: Window) -> Self {
+        Self { flag, window }
     }
 
     pub fn flag(&self) -> &Flag {
         &self.flag
+    }
+
+    pub fn window(&self) -> &Window {
+        &self.window
+    }
+
+    pub fn set_window(&mut self, window: Window) {
+        self.window = window;
     }
 }

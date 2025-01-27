@@ -1,10 +1,6 @@
 use std::{collections::HashMap, fs, io, path::PathBuf};
 
-use common::{
-    game::{GameFrame, PlayerId},
-    network::ClientId,
-    space::window::Window,
-};
+use common::game::{GameFrame, PlayerId};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -24,7 +20,6 @@ pub struct Snapshot {
     tasks: Vec<Box<dyn Task>>,
     cities: Vec<City>,
     units: Vec<Unit>,
-    client_windows: Vec<(ClientId, Window)>,
     client_states: HashMap<PlayerId, ClientState>,
 }
 
@@ -58,10 +53,6 @@ impl Snapshot {
         &self.units
     }
 
-    pub fn client_windows(&self) -> &[(ClientId, Window)] {
-        &self.client_windows
-    }
-
     pub fn client_states(&self) -> &HashMap<PlayerId, ClientState> {
         &self.client_states
     }
@@ -80,7 +71,6 @@ impl From<&State> for Snapshot {
             tasks,
             cities: value.cities().to_vec(),
             units: value.units().to_vec(),
-            client_windows: value.clients().client_windows().to_vec(),
             client_states: value.clients().states().clone(),
         }
     }
@@ -105,7 +95,7 @@ impl From<Snapshot> for State {
             .collect();
         Self::new(
             value.frame_i,
-            Clients::new(value.client_windows, value.client_states),
+            Clients::new(HashMap::new(), value.client_states),
             index,
             tasks,
             value.cities,

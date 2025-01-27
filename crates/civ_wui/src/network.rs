@@ -1,6 +1,7 @@
 use async_std::channel::{unbounded, Receiver, Sender};
 use bevy::prelude::*;
 use bevy_async_task::AsyncTaskRunner;
+use bon::Builder;
 use common::network::message::{
     ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientEstablishmentMessage,
     ServerToClientInGameMessage, ServerToClientMessage,
@@ -15,7 +16,7 @@ use async_wsocket::{
     ConnectionMode, Sink, Stream, Url, WsMessage,
 };
 
-use crate::state::Client;
+use crate::{inject::Injection, state::Client};
 
 const SERVER: Option<&str> = std::option_env!("SERVER");
 
@@ -40,18 +41,29 @@ pub struct EstablishmentMessage(pub ServerToClientEstablishmentMessage);
 #[derive(Event)]
 pub struct InGameMessage(pub ServerToClientInGameMessage);
 
-pub struct NetworkPlugin;
+#[derive(Default, Builder)]
+pub struct NetworkPlugin {
+    to_server_channels: Option<(
+        Sender<ClientToServerMessage>,
+        Receiver<ClientToServerMessage>,
+    )>,
+    from_server_channels: Option<(
+        Sender<ServerToClientMessage>,
+        Receiver<ServerToClientMessage>,
+    )>,
+}
 
 impl Plugin for NetworkPlugin {
     fn build(&self, app: &mut App) {
         let (to_server_sender, to_server_receiver): (
             Sender<ClientToServerMessage>,
             Receiver<ClientToServerMessage>,
-        ) = unbounded();
+        ) = self.to_server_channels.clone().unwrap_or(unbounded());
+
         let (from_server_sender, from_server_receiver): (
             Sender<ServerToClientMessage>,
             Receiver<ServerToClientMessage>,
-        ) = unbounded();
+        ) = self.from_server_channels.clone().unwrap_or(unbounded());
 
         app.insert_resource(ServerToClientSenderResource(from_server_sender))
             .insert_resource(ServerToClientReceiverResource(from_server_receiver))
@@ -62,6 +74,7 @@ impl Plugin for NetworkPlugin {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 fn setup_network(
     mut task_runner: AsyncTaskRunner<'_, ()>,
     to_server_receiver: Res<ClientToServerReceiverResource>,
@@ -73,6 +86,16 @@ fn setup_network(
     ));
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+fn setup_network(
+    mut _task_runner: AsyncTaskRunner<'_, ()>,
+    _to_server_receiver: Res<ClientToServerReceiverResource>,
+    _from_server_sender: Res<ServerToClientSenderResource>,
+) {
+    // This is a fake network implemented, for now, to simplify examples
+}
+
+#[cfg(target_arch = "wasm32")]
 async fn websocket_client(
     to_server_receiver: Receiver<ClientToServerMessage>,
     from_server_sender: Sender<ServerToClientMessage>,
@@ -98,6 +121,7 @@ async fn websocket_client(
     info!("Close websocket client");
 }
 
+#[cfg(target_arch = "wasm32")]
 async fn listen_to(mut tx: Sink, to_server_receiver: Receiver<ClientToServerMessage>) {
     while let Ok(message) = to_server_receiver.recv().await {
         let bytes = bincode::serialize(&message).unwrap();
@@ -107,6 +131,7 @@ async fn listen_to(mut tx: Sink, to_server_receiver: Receiver<ClientToServerMess
     info!("Websocket server message sender closed")
 }
 
+#[cfg(target_arch = "wasm32")]
 async fn listen_from(mut rx: Stream, from_server_sender: Sender<ServerToClientMessage>) {
     while let Some(msg) = rx.next().await {
         if let Ok(WsMessage::Binary(bytes)) = msg {
