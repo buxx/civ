@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1737324648983,
+  "lastUpdate": 1742986940666,
   "repoUrl": "https://github.com/buxx/civ",
   "entries": {
     "Benchmark": [
@@ -1637,6 +1637,174 @@ window.BENCHMARK_DATA = {
             "name": "runner_with_fibonacci_tasks 10k🎯 1G🧠 1k➰",
             "value": 358672305,
             "range": "± 8341952",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "committer": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "distinct": false,
+          "id": "936a020d9a928ff4496f9d831ee24c467f52b3be",
+          "message": "feat: hex",
+          "timestamp": "2025-03-25T20:42:37+01:00",
+          "tree_id": "a96d1f2f883e41d28b3c49fdac7cb2cc0dec2617",
+          "url": "https://github.com/buxx/civ/commit/936a020d9a928ff4496f9d831ee24c467f52b3be"
+        },
+        "date": 1742986940315,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "tiles_from_window",
+            "value": 591,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1🚹",
+            "value": 275,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1k🚹",
+            "value": 60456364,
+            "range": "± 1093631",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 10k🚹",
+            "value": 6918077168,
+            "range": "± 44567175",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1🏠",
+            "value": 314,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1k🏠",
+            "value": 36701694,
+            "range": "± 45299",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 10k🏠",
+            "value": 3840518748,
+            "range": "± 12831185",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_xy_window/index_xy_window 1🚹 1🏠",
+            "value": 99,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_xy_window/index_xy_window 1k🚹 1k🏠",
+            "value": 35562329,
+            "range": "± 50289",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_xy_window/index_xy_window 10k🚹 10k🏠",
+            "value": 3700790199,
+            "range": "± 9458409",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/snapshot_state 100k🚹 5k🏠 1M🎯",
+            "value": 35784098,
+            "range": "± 136579",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/write_snapshot 100k🚹 5k🏠 1M🎯",
+            "value": 229030416,
+            "range": "± 3264001",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fibonacci 1🧠",
+            "value": 1,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fibonacci 1M🧠",
+            "value": 310557,
+            "range": "± 241",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "fibonacci 1G🧠",
+            "value": 310596998,
+            "range": "± 289067",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_with_fibonacci_tasks 8🎯 1🧠 1k➰",
+            "value": 9255147,
+            "range": "± 361021",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_with_fibonacci_tasks 1k🎯 1🧠 1k➰",
+            "value": 75821388,
+            "range": "± 2676006",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_with_fibonacci_tasks 10k🎯 1🧠 1k➰",
+            "value": 355438158,
+            "range": "± 5298231",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_with_fibonacci_tasks 8🎯 1M🧠 1k➰",
+            "value": 9231147,
+            "range": "± 366339",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_with_fibonacci_tasks 1k🎯 1M🧠 1k➰",
+            "value": 74205274,
+            "range": "± 1450388",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_with_fibonacci_tasks 10k🎯 1M🧠 1k➰",
+            "value": 355301544,
+            "range": "± 12738344",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_with_fibonacci_tasks 8🎯 1G🧠 1k➰",
+            "value": 9180313,
+            "range": "± 282902",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_with_fibonacci_tasks 1k🎯 1G🧠 1k➰",
+            "value": 74643284,
+            "range": "± 1634272",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_with_fibonacci_tasks 10k🎯 1G🧠 1k➰",
+            "value": 358319843,
+            "range": "± 9316435",
             "unit": "ns/iter"
           }
         ]
