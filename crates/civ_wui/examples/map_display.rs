@@ -4,27 +4,28 @@ use std::thread;
 use async_std::channel::{unbounded, Receiver, Sender};
 use async_std::task;
 use bevy::prelude::*;
-use common::network::message::{
-    ClientStateMessage, ClientToServerGameMessage, ClientToServerInGameMessage,
-    ClientToServerMessage, ServerToClientInGameMessage, ServerToClientMessage,
-};
-use common::space::window::{DisplayStep, Resolution, SetWindow, Window as SpaceWindow};
-use common::world::reader::WorldReader;
+use civ_wui::map::MapPlugin;
 use wasm_bindgen::prelude::*;
 
 use civ_wui::core::CorePlugin;
-#[cfg(feature = "debug")]
-use civ_wui::debug::DebugPlugin;
 use civ_wui::ingame::InGamePlugin;
-use civ_wui::inject::Injection;
 use civ_wui::menu::MenuPlugin;
 use civ_wui::network::NetworkPlugin;
 use civ_wui::state::{AppState, StatePlugin};
 use civ_wui::window::window_plugin;
 use common::game::slice::GameSlice;
-use common::geo::{ImaginaryWorldPoint, WorldPoint};
+use common::geo::ImaginaryWorldPoint;
+use common::network::message::{
+    ClientStateMessage, ClientToServerGameMessage, ClientToServerInGameMessage,
+    ClientToServerMessage, ServerToClientInGameMessage, ServerToClientMessage,
+};
+use common::space::window::{DisplayStep, Resolution, SetWindow, Window as SpaceWindow};
 use common::world::partial::PartialWorld;
+use common::world::reader::WorldReader;
 use common::world::{CtxTile, TerrainType, Tile};
+
+#[cfg(feature = "debug")]
+use civ_wui::debug::DebugPlugin;
 
 #[wasm_bindgen(start)]
 fn entrypoint() -> Result<(), JsValue> {
@@ -239,6 +240,7 @@ fn entrypoint() -> Result<(), JsValue> {
         MenuPlugin,
         CorePlugin,
         InGamePlugin,
+        MapPlugin,
     ));
 
     #[cfg(feature = "debug")]

@@ -1,6 +1,6 @@
 use common::world::{CtxTile, TerrainType, Tile};
 
-use crate::ingame::AtlasIndex;
+use crate::map::AtlasIndex;
 
 pub trait AsAtlasIndex {
     fn atlas_index(&self) -> AtlasIndex;

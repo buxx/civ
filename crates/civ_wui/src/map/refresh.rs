@@ -1,23 +1,124 @@
-use bevy::prelude::*;
-use common::game::slice::GameSlice;
-use hexx::{shapes, *};
+use bevy::{prelude::*, window::PrimaryWindow};
+use common::{
+    network::message::{
+        ClientToServerGameMessage, ClientToServerInGameMessage, ClientToServerMessage,
+    },
+    space::window::{Resolution, SetWindow},
+};
 
 use crate::{
     assets::tile::{layout, texture_atlas_layout, TILES_ATLAS_PATH},
-    ingame::HexTile,
+    ingame::{GameSlice, HexTile},
     utils::assets::AsAtlasIndex,
+};
+use crate::{
+    core::GameSliceUpdated,
+    ingame::{CameraInitialized, City, Unit},
+    network::ClientToServerSenderResource,
+};
+use common::game::slice::ClientCity;
+use common::game::slice::ClientUnit;
+use common::game::slice::GameSlice as BaseGameSlice;
+use hexx::{shapes, *};
+
+use super::{
+    grid::HexGrid, move_::CurrentCenter, tile::HexTileMeta, AtlasIndex, CenterCameraOnGrid,
 };
 
 #[cfg(feature = "debug_tiles")]
 use crate::utils::debug::DebugDisplay;
 
-use super::{CurrentCenter, HexGrid, HexTileMeta};
+pub fn refresh_tiles(
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<(&Camera, &GlobalTransform)>,
+    grid: Res<HexGrid>,
+    client_to_server: Res<ClientToServerSenderResource>,
+    current: Res<CurrentCenter>,
+) {
+    let window = windows.single();
+    let center = Vec2::new(
+        window.resolution.width() / 2.0,
+        window.resolution.height() / 2.0,
+    );
+    let (camera, cam_transform) = cameras.single();
+    if let Ok(world_point) = camera.viewport_to_world_2d(cam_transform, center) {
+        let hex_pos = grid.layout.world_pos_to_hex(world_point);
+        let Some(hex_tile_meta) = grid.entities.get(&hex_pos) else {
+            return;
+        };
+        let point = hex_tile_meta.imaginary();
+        if Some(point) == current.0 {
+            return;
+        }
+
+        // FIXME: called multiple time on same tile
+        // FIXME: resolution according to window + zoom + hex size
+        let set_window = SetWindow::from_around(&point, &Resolution::new(50, 50));
+        // TODO: refactor clean
+        client_to_server
+            .0
+            .send_blocking(ClientToServerMessage::Game(
+                ClientToServerGameMessage::InGame(ClientToServerInGameMessage::SetWindow(
+                    set_window,
+                )),
+            ))
+            .unwrap();
+    }
+}
+
+pub fn react_game_slice_updated(
+    _trigger: Trigger<GameSliceUpdated>,
+    mut commands: Commands,
+    atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    asset_server: Res<AssetServer>,
+    tiles: Query<Entity, With<HexTile>>,
+    cities: Query<Entity, With<City>>,
+    units: Query<Entity, With<Unit>>,
+    game_slice: Res<GameSlice>,
+    mut center: ResMut<CurrentCenter>,
+    mut camera_initialized: ResMut<CameraInitialized>,
+) {
+    if let Some(game_slice) = &game_slice.0 {
+        // Tiles
+        for entity in tiles.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+        spawn_tiles(
+            &mut commands,
+            atlas_layouts,
+            asset_server,
+            game_slice,
+            &mut center,
+        );
+
+        // Cities
+        for entity in cities.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+        for city in game_slice.cities() {
+            commands.spawn(city_bundle(city));
+        }
+
+        // Units
+        for entity in units.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+        for unit in game_slice.units() {
+            commands.spawn(unit_bundle(unit));
+        }
+
+        if !camera_initialized.0 && center.0.is_some() {
+            camera_initialized.0 = true;
+            commands.trigger(CenterCameraOnGrid)
+        }
+    }
+}
 
 pub fn spawn_tiles(
     commands: &mut Commands,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     asset_server: Res<AssetServer>,
-    game_slice: &GameSlice,
+    game_slice: &BaseGameSlice,
     current: &mut ResMut<CurrentCenter>,
 ) {
     let texture = asset_server.load(TILES_ATLAS_PATH);
@@ -79,7 +180,7 @@ fn hex_tile_entity(
     texture: &Handle<Image>,
     atlas_layout: &Handle<TextureAtlasLayout>,
     relative_point: Vec2,
-    atlas_index: &super::AtlasIndex,
+    atlas_index: &AtlasIndex,
 ) -> (HexTile, Sprite, Transform) {
     (
         HexTile,
@@ -92,6 +193,28 @@ fn hex_tile_entity(
             ..default()
         },
         Transform::from_xyz(relative_point.x, relative_point.y, 0.0),
+    )
+}
+
+pub fn city_bundle(city: &ClientCity) -> (City, Transform) {
+    let translation = Vec3::ZERO; // FIXME: real position
+    (
+        City(city.clone()),
+        Transform {
+            translation,
+            ..default()
+        },
+    )
+}
+
+pub fn unit_bundle(unit: &ClientUnit) -> (Unit, Transform) {
+    let translation = Vec3::ZERO; // FIXME: real position
+    (
+        Unit(unit.clone()),
+        Transform {
+            translation,
+            ..default()
+        },
     )
 }
 

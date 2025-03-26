@@ -4,6 +4,7 @@ use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use debug::DebugPlugin;
 use ingame::InGamePlugin;
+use map::MapPlugin;
 use network::NetworkPlugin;
 use wasm_bindgen::prelude::*;
 
@@ -17,6 +18,7 @@ mod core;
 mod debug;
 mod ingame;
 mod inject;
+mod map;
 mod menu;
 mod network;
 mod state;
@@ -33,6 +35,7 @@ fn entrypoint() -> Result<(), JsValue> {
         NetworkPlugin::default(),
         MenuPlugin,
         CorePlugin,
+        MapPlugin,
         InGamePlugin,
     ));
 

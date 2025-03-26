@@ -4,6 +4,7 @@ pub mod core;
 pub mod debug;
 pub mod ingame;
 pub mod inject;
+pub mod map;
 pub mod menu;
 pub mod network;
 pub mod state;
