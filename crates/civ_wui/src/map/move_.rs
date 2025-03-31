@@ -66,6 +66,8 @@ pub fn map_dragging(
                 let delta_y = last_position.0.y - current_position.y;
                 camera.translation.x += delta_x;
                 camera.translation.y -= delta_y;
+                camera.translation.x = camera.translation.x.round();
+                camera.translation.y = camera.translation.y.round();
             }
         }
     }

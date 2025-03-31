@@ -15,6 +15,8 @@ pub fn map_zoom(
                 scale.y += ev.y;
                 scale.x = scale.x.max(1.0);
                 scale.y = scale.y.max(1.0);
+                scale.x = scale.x.round();
+                scale.y = scale.y.round();
                 camera.single_mut().scale = scale;
             }
             MouseScrollUnit::Pixel => {
@@ -23,6 +25,8 @@ pub fn map_zoom(
                 scale.y += ev.y / 100.;
                 scale.x = scale.x.max(1.0);
                 scale.y = scale.y.max(1.0);
+                scale.x = scale.x.round();
+                scale.y = scale.y.round();
                 camera.single_mut().scale = scale;
             }
         }

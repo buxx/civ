@@ -100,7 +100,7 @@ pub fn react_establishment(
             }
         }
         ServerToClientEstablishmentMessage::TakePlaceRefused(_reason) => {
-            // FIXME: error message display
+            // TODO: error message display
         }
     }
 }

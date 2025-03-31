@@ -30,7 +30,9 @@ fn entrypoint() -> Result<(), JsValue> {
     let mut app = App::new();
 
     app.add_plugins((
-        DefaultPlugins.set(window_plugin()),
+        DefaultPlugins
+            .set(window_plugin())
+            .set(ImagePlugin::default_nearest()),
         StatePlugin::builder().build(),
         NetworkPlugin::default(),
         MenuPlugin,
