@@ -140,7 +140,11 @@ pub fn spawn_tiles(
             let atlas_index = tile.atlas_index();
             let entity_ = hex_tile_entity(&texture, &atlas_layout, relative_point, &atlas_index);
 
+            #[cfg(feature = "debug_tiles")]
             let mut entity = commands.spawn(entity_);
+
+            #[cfg(not(feature = "debug_tiles"))]
+            let entity = commands.spawn(entity_);
 
             #[cfg(feature = "debug_tiles")]
             {

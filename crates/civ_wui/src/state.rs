@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 use bon::Builder;
 use common::{
-    game::{nation::flag::Flag, server::ServerResume, slice::GameSlice as BaseGameSlice},
+    game::{nation::flag::Flag, server::ServerResume},
     network::Client as ClientBase,
 };
 
-use crate::inject::{self, Injection};
+use crate::inject::Injection;
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum AppState {
@@ -19,8 +19,8 @@ pub enum AppState {
 pub enum InGame {
     #[default]
     Close,
-    Map,
-    World,
+    // Map,
+    // World,
 }
 
 #[derive(Resource, Default, Deref, DerefMut)]

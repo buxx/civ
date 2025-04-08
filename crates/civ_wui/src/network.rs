@@ -2,24 +2,33 @@ use async_std::channel::{unbounded, Receiver, Sender};
 use bevy::prelude::*;
 use bevy_async_task::AsyncTaskRunner;
 use bon::Builder;
+#[cfg(target_arch = "wasm32")]
+use common::network::message::ClientToServerNetworkMessage;
 use common::network::message::{
-    ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientEstablishmentMessage,
-    ServerToClientInGameMessage, ServerToClientMessage,
+    ClientToServerMessage, ServerToClientEstablishmentMessage, ServerToClientInGameMessage,
+    ServerToClientMessage,
 };
+#[cfg(target_arch = "wasm32")]
 use futures::join;
+#[cfg(target_arch = "wasm32")]
 use web_sys::{window, UrlSearchParams};
 
+#[cfg(target_arch = "wasm32")]
 use std::time::Duration;
 
+#[cfg(target_arch = "wasm32")]
 use async_wsocket::{
     futures_util::{SinkExt, StreamExt},
     ConnectionMode, Sink, Stream, Url, WsMessage,
 };
 
+#[cfg(target_arch = "wasm32")]
 use crate::{inject::Injection, state::Client};
 
+#[cfg(target_arch = "wasm32")]
 const SERVER: Option<&str> = std::option_env!("SERVER");
 
+#[allow(dead_code)]
 #[derive(Resource)]
 pub struct ClientToServerReceiverResource(pub Receiver<ClientToServerMessage>);
 
@@ -29,6 +38,7 @@ pub struct ClientToServerSenderResource(pub Sender<ClientToServerMessage>);
 #[derive(Resource)]
 pub struct ServerToClientReceiverResource(pub Receiver<ServerToClientMessage>);
 
+#[allow(dead_code)]
 #[derive(Resource)]
 pub struct ServerToClientSenderResource(pub Sender<ServerToClientMessage>);
 

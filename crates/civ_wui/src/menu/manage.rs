@@ -1,8 +1,5 @@
-use std::str::FromStr;
-
 use bevy::prelude::*;
 use common::{
-    game::PlayerId,
     network::message::{
         ClientToServerEstablishmentMessage, ClientToServerGameMessage, ClientToServerMessage,
         ClientToServerNetworkMessage, ServerToClientEstablishmentMessage,
@@ -10,10 +7,16 @@ use common::{
     space::window::Resolution,
 };
 
+#[cfg(target_arch = "wasm32")]
+use common::game::PlayerId;
+#[cfg(target_arch = "wasm32")]
+use std::str::FromStr;
+
+#[cfg(target_arch = "wasm32")]
+use crate::utils::cookies::Cookies;
 use crate::{
     network::{ClientToServerSenderResource, EstablishmentMessage},
     state::{AppState, Client},
-    utils::cookies::Cookies,
 };
 
 use super::{
@@ -21,17 +24,22 @@ use super::{
     Connect, Connecting, TakePlace, TakingPlace,
 };
 
+#[allow(unused)]
 pub fn auto_login(mut commands: Commands) {
-    if Cookies
-        .get_keep_connected()
-        .unwrap_or(Some(false))
-        .unwrap_or(false)
-        && Cookies.get_player_id().unwrap_or(None).is_some()
+    #[cfg(target_arch = "wasm32")]
     {
-        commands.trigger(Connect);
+        if Cookies
+            .get_keep_connected()
+            .unwrap_or(Some(false))
+            .unwrap_or(false)
+            && Cookies.get_player_id().unwrap_or(None).is_some()
+        {
+            commands.trigger(Connect);
+        }
     }
 }
 
+#[allow(unused)]
 pub fn react_connect(
     _trigger: Trigger<Connect>,
     to_server_sender: Res<ClientToServerSenderResource>,
@@ -43,21 +51,23 @@ pub fn react_connect(
     if player_id_input.0.is_empty() {
         return;
     }
-
-    Cookies
-        .set_player_id(&PlayerId::from_str(&player_id_input.0).unwrap())
-        .unwrap();
-    Cookies.set_keep_connected(keep_connected_input.0).unwrap();
-    client
-        .0
-        .set_player_id(PlayerId::from_str(&player_id_input.0).unwrap());
+    #[cfg(target_arch = "wasm32")]
+    {
+        Cookies
+            .set_player_id(&PlayerId::from_str(&player_id_input.0).unwrap())
+            .unwrap();
+        Cookies.set_keep_connected(keep_connected_input.0).unwrap();
+        client
+            .0
+            .set_player_id(PlayerId::from_str(&player_id_input.0).unwrap());
+    }
     connecting.0 = true;
     info!("HELLO");
     to_server_sender
         .0
         .send_blocking(ClientToServerMessage::Network(
             ClientToServerNetworkMessage::Hello(
-                client.0.clone(),
+                client.0,
                 // FIXME BS NOW
                 Resolution::new(50, 50),
             ),

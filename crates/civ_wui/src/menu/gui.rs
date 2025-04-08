@@ -6,10 +6,9 @@ use common::game::nation::flag::Flag;
 use strum::IntoEnumIterator;
 use uuid::Uuid;
 
-use crate::{
-    state::{Client, Server},
-    utils::cookies::Cookies,
-};
+use crate::state::{Client, Server};
+#[cfg(target_arch = "wasm32")]
+use crate::utils::cookies::Cookies;
 
 use super::{Connect, Connecting, TakePlace, TakingPlace};
 
@@ -17,10 +16,12 @@ use super::{Connect, Connecting, TakePlace, TakingPlace};
 pub struct PlayerIdInput(pub String);
 
 impl PlayerIdInput {
+    #[cfg(target_arch = "wasm32")]
     pub fn new(value: String) -> Self {
         Self(value)
     }
 
+    #[cfg(target_arch = "wasm32")]
     pub fn from_cookies() -> Self {
         Self(
             Cookies
@@ -30,15 +31,22 @@ impl PlayerIdInput {
                 .unwrap_or("".to_string()),
         )
     }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn from_cookies() -> Self {
+        Self("".to_string())
+    }
 }
 #[derive(Resource, Deref, Default)]
 pub struct KeepConnectedInput(pub bool);
 
 impl KeepConnectedInput {
+    #[cfg(target_arch = "wasm32")]
     pub fn new(value: bool) -> Self {
         Self(value)
     }
 
+    #[cfg(target_arch = "wasm32")]
     pub fn from_cookies() -> Self {
         Self(
             Cookies
@@ -48,6 +56,11 @@ impl KeepConnectedInput {
                 .unwrap_or(false),
         )
     }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn from_cookies() -> Self {
+        Self(false)
+    }
 }
 
 #[derive(Resource, Deref, DerefMut, Default, PartialEq, Hash, Eq)]
@@ -55,7 +68,7 @@ pub struct FlagInput(pub Option<Flag>);
 
 impl Display for FlagInput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.0.and_then(|f| Some(f.to_string())).unwrap_or_default())
+        f.write_str(&self.0.map(|f| f.to_string()).unwrap_or_default())
     }
 }
 
@@ -112,7 +125,7 @@ fn draw_window(
 
         ui.horizontal_wrapped(|ui| {
             ui.label("PlayerId: ");
-            if !server.resume().is_none() {
+            if server.resume().is_some() {
                 ui.label(player_id.0.clone());
             } else {
                 ui.text_edit_singleline(&mut player_id.0);

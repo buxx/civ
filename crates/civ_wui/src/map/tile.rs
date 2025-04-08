@@ -5,6 +5,7 @@ use common::world::{CtxTile, Tile as BaseTile};
 
 use super::AtlasIndex;
 
+#[allow(unused)]
 #[derive(Debug)]
 pub struct HexTileMeta {
     entity: Entity,
@@ -29,22 +30,6 @@ impl HexTileMeta {
             tile,
             atlas,
         }
-    }
-
-    pub fn entity(&self) -> Entity {
-        self.entity
-    }
-
-    pub fn tile(&self) -> &Option<CtxTile<BaseTile>> {
-        &self.tile
-    }
-
-    pub fn atlas(&self) -> &AtlasIndex {
-        &self.atlas
-    }
-
-    pub fn point(&self) -> Option<WorldPoint> {
-        self.point
     }
 
     pub fn imaginary(&self) -> ImaginaryWorldPoint {
