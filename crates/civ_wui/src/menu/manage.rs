@@ -69,7 +69,7 @@ pub fn react_connect(
             ClientToServerNetworkMessage::Hello(
                 client.0,
                 // FIXME BS NOW
-                Resolution::new(50, 50),
+                Resolution::new(1, 1),
             ),
         ))
         .unwrap();
