@@ -7,7 +7,7 @@ use common::{
 };
 
 use crate::{
-    assets::tile::{layout, texture_atlas_layout, TILES_ATLAS_PATH},
+    assets::tile::{layout, texture_atlas_layout, TILES_ATLAS_PATH, TILE_SIZE},
     ingame::{GameSlice, HexTile},
     utils::assets::AsAtlasIndex,
 };
@@ -36,10 +36,7 @@ pub fn refresh_tiles(
     current: Res<CurrentCenter>,
 ) {
     let window = windows.single();
-    let center = Vec2::new(
-        window.resolution.width() / 2.0,
-        window.resolution.height() / 2.0,
-    );
+    let center = Vec2::new(window.width() / 2.0, window.height() / 2.0);
     let (camera, cam_transform) = cameras.single();
     if let Ok(world_point) = camera.viewport_to_world_2d(cam_transform, center) {
         let hex_pos = grid.layout.world_pos_to_hex(world_point);
@@ -51,9 +48,16 @@ pub fn refresh_tiles(
             return;
         }
 
+        let window_width = window.width() * cam_transform.scale().x;
+        let window_height = window.height() * cam_transform.scale().y;
+        let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as u64;
+        let tiles_in_height = (window_height / (TILE_SIZE.y as f32)) as u64;
+        let tiles_size = tiles_in_height.max(tiles_in_width);
+        let tiles_size = tiles_size * 2;
+
         // FIXME: called multiple time on same tile
         // FIXME: resolution according to window + zoom + hex size
-        let set_window = SetWindow::from_around(&point, &Resolution::new(50, 50));
+        let set_window = SetWindow::from_around(&point, &Resolution::new(tiles_size, tiles_size));
         // TODO: refactor clean
         client_to_server
             .0
@@ -69,6 +73,8 @@ pub fn refresh_tiles(
 pub fn react_game_slice_updated(
     _trigger: Trigger<GameSliceUpdated>,
     mut commands: Commands,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<(&Camera, &GlobalTransform)>,
     atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     asset_server: Res<AssetServer>,
     tiles: Query<Entity, With<HexTile>>,
@@ -85,6 +91,8 @@ pub fn react_game_slice_updated(
         }
         spawn_tiles(
             &mut commands,
+            windows,
+            cameras,
             atlas_layouts,
             asset_server,
             game_slice,
@@ -116,11 +124,15 @@ pub fn react_game_slice_updated(
 
 pub fn spawn_tiles(
     commands: &mut Commands,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<(&Camera, &GlobalTransform)>,
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     asset_server: Res<AssetServer>,
     game_slice: &BaseGameSlice,
     current: &mut ResMut<CurrentCenter>,
 ) {
+    let window = windows.single();
+    let (_, cam_transform) = cameras.single();
     let texture = asset_server.load(TILES_ATLAS_PATH);
     let atlas_layout = atlas_layouts.add(texture_atlas_layout());
     let world = game_slice.world();
@@ -128,54 +140,63 @@ pub fn spawn_tiles(
     let layout = layout(&center);
     current.0 = Some(center);
 
+    let window_width = window.width() * cam_transform.scale().x;
+    let window_height = window.height() * cam_transform.scale().y;
+    let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as i32;
+    let tiles_in_height = (window_height / (TILE_SIZE.y as f32)) as i32;
+    let tiles_size = tiles_in_height.max(tiles_in_width);
+    let tiles_size = tiles_size * 2;
+
     // FIXME size according to window + zoom + hex size
-    let entities = shapes::parallelogram(hex(-20, -20), hex(20, 20))
-        .map(|hex| {
-            let imaginary_world_point =
-                world.imaginary_world_point_for_center_rel((hex.x as isize, hex.y as isize));
-            let world_point =
-                world.try_world_point_for_center_rel((hex.x as isize, hex.y as isize));
-            let tile = world_point.and_then(|p| world.get_tile(&p));
-            let relative_point = layout.hex_to_world_pos(hex);
-            let atlas_index = tile.atlas_index();
-            let entity_ = hex_tile_entity(&texture, &atlas_layout, relative_point, &atlas_index);
+    let entities = shapes::parallelogram(
+        hex(-(tiles_size / 2), -(tiles_size / 2)),
+        hex(tiles_size / 2, tiles_size / 2),
+    )
+    .map(|hex| {
+        let imaginary_world_point =
+            world.imaginary_world_point_for_center_rel((hex.x as isize, hex.y as isize));
+        let world_point = world.try_world_point_for_center_rel((hex.x as isize, hex.y as isize));
+        let tile = world_point.and_then(|p| world.get_tile(&p));
+        let relative_point = layout.hex_to_world_pos(hex);
+        let atlas_index = tile.atlas_index();
+        let entity_ = hex_tile_entity(&texture, &atlas_layout, relative_point, &atlas_index);
 
-            #[cfg(feature = "debug_tiles")]
-            let mut entity = commands.spawn(entity_);
+        #[cfg(feature = "debug_tiles")]
+        let mut entity = commands.spawn(entity_);
 
-            #[cfg(not(feature = "debug_tiles"))]
-            let entity = commands.spawn(entity_);
+        #[cfg(not(feature = "debug_tiles"))]
+        let entity = commands.spawn(entity_);
 
-            #[cfg(feature = "debug_tiles")]
-            {
-                let debug_info = (hex, world_point).display();
-                let hex_tile_text = (
-                    Text2d(debug_info),
-                    TextColor(Color::BLACK),
-                    TextFont {
-                        font_size: 12.0,
-                        ..default()
-                    },
-                    Transform::from_xyz(0.0, 0.0, 10.0),
-                );
-                entity.with_children(|b| {
-                    b.spawn(hex_tile_text);
-                });
-            }
-            let entity = entity.id();
+        #[cfg(feature = "debug_tiles")]
+        {
+            let debug_info = (hex, world_point).display();
+            let hex_tile_text = (
+                Text2d(debug_info),
+                TextColor(Color::BLACK),
+                TextFont {
+                    font_size: 12.0,
+                    ..default()
+                },
+                Transform::from_xyz(0.0, 0.0, 10.0),
+            );
+            entity.with_children(|b| {
+                b.spawn(hex_tile_text);
+            });
+        }
+        let entity = entity.id();
 
-            (
-                hex,
-                HexTileMeta::new(
-                    entity,
-                    imaginary_world_point,
-                    world_point,
-                    tile.cloned(),
-                    atlas_index,
-                ),
-            )
-        })
-        .collect();
+        (
+            hex,
+            HexTileMeta::new(
+                entity,
+                imaginary_world_point,
+                world_point,
+                tile.cloned(),
+                atlas_index,
+            ),
+        )
+    })
+    .collect();
 
     commands.insert_resource(HexGrid::new(entities, layout));
 }

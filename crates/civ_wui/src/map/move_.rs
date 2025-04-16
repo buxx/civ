@@ -62,8 +62,8 @@ pub fn map_dragging(
             if let Ok(mut camera) = camera_query.get_single_mut() {
                 dragging.0 = true;
 
-                let delta_x = last_position.0.x - current_position.x;
-                let delta_y = last_position.0.y - current_position.y;
+                let delta_x = (last_position.0.x - current_position.x) * camera.scale.x;
+                let delta_y = (last_position.0.y - current_position.y) * camera.scale.y;
                 camera.translation.x += delta_x;
                 camera.translation.y -= delta_y;
                 camera.translation.x = camera.translation.x.round();

@@ -46,6 +46,9 @@ wasm-cookies = "0.2.1"
 thiserror.workspace = true
 eval-macro.workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+message-io.workspace = true
+
 [profile.dev]
 opt-level = 1
 

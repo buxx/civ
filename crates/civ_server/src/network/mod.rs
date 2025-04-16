@@ -46,12 +46,20 @@ impl Network {
         to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
     ) -> io::Result<Self> {
         let (handler, node_listener) = node::split::<Signal>();
+
+        info!(
+            "Server will try to listent TCP {} and Ws {}",
+            tcp_listen_addr, ws_listen_addr
+        );
         handler
             .network()
             .listen(Transport::FramedTcp, tcp_listen_addr)?;
         handler.network().listen(Transport::Ws, ws_listen_addr)?;
 
-        info!("Network server running at {}", tcp_listen_addr);
+        info!(
+            "Server running and listening TCP {} and Ws {}",
+            tcp_listen_addr, ws_listen_addr
+        );
         Ok(Self {
             context,
             state,
