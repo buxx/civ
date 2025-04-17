@@ -3,7 +3,7 @@ use common::game::nation::flag::Flag;
 use common::game::unit::UnitId;
 use common::network::message::ServerToClientMessage;
 use common::network::{Client, ClientId};
-use common::space::window::{SetWindow, Window, Resolution};
+use common::space::window::{Resolution, SetWindow, Window};
 
 use crate::game::{city::City, unit::Unit};
 

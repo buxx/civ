@@ -48,8 +48,8 @@ pub const DEFAULT_SERVER_PORT: u16 = 9876;
 
 #[derive(Debug, Builder, Clone)]
 pub struct NetworkConfig {
-    server_host: String,
-    server_port: u16,
+    pub server_host: String,
+    pub server_port: u16,
 }
 
 impl Default for NetworkConfig {

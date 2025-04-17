@@ -10,7 +10,7 @@ use crate::{
         unit::UnitId,
         GameFrame,
     },
-    space::window::{SetWindow, Window, Resolution},
+    space::window::{Resolution, SetWindow, Window},
 };
 
 use super::Client;

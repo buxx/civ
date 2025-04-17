@@ -4,7 +4,7 @@ use common::{
     game::{nation::flag::Flag, PlayerId},
     geo::GeoContext,
     network::{Client, ClientId},
-    space::window::{Window, Resolution},
+    space::window::{Resolution, Window},
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
