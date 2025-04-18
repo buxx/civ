@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use crate::config::ServerConfig;
 use crate::context::Context;
-use crate::network::Network;
 use crate::runner::{Runner, RunnerContext};
 use crate::snapshot::{Snapshot, SnapshotError};
 use crate::state::State;
@@ -11,15 +10,10 @@ use crate::task::{TaskContext, TaskId};
 use clap::Parser;
 use common::game::unit::{SystemTaskType, TaskType};
 use common::game::GameFrame;
-use common::network::{
-    message::{ClientToServerMessage, ServerToClientMessage},
-    Client, ClientId,
-};
 use common::rules::std1::Std1RuleSet;
 use common::world::reader::{WorldReader, WorldReaderError};
-use crossbeam::channel::unbounded;
-use crossbeam::channel::{Receiver, Sender};
 use log::info;
+use network::{Bridge, BridgeBuilder};
 use std::io;
 use std::{
     sync::{Arc, RwLock},
@@ -43,15 +37,6 @@ pub mod utils;
 
 pub const TICK_BASE_PERIOD: u64 = 60;
 
-pub type FromClientsChannels = (
-    Sender<(Client, ClientToServerMessage)>,
-    Receiver<(Client, ClientToServerMessage)>,
-);
-pub type ToClientsChannels = (
-    Sender<(ClientId, ServerToClientMessage)>,
-    Receiver<(ClientId, ServerToClientMessage)>,
-);
-
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
@@ -74,12 +59,15 @@ pub enum Error {
     #[error("Snapshot load/save error: {0}")]
     Snapshot(#[from] SnapshotError),
     #[error("Network prepare error: {0}")]
-    PrepareNetwork(String),
+    PrepareBridge(String),
     #[error("World error: {0}")]
     World(#[from] WorldReaderError),
 }
 
-pub fn start(args: Args) -> Result<(), Error> {
+pub fn start<B: Bridge + 'static>(
+    args: Args,
+    bridge_builder: &dyn BridgeBuilder<B>,
+) -> Result<(), Error> {
     let config = ServerConfig::from(args);
 
     let rules = Std1RuleSet;
@@ -122,18 +110,23 @@ pub fn start(args: Args) -> Result<(), Error> {
     let context = Context::new(Box::new(rules), config.clone());
     let state = Arc::new(RwLock::new(state));
     let world = Arc::new(RwLock::new(world));
-    let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
-    let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
+    // let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
+    // let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
 
-    let network = Network::new(
-        context.clone(),
-        Arc::clone(&state),
-        config.tcp_listen_address(),
-        config.ws_listen_address(),
-        from_clients_sender,
-        to_clients_receiver,
-    )
-    .map_err(|e| Error::PrepareNetwork(e.to_string()))?;
+    let (mut bridge, from_clients_receiver, to_clients_sender) = bridge_builder
+        .build(context.clone(), Arc::clone(&state), &config)
+        .map_err(|e| Error::PrepareBridge(e.to_string()))?;
+
+    // let bridge = Network::new(
+    //     context.clone(),
+    //     Arc::clone(&state),
+    //     config.tcp_listen_address(),
+    //     config.ws_listen_address(),
+    //     from_clients_sender,
+    //     to_clients_receiver,
+    // )
+    // .map_err(|e| Error::PrepareNetwork(e.to_string()))?;
+
     let mut runner = Runner::builder()
         .tick_base_period(TICK_BASE_PERIOD)
         .context(RunnerContext::new(
@@ -145,7 +138,7 @@ pub fn start(args: Args) -> Result<(), Error> {
         ))
         .build();
 
-    let network = thread::spawn(move || network.run());
+    let network = thread::spawn(move || bridge.run());
     let runner = thread::spawn(move || runner.run());
 
     network.join().unwrap();

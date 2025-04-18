@@ -69,5 +69,7 @@ fn network_config() -> network::NetworkConfig {
 }
 
 fn main() {
+    // civ_server::start(args);
+
     entrypoint().unwrap()
 }

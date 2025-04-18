@@ -3,14 +3,16 @@ use common::network::message::{
     ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage,
 };
 use common::network::{Client, ClientId};
-use crossbeam::channel::{Receiver, Sender};
+use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::info;
 use message_io::network::{NetEvent, Transport};
-use message_io::node::{self, NodeHandler, NodeListener};
+use message_io::node::{self};
 use std::io;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
+use thiserror::Error;
 
+use crate::config::ServerConfig;
 use crate::context::Context;
 use crate::state::State;
 
@@ -19,43 +21,99 @@ mod clients;
 const SEND_INTERVAL: Duration = Duration::from_millis(25);
 const CHECK_STOP_INTERVAL: Duration = Duration::from_millis(250);
 
+pub type FromClientsChannels = (
+    Sender<(Client, ClientToServerMessage)>,
+    Receiver<(Client, ClientToServerMessage)>,
+);
+pub type ToClientsChannels = (
+    Sender<(ClientId, ServerToClientMessage)>,
+    Receiver<(ClientId, ServerToClientMessage)>,
+);
+
+pub trait BridgeBuilder<T> {
+    fn build(
+        &self,
+        context: Context,
+        state: Arc<RwLock<State>>,
+        config: &ServerConfig,
+    ) -> Result<
+        (
+            T,
+            Receiver<(Client, ClientToServerMessage)>,
+            Sender<(ClientId, ServerToClientMessage)>,
+        ),
+        BridgeBuildError,
+    >;
+}
+
+#[derive(Debug, Error)]
+pub enum BridgeBuildError {
+    #[error("Io: {0}")]
+    Io(io::ErrorKind),
+}
+
+pub trait Bridge: Send {
+    fn run(&mut self);
+}
+
+#[derive(Debug, Default)]
+pub struct NetworkBridgeBuilder;
+
+impl BridgeBuilder<NetworkBridge> for NetworkBridgeBuilder {
+    fn build(
+        &self,
+        context: Context,
+        state: Arc<RwLock<State>>,
+        config: &ServerConfig,
+    ) -> Result<
+        (
+            NetworkBridge,
+            Receiver<(Client, ClientToServerMessage)>,
+            Sender<(ClientId, ServerToClientMessage)>,
+        ),
+        BridgeBuildError,
+    > {
+        let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
+        let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
+        let bridge = NetworkBridge::new(
+            context.clone(),
+            Arc::clone(&state),
+            config.tcp_listen_address().to_string(),
+            config.ws_listen_address().to_string(),
+            from_clients_sender,
+            to_clients_receiver,
+        )
+        .map_err(|e| BridgeBuildError::Io(e.kind()))?;
+        Ok((bridge, from_clients_receiver, to_clients_sender))
+    }
+}
+
 enum Signal {
     SendServerToClientsMessages,
     CheckStopRequired,
 }
 
-pub struct Network {
+pub struct NetworkBridge {
     context: Context,
     state: Arc<RwLock<State>>,
     from_clients_sender: Sender<(Client, ClientToServerMessage)>,
     to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
-    handler: NodeHandler<Signal>,
-    node_listener: NodeListener<Signal>,
+    tcp_listen_addr: String,
+    ws_listen_addr: String,
     clients: Clients,
 }
 
 // TODO: unwraps
 // TODO: stop required
-impl Network {
+impl NetworkBridge {
     pub fn new(
         context: Context,
         state: Arc<RwLock<State>>,
-        tcp_listen_addr: &str,
-        ws_listen_addr: &str,
+        tcp_listen_addr: String,
+        ws_listen_addr: String,
         from_clients_sender: Sender<(Client, ClientToServerMessage)>,
         to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
     ) -> io::Result<Self> {
-        let (handler, node_listener) = node::split::<Signal>();
-
-        info!(
-            "Server will try to listent TCP {} and Ws {}",
-            tcp_listen_addr, ws_listen_addr
-        );
-        handler
-            .network()
-            .listen(Transport::FramedTcp, tcp_listen_addr)?;
-        handler.network().listen(Transport::Ws, ws_listen_addr)?;
-
         info!(
             "Server running and listening TCP {} and Ws {}",
             tcp_listen_addr, ws_listen_addr
@@ -65,21 +123,34 @@ impl Network {
             state,
             from_clients_sender,
             to_client_receiver,
-            handler,
-            node_listener,
+            tcp_listen_addr,
+            ws_listen_addr,
             clients: Clients::default(),
         })
     }
+}
 
-    pub fn run(mut self) {
-        let node_listener = self.node_listener;
+impl Bridge for NetworkBridge {
+    fn run(&mut self) {
+        let (handler, node_listener) = node::split::<Signal>();
+
+        info!(
+            "Starting TCP {} and Ws {}",
+            &self.tcp_listen_addr, &self.ws_listen_addr
+        );
+        handler
+            .network()
+            .listen(Transport::FramedTcp, &self.tcp_listen_addr)
+            .unwrap();
+        handler
+            .network()
+            .listen(Transport::Ws, &self.ws_listen_addr)
+            .unwrap();
 
         // TODO : Trigger signal to start the signal loop of sending messages to clients
         // This could probably be enhanced for better performances. To check ...
-        self.handler
-            .signals()
-            .send(Signal::SendServerToClientsMessages);
-        self.handler.signals().send(Signal::CheckStopRequired);
+        handler.signals().send(Signal::SendServerToClientsMessages);
+        handler.signals().send(Signal::CheckStopRequired);
 
         node_listener.for_each(move |event| match event {
             node::NodeEvent::Network(event) => match event {
@@ -131,18 +202,18 @@ impl Network {
                         while let Ok((client_id, message)) = self.to_client_receiver.try_recv() {
                             if let Some(endpoint) = self.clients.endpoint(&client_id) {
                                 let data = bincode::serialize(&message).unwrap();
-                                self.handler.network().send(*endpoint, &data);
+                                handler.network().send(*endpoint, &data);
                             }
                         }
-                        self.handler
+                        handler
                             .signals()
                             .send_with_timer(Signal::SendServerToClientsMessages, SEND_INTERVAL);
                     }
                     Signal::CheckStopRequired => {
                         if self.context.stop_is_required() {
-                            self.handler.stop();
+                            handler.stop();
                         }
-                        self.handler.signals().send_with_timer(
+                        handler.signals().send_with_timer(
                             Signal::SendServerToClientsMessages,
                             CHECK_STOP_INTERVAL,
                         );

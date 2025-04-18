@@ -48,6 +48,7 @@ eval-macro.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 message-io.workspace = true
+civ_server = { path = "../civ_server" }
 
 [profile.dev]
 opt-level = 1
