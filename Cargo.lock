@@ -1929,6 +1929,7 @@ dependencies = [
  "bincode",
  "bon",
  "civ_common",
+ "civ_server",
  "crossbeam",
  "env_logger",
  "eval-macro",

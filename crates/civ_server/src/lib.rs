@@ -7,13 +7,13 @@ use crate::snapshot::{Snapshot, SnapshotError};
 use crate::state::State;
 use crate::task::snapshot::SnapshotTask;
 use crate::task::{TaskContext, TaskId};
+use bridge::{Bridge, BridgeBuilder};
 use clap::Parser;
 use common::game::unit::{SystemTaskType, TaskType};
 use common::game::GameFrame;
 use common::rules::std1::Std1RuleSet;
 use common::world::reader::{WorldReader, WorldReaderError};
 use log::info;
-use network::{Bridge, BridgeBuilder};
 use std::io;
 use std::{
     sync::{Arc, RwLock},
@@ -21,11 +21,11 @@ use std::{
 };
 use thiserror::Error;
 
+pub mod bridge;
 pub mod config;
 pub mod context;
 pub mod effect;
 pub mod game;
-pub mod network;
 pub mod reflect;
 pub mod request;
 pub mod runner;

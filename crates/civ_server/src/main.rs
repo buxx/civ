@@ -1,4 +1,4 @@
-use civ_server::{network::NetworkBridgeBuilder, start, Args, Error};
+use civ_server::{bridge::NetworkBridgeBuilder, start, Args, Error};
 use clap::Parser;
 
 fn main() -> Result<(), Error> {
