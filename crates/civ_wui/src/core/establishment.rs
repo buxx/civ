@@ -2,13 +2,16 @@ use bevy::prelude::*;
 
 use common::network::message::ServerToClientEstablishmentMessage;
 
-use crate::{network::EstablishmentMessage, state::Server};
+use crate::{network::EstablishmentMessage, state::ServerResource};
 
-pub fn react_establishment(trigger: Trigger<EstablishmentMessage>, mut server: ResMut<Server>) {
+pub fn react_establishment(
+    trigger: Trigger<EstablishmentMessage>,
+    mut server: ResMut<ServerResource>,
+) {
     match &trigger.event().0 {
         ServerToClientEstablishmentMessage::ServerResume(resume, flag) => {
-            server.set_resume(Some(resume.clone()));
-            server.set_flag(Some(flag.clone()));
+            server.resume = Some(resume.clone());
+            server.flag = Some(*flag);
             info!("{:?}", server);
         }
         ServerToClientEstablishmentMessage::TakePlaceRefused(_reason) => {}

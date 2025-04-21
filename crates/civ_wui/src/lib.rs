@@ -1,7 +1,10 @@
 pub mod assets;
+pub mod bridge;
+pub mod context;
 pub mod core;
 #[cfg(feature = "debug")]
 pub mod debug;
+pub mod embedded;
 pub mod ingame;
 pub mod inject;
 pub mod map;

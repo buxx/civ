@@ -1,3 +1,4 @@
+pub mod direct;
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use common::network::{Client, ClientId};
 use crossbeam::channel::{Receiver, Sender};

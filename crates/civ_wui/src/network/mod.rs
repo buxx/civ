@@ -11,10 +11,14 @@ pub mod native;
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
 
+use derive_more::Constructor;
 #[cfg(not(target_arch = "wasm32"))]
-use native::setup_network;
+use native::react_join_server;
 #[cfg(target_arch = "wasm32")]
 use wasm::setup_network;
+
+#[derive(Resource, Deref, DerefMut, Default)]
+pub struct BridgeResource(Option<Box<dyn Bridge>>);
 
 #[derive(Resource)]
 pub struct ClientToServerReceiverResource(pub Receiver<ClientToServerMessage>);
@@ -28,8 +32,11 @@ pub struct ServerToClientReceiverResource(pub Receiver<ServerToClientMessage>);
 #[derive(Resource)]
 pub struct ServerToClientSenderResource(pub Sender<ServerToClientMessage>);
 
-#[derive(Resource, Deref)]
-pub struct NetworkConfigResource(NetworkConfig);
+// #[derive(Resource, Deref)]
+// pub struct NetworkConfigResource(NetworkConfig);
+
+#[derive(Event, Deref, Constructor)]
+pub struct JoinServer(pub NetworkConfig);
 
 #[derive(Event)]
 pub struct ServerMessage(pub ServerToClientMessage);
@@ -46,24 +53,18 @@ pub const DEFAULT_SERVER_PORT: u16 = 9877;
 #[cfg(not(target_arch = "wasm32"))]
 pub const DEFAULT_SERVER_PORT: u16 = 9876;
 
+pub trait Bridge: Sync + Send {}
+
+#[derive(Debug, Deref, Constructor, Clone)]
+pub struct ServerAddress(pub String);
+
 #[derive(Debug, Builder, Clone)]
 pub struct NetworkConfig {
-    pub server_host: String,
-    pub server_port: u16,
-}
-
-impl Default for NetworkConfig {
-    fn default() -> Self {
-        Self {
-            server_host: DEFAULT_SERVER_HOST.to_string(),
-            server_port: DEFAULT_SERVER_PORT,
-        }
-    }
+    pub server_address: ServerAddress,
 }
 
 #[derive(Default, Builder)]
 pub struct NetworkPlugin {
-    config: NetworkConfig,
     to_server_channels: Option<(
         Sender<ClientToServerMessage>,
         Receiver<ClientToServerMessage>,
@@ -86,12 +87,13 @@ impl Plugin for NetworkPlugin {
             Receiver<ServerToClientMessage>,
         ) = self.from_server_channels.clone().unwrap_or(unbounded());
 
-        app.insert_resource(NetworkConfigResource(self.config.clone()))
+        app.init_resource::<BridgeResource>()
+            // .insert_resource(NetworkConfigResource(self.config.clone()))
             .insert_resource(ServerToClientSenderResource(from_server_sender))
             .insert_resource(ServerToClientReceiverResource(from_server_receiver))
             .insert_resource(ClientToServerSenderResource(to_server_sender))
             .insert_resource(ClientToServerReceiverResource(to_server_receiver))
-            .add_systems(Startup, setup_network)
+            .add_observer(react_join_server)
             .add_systems(Update, react_incoming);
     }
 }

@@ -11,11 +11,12 @@ use common::{
 use common::game::PlayerId;
 #[cfg(target_arch = "wasm32")]
 use std::str::FromStr;
+use std::thread;
 
 #[cfg(target_arch = "wasm32")]
 use crate::utils::cookies::Cookies;
 use crate::{
-    network::{ClientToServerSenderResource, EstablishmentMessage},
+    network::{BridgeResource, ClientToServerSenderResource, EstablishmentMessage},
     state::{AppState, Client},
 };
 
@@ -39,7 +40,6 @@ pub fn auto_login(mut commands: Commands) {
     }
 }
 
-#[allow(unused)]
 pub fn react_connect(
     _trigger: Trigger<Connect>,
     to_server_sender: Res<ClientToServerSenderResource>,
@@ -47,6 +47,7 @@ pub fn react_connect(
     keep_connected_input: Res<KeepConnectedInput>,
     mut client: ResMut<Client>,
     mut connecting: ResMut<Connecting>,
+    mut bridge: ResMut<BridgeResource>,
 ) {
     if player_id_input.0.is_empty() {
         return;
@@ -62,6 +63,11 @@ pub fn react_connect(
             .set_player_id(PlayerId::from_str(&player_id_input.0).unwrap());
     }
     connecting.0 = true;
+
+    // FIXME HERE FAKE embedded server choice (must be user input)
+    // *bridge = DirectBridge::new();
+    thread::spawn(move || {});
+
     info!("HELLO");
     to_server_sender
         .0

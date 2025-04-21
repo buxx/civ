@@ -6,7 +6,7 @@ use std::sync::mpsc::{channel, Receiver as SyncReceiver, Sender as SyncSender};
 use common::{network::message::ClientToServerNetworkMessage, space::window::Resolution};
 use message_io::network::Endpoint;
 
-use super::{ClientToServerReceiverResource, NetworkConfigResource, ServerToClientSenderResource};
+use super::{ClientToServerReceiverResource, JoinServer, ServerToClientSenderResource};
 
 use crate::state::Client;
 
@@ -25,23 +25,20 @@ enum Signal {
     ClientToServerMessageAvailable,
 }
 
-pub fn setup_network(
+pub fn react_join_server(
+    trigger: Trigger<JoinServer>,
     mut _task_runner: AsyncTaskRunner<'_, ()>,
     client: Res<Client>,
-    network_config: Res<NetworkConfigResource>,
     to_server_receiver: Res<ClientToServerReceiverResource>,
     from_server_sender: Res<ServerToClientSenderResource>,
 ) {
+    let config = trigger.event().0.clone();
     let handler: Arc<Mutex<Option<NodeHandler<Signal>>>> = Arc::new(Mutex::new(None));
     let server: Arc<Mutex<Option<Endpoint>>> = Arc::new(Mutex::new(None));
 
     let handler_ = handler.clone();
     let server_ = server.clone();
     let from_server_sender_ = from_server_sender.0.clone();
-    let server_address = format!(
-        "{}:{}",
-        network_config.server_host, network_config.server_port
-    );
     let (bridge_sender, bridge_receiver): (
         SyncSender<ClientToServerMessage>,
         SyncReceiver<ClientToServerMessage>,
@@ -52,7 +49,7 @@ pub fn setup_network(
 
         let (server, _) = handler
             .network()
-            .connect(Transport::FramedTcp, server_address)
+            .connect(Transport::FramedTcp, config.server_address.to_string())
             .unwrap();
 
         *handler_.lock().unwrap() = Some(handler.clone());

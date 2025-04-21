@@ -74,10 +74,6 @@ impl NetworkBridge {
         from_clients_sender: Sender<(Client, ClientToServerMessage)>,
         to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
     ) -> io::Result<Self> {
-        info!(
-            "Server running and listening TCP {} and Ws {}",
-            tcp_listen_addr, ws_listen_addr
-        );
         Ok(Self {
             context,
             state,
