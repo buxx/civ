@@ -1,12 +1,16 @@
 pub mod assets;
+pub mod bridge;
+pub mod context;
 pub mod core;
 #[cfg(feature = "debug")]
 pub mod debug;
+pub mod embedded;
 pub mod ingame;
 pub mod inject;
 pub mod map;
 pub mod menu;
 pub mod network;
 pub mod state;
+pub mod user;
 pub mod utils;
 pub mod window;

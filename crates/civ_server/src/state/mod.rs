@@ -11,7 +11,7 @@ use common::{
     },
     network::Client,
     rules::RuleSetBox,
-    space::window::{DisplayStep, Window},
+    space::window::Window,
 };
 use index::Index;
 use thiserror::Error;

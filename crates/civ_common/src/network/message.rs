@@ -45,11 +45,35 @@ pub enum ClientToServerEstablishmentMessage {
     TakePlace(Flag),
 }
 
+impl From<ClientToServerEstablishmentMessage> for ClientToServerGameMessage {
+    fn from(value: ClientToServerEstablishmentMessage) -> Self {
+        ClientToServerGameMessage::Establishment(value)
+    }
+}
+
+impl From<ClientToServerEstablishmentMessage> for ClientToServerMessage {
+    fn from(value: ClientToServerEstablishmentMessage) -> Self {
+        ClientToServerMessage::Game(ClientToServerGameMessage::Establishment(value))
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerInGameMessage {
     SetWindow(SetWindow),
     Unit(UnitId, ClientToServerUnitMessage),
     City(CityId, ClientToServerCityMessage),
+}
+
+impl From<ClientToServerInGameMessage> for ClientToServerGameMessage {
+    fn from(value: ClientToServerInGameMessage) -> Self {
+        ClientToServerGameMessage::InGame(value)
+    }
+}
+
+impl From<ClientToServerInGameMessage> for ClientToServerMessage {
+    fn from(value: ClientToServerInGameMessage) -> Self {
+        ClientToServerMessage::Game(ClientToServerGameMessage::InGame(value))
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]

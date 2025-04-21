@@ -21,7 +21,12 @@ impl FilesWriter {
 impl Writer for FilesWriter {
     fn write_chunk(&self, chunk: Chunk) -> Result<(), WorldGeneratorError> {
         let file_name = format!("{}_{}.ct", chunk.x, chunk.y);
-        fs::write(self.target.join(file_name), bincode::serialize(&chunk)?)?;
+        fs::write(
+            self.target.join(file_name),
+            bincode::serialize(&chunk)
+                .map_err(|e| WorldGeneratorError::BincodeError(e.to_string()))?,
+        )
+        .map_err(|e| WorldGeneratorError::DiskError(e.kind()))?;
         Ok(())
     }
 }

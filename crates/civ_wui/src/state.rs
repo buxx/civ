@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bon::Builder;
 use common::{
     game::{nation::flag::Flag, server::ServerResume},
-    network::Client as ClientBase,
+    network::ClientId,
 };
 
 use crate::inject::Injection;
@@ -24,34 +24,19 @@ pub enum InGame {
 }
 
 #[derive(Resource, Default, Deref, DerefMut)]
-pub struct Client(pub ClientBase);
+pub struct ClientIdResource(pub ClientId);
 
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct InjectionResource(pub Injection);
 
-#[derive(Resource, Default, Debug)]
-pub struct Server {
-    resume: Option<ServerResume>,
-    flag: Option<Option<Flag>>,
-}
-
-impl Server {
-    pub fn resume(&self) -> Option<&ServerResume> {
-        self.resume.as_ref()
-    }
-
-    pub fn flag(&self) -> Option<&Option<Flag>> {
-        self.flag.as_ref()
-    }
-
-    pub fn set_resume(&mut self, resume: Option<ServerResume>) {
-        self.resume = resume;
-    }
-
-    pub fn set_flag(&mut self, flag: Option<Option<Flag>>) {
-        self.flag = flag;
-    }
-}
+// #[derive(Resource, Default, Debug)]
+// pub struct ServerResource {
+//     pub connected: Option<ServerAddress>,
+//     pub resume: Option<ServerResume>,
+//     pub flag: Option<Flag>,
+//     pub player_id: String,
+//     pub keep_connected: bool,
+// }
 
 #[derive(Builder)]
 pub struct StatePlugin {
@@ -65,7 +50,8 @@ impl Plugin for StatePlugin {
         app.insert_state(self.init_state.clone().unwrap_or_default())
             .add_sub_state::<InGame>()
             .insert_resource(self.injection.clone())
-            .insert_resource(Client::default())
-            .insert_resource(Server::default());
+            .insert_resource(ClientIdResource::default())
+            // .insert_resource(ServerResource::default());
+    ;
     }
 }

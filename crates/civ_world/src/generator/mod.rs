@@ -1,4 +1,8 @@
-use common::world::{Chunk, TerrainType, Tile, World};
+use async_std::channel::Sender;
+use common::{
+    utils::Progress,
+    world::{Chunk, TerrainType, Tile, World},
+};
 use std::{fs, path::PathBuf};
 use weighted_rand::builder::{NewBuilder, WalkerTableBuilder};
 
@@ -19,23 +23,43 @@ impl Generator {
         }
     }
 
-    pub fn generate(&self) -> Result<(), WorldGeneratorError> {
-        std::fs::create_dir_all(&self.target)?;
+    pub fn generate(
+        &self,
+        progress: Option<Sender<Progress<WorldGeneratorError>>>,
+    ) -> Result<(), WorldGeneratorError> {
+        progress
+            .as_ref()
+            .map(|s| s.send_blocking(Progress::InProgress(0.)));
+        std::fs::create_dir_all(&self.target)
+            .map_err(|e| WorldGeneratorError::DiskError(e.kind()))?;
         fs::write(
             self.target.join("world.ron"),
             ron::ser::to_string_pretty(&self.world, ron::ser::PrettyConfig::default())?,
-        )?;
+        )
+        .map_err(|e| WorldGeneratorError::DiskError(e.kind()))?;
 
         let chunked_width = self.world.width / self.world.chunk_size;
         let chunked_height = self.world.height / self.world.chunk_size;
+        let mut done = 0;
+        let expected = self.world.width * self.world.height;
 
-        for chunk_x in 0..chunked_width {
-            for chunk_y in 0..chunked_height {
+        for chunk_y in 0..chunked_height {
+            for chunk_x in 0..chunked_width {
                 let chunk = self.generate_chunk(chunk_x, chunk_y)?;
+                done += chunk.tiles.len();
+
                 self.writer.write_chunk(chunk)?;
+
+                let progress_ = done as f32 / expected as f32;
+                progress
+                    .as_ref()
+                    .map(|s| s.send_blocking(Progress::InProgress(progress_)));
             }
         }
 
+        progress
+            .as_ref()
+            .map(|s| s.send_blocking(Progress::Finished));
         Ok(())
     }
 

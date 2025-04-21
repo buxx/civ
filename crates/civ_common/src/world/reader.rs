@@ -1,14 +1,16 @@
 use std::{fs, io, path::PathBuf};
 
+use async_std::channel::Sender;
 use thiserror::Error;
 
 use crate::space::window::Window;
 
+use crate::utils::Progress;
 use crate::world::{Chunk, Tile, World};
 
 use super::CtxTile;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum WorldReaderError {
     #[error("Failed to init world: {0}")]
     InitWorldError(InitWorldError),
@@ -16,14 +18,14 @@ pub enum WorldReaderError {
     NotInitialized,
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum InitWorldError {
     #[error("Disk access error : {0}")]
-    Io(#[from] io::Error),
+    Io(io::ErrorKind),
     #[error("World.ron load error : {0}")]
     InvalidWorld(#[from] ron::de::SpannedError),
     #[error("Chunk decoding error : {0}")]
-    InvalidChunk(#[from] Box<bincode::ErrorKind>),
+    InvalidChunk(String),
 }
 
 pub struct WorldReader {
@@ -44,7 +46,10 @@ impl WorldReader {
         }
     }
 
-    pub fn from(source: PathBuf) -> Result<Self, WorldReaderError> {
+    pub fn from(
+        source: PathBuf,
+        progress: &Option<Sender<Progress<WorldReaderError>>>,
+    ) -> Result<Self, WorldReaderError> {
         let mut self_ = Self {
             source,
             width: 0,
@@ -54,7 +59,7 @@ impl WorldReader {
 
         let world: World = ron::from_str(
             &fs::read_to_string(self_.source.join("world.ron"))
-                .map_err(|e| WorldReaderError::InitWorldError(InitWorldError::Io(e)))?,
+                .map_err(|e| WorldReaderError::InitWorldError(InitWorldError::Io(e.kind())))?,
         )
         .map_err(|e| WorldReaderError::InitWorldError(InitWorldError::InvalidWorld(e)))?;
 
@@ -64,19 +69,35 @@ impl WorldReader {
         self_.tiles.clear();
         self_.width = world.width;
         self_.height = world.height;
+        let mut done = 0;
+        let expected = world.width * world.height;
 
         for chunk_x in 0..chunked_width {
             for chunk_y in 0..chunked_height {
                 let file_name = format!("{}_{}.ct", chunk_x, chunk_y);
-                let chunk: Chunk = bincode::deserialize(
-                    &fs::read(self_.source.join(file_name))
-                        .map_err(|e| WorldReaderError::InitWorldError(InitWorldError::Io(e)))?,
-                )
-                .map_err(|e| WorldReaderError::InitWorldError(InitWorldError::InvalidChunk(e)))?;
+                let chunk: Chunk =
+                    bincode::deserialize(&fs::read(self_.source.join(file_name)).map_err(|e| {
+                        WorldReaderError::InitWorldError(InitWorldError::Io(e.kind()))
+                    })?)
+                    .map_err(|e| {
+                        WorldReaderError::InitWorldError(InitWorldError::InvalidChunk(
+                            e.to_string(),
+                        ))
+                    })?;
+
+                done += chunk.tiles.len();
                 self_.tiles.extend(chunk.tiles);
+
+                let progress_ = done as f32 / expected as f32;
+                progress
+                    .as_ref()
+                    .map(|s| s.send_blocking(Progress::InProgress(progress_)));
             }
         }
 
+        progress
+            .as_ref()
+            .map(|s| s.send_blocking(Progress::Finished));
         Ok(self_)
     }
 

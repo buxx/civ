@@ -7,11 +7,14 @@ use crate::snapshot::{Snapshot, SnapshotError};
 use crate::state::State;
 use crate::task::snapshot::SnapshotTask;
 use crate::task::{TaskContext, TaskId};
+use async_std::channel::Sender;
+use bon::{builder, Builder};
 use bridge::{Bridge, BridgeBuilder};
 use clap::Parser;
 use common::game::unit::{SystemTaskType, TaskType};
 use common::game::GameFrame;
 use common::rules::std1::Std1RuleSet;
+use common::utils::Progress;
 use common::world::reader::{WorldReader, WorldReaderError};
 use log::info;
 use std::io;
@@ -37,7 +40,7 @@ pub mod utils;
 
 pub const TICK_BASE_PERIOD: u64 = 60;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Builder)]
 #[command(version, about, long_about = None)]
 pub struct Args {
     /// Path where load and save server snapshot
@@ -54,7 +57,7 @@ pub struct Args {
     ws_listen_address: String,
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum Error {
     #[error("Snapshot load/save error: {0}")]
     Snapshot(#[from] SnapshotError),
@@ -64,10 +67,15 @@ pub enum Error {
     World(#[from] WorldReaderError),
 }
 
+#[builder]
 pub fn start<B: Bridge + 'static>(
     args: Args,
     bridge_builder: &dyn BridgeBuilder<B>,
+    progress: Option<Sender<Progress<WorldReaderError>>>,
 ) -> Result<(), Error> {
+    progress
+        .as_ref()
+        .map(|s| s.send_blocking(Progress::InProgress(0.)));
     let config = ServerConfig::from(args);
 
     let rules = Std1RuleSet;
@@ -85,7 +93,7 @@ pub fn start<B: Bridge + 'static>(
 
             match Snapshot::try_from(snapshot_path) {
                 Ok(snapshot) => State::from(snapshot),
-                Err(SnapshotError::Io(error)) => match error.kind() {
+                Err(SnapshotError::Io(error)) => match error {
                     io::ErrorKind::NotFound => {
                         info!(
                             "No snapshot found at {}: create empty state",
@@ -104,7 +112,7 @@ pub fn start<B: Bridge + 'static>(
     let world_source = PathBuf::from("./world");
 
     info!("Read world ...");
-    let world = WorldReader::from(world_source)?;
+    let world = WorldReader::from(world_source, &progress)?;
     info!("Read world ... OK ({} tiles)", world.shape());
 
     let context = Context::new(Box::new(rules), config.clone());

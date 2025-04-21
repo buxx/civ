@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use crate::Args;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ServerConfig {
     snapshot: Option<PathBuf>,
     snapshot_interval: GameFrame,

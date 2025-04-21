@@ -2,7 +2,6 @@ use std::sync::RwLockReadGuard;
 
 use common::{
     game::slice::{ClientCity, ClientUnit, GameSlice},
-    geo::{ImaginaryWorldPoint, WorldPoint},
     network::Client,
     space::window::Window,
     world::{partial::PartialWorld, reader::WorldReader, CtxTile, Tile},
