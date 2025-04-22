@@ -8,7 +8,15 @@ use bevy_egui::{
     egui::{self, Ui},
     EguiContextSettings, EguiContexts,
 };
-use common::game::nation::flag::Flag;
+use common::{
+    game::PlayerId,
+    network::message::{ClientToServerMessage, ClientToServerNetworkMessage},
+};
+use common::{
+    game::{nation::flag::Flag, server::ServerResume},
+    network::Client as ClientBase,
+    space::window::Resolution,
+};
 use derive_more::Constructor;
 use strum::IntoEnumIterator;
 use uuid::Uuid;
@@ -18,11 +26,11 @@ use crate::utils::cookies::Cookies;
 use crate::{
     context::{Context, ContextResource, EntryPoint},
     embedded::{NewLocalGameConfig, StartNewLocalGame},
-    network::{JoinServer, NetworkConfig, ServerAddress},
-    state::{Client, ServerResource},
+    network::{ClientToServerSenderResource, JoinServer, NetworkConfig, ServerAddress},
+    state::{ClientResource, ServerResource},
 };
 
-use super::{Connect, Connecting, GuiStateResource, TakePlace, TakingPlace};
+use super::{Connect, ConnectingResource, GuiStateResource, TakePlace, TakingPlace};
 
 #[derive(Resource, Deref, Default)]
 pub struct PlayerIdInput(pub String);
@@ -139,9 +147,10 @@ pub fn manage_gui(
     player_id: ResMut<PlayerIdInput>,
     keep_connected: ResMut<KeepConnectedInput>,
     flag: ResMut<FlagInput>,
-    _client: Res<Client>,
-    mut connecting: ResMut<Connecting>,
+    mut client: ResMut<ClientResource>,
+    mut connecting: ResMut<ConnectingResource>,
     taking_place: Res<TakingPlace>,
+    client_to_server: Res<ClientToServerSenderResource>,
 ) {
     set_scale_factor(context_settings);
     egui::TopBottomPanel::top("menu").show(contexts.ctx_mut(), |ui| {
@@ -167,17 +176,33 @@ pub fn manage_gui(
                         gui.screen = GuiScreen::Local(context.clone().into());
                     }
                     Switch::JoinServer => {
+                        server.connected = None;
                         gui.screen = GuiScreen::Server(context.clone().into());
                     }
                 },
                 GuiEvent::StartLocalGame => {
                     commands.trigger(StartNewLocalGame::new(NewLocalGameConfig));
                 }
-                GuiEvent::Join(address) => {
+                GuiEvent::Connect(address) => {
                     commands.trigger(JoinServer::new(
                         NetworkConfig::builder().server_address(address).build(),
                     ));
                     connecting.0 = true;
+                }
+                GuiEvent::Join => {
+                    client
+                        .0
+                        .set_player_id(PlayerId(Uuid::parse_str(&server.player_id).unwrap())); // TODO: bof ...
+
+                    client_to_server
+                        .0
+                        .send_blocking(ClientToServerMessage::Network(
+                            ClientToServerNetworkMessage::Hello(
+                                client.0.clone(),
+                                Resolution::new(1, 1), // TODO
+                            ),
+                        ))
+                        .unwrap();
                 }
             }
         }
@@ -187,7 +212,8 @@ pub fn manage_gui(
 enum GuiEvent {
     Switch(Switch),
     StartLocalGame,
-    Join(ServerAddress),
+    Connect(ServerAddress), // TODO: server address from state ?
+    Join,
 }
 
 enum Switch {
@@ -231,23 +257,31 @@ fn draw_server(
     let mut event = None;
 
     ui.vertical_centered(|ui| {
-        ui.horizontal_centered(|ui| {
+        if server.connected.is_none() {
+            // ui.horizontal_centered(|ui| {
+            // Server address
             ui.text_edit_singleline(&mut state.address);
-            if ui.button("Join").clicked() {
-                event = Some(GuiEvent::Join(ServerAddress::new(state.address.clone())))
-            }
 
-            ui.label("PlayerId: ");
+            // Join server button
+            if ui.button("Connect").clicked() {
+                event = Some(GuiEvent::Connect(ServerAddress::new(state.address.clone())))
+            }
+            // });
+        } else {
+            // ui.horizontal_centered(|ui| {
+
             if server.resume.is_some() {
+                ui.label("PlayerId");
                 ui.label(server.player_id.clone());
             } else {
+                ui.label("PlayerId");
                 ui.text_edit_singleline(&mut server.player_id);
                 if ui.button("🔄").clicked() {
                     server.player_id = Uuid::new_v4().to_string();
                 }
                 // Display connect button if server resume has not been received yet
                 if ui.button("Connect").clicked() {
-                    commands.trigger(Connect)
+                    event = Some(GuiEvent::Join)
                 }
                 ui.checkbox(&mut server.keep_connected, "Keep connected");
             }
@@ -275,7 +309,8 @@ fn draw_server(
                     });
                 }
             }
-        })
+            // })
+        }
     });
 
     event

@@ -31,7 +31,7 @@ impl Plugin for MenuPlugin {
             .insert_resource(PlayerIdInput::from_cookies())
             .insert_resource(KeepConnectedInput::from_cookies())
             .init_resource::<FlagInput>()
-            .init_resource::<Connecting>()
+            .init_resource::<ConnectingResource>()
             .init_resource::<TakingPlace>()
             .add_systems(OnEnter(AppState::Menu), (spawn_menu, auto_login))
             .add_systems(Update, manage_gui.run_if(in_state(AppState::Menu)))
@@ -52,7 +52,7 @@ pub struct Connect;
 pub struct TakePlace;
 
 #[derive(Resource, Default, Deref, DerefMut)]
-pub struct Connecting(pub bool);
+pub struct ConnectingResource(pub bool);
 
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct TakingPlace(pub bool);

@@ -17,12 +17,12 @@ use std::thread;
 use crate::utils::cookies::Cookies;
 use crate::{
     network::{BridgeResource, ClientToServerSenderResource, EstablishmentMessage},
-    state::{AppState, Client},
+    state::{AppState, ClientResource},
 };
 
 use super::{
     gui::{FlagInput, KeepConnectedInput, PlayerIdInput},
-    Connect, Connecting, TakePlace, TakingPlace,
+    Connect, ConnectingResource, TakePlace, TakingPlace,
 };
 
 #[allow(unused)]
@@ -45,8 +45,8 @@ pub fn react_connect(
     to_server_sender: Res<ClientToServerSenderResource>,
     player_id_input: Res<PlayerIdInput>,
     keep_connected_input: Res<KeepConnectedInput>,
-    mut client: ResMut<Client>,
-    mut connecting: ResMut<Connecting>,
+    mut client: ResMut<ClientResource>,
+    mut connecting: ResMut<ConnectingResource>,
     mut bridge: ResMut<BridgeResource>,
 ) {
     if player_id_input.0.is_empty() {
@@ -103,7 +103,7 @@ pub fn react_take_place(
 pub fn react_establishment(
     trigger: Trigger<EstablishmentMessage>,
     mut next_state: ResMut<NextState<AppState>>,
-    mut connecting: ResMut<Connecting>,
+    mut connecting: ResMut<ConnectingResource>,
     mut taking_place: ResMut<TakingPlace>,
 ) {
     match &trigger.event().0 {

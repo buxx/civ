@@ -23,7 +23,7 @@ impl Display for ClientId {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub struct Client(ClientId, PlayerId); // ClientId, PlayerId
+pub struct Client(ClientId, PlayerId);
 
 impl Client {
     pub fn new(client_id: ClientId, player_id: PlayerId) -> Self {
