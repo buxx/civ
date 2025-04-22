@@ -11,7 +11,7 @@ pub fn react_establishment(
     match &trigger.event().0 {
         ServerToClientEstablishmentMessage::ServerResume(resume, flag) => {
             server.resume = Some(resume.clone());
-            server.flag = Some(*flag);
+            server.flag = *flag;
             info!("{:?}", server);
         }
         ServerToClientEstablishmentMessage::TakePlaceRefused(_reason) => {}

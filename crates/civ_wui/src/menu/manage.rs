@@ -17,7 +17,7 @@ use std::thread;
 use crate::utils::cookies::Cookies;
 use crate::{
     network::{BridgeResource, ClientToServerSenderResource, EstablishmentMessage},
-    state::{AppState, ClientResource},
+    state::{AppState, ClientResource, ServerResource},
 };
 
 use super::{
@@ -84,10 +84,11 @@ pub fn react_connect(
 pub fn react_take_place(
     _trigger: Trigger<TakePlace>,
     to_server_sender: Res<ClientToServerSenderResource>,
-    flag_input: Res<FlagInput>,
+    // flag_input: Res<FlagInput>,
     mut taking_place: ResMut<TakingPlace>,
+    server: Res<ServerResource>,
 ) {
-    if let Some(flag) = flag_input.0 {
+    if let Some(flag) = server.flag {
         taking_place.0 = true;
         to_server_sender
             .0

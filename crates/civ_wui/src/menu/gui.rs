@@ -168,7 +168,7 @@ pub fn manage_gui(
         if let Some(event) = match screen {
             GuiScreen::Root(state) => draw_root(ui, state),
             GuiScreen::Local(state) => draw_local(ui, state),
-            GuiScreen::Server(state) => draw_server(ui, state, &mut server, &mut commands),
+            GuiScreen::Server(state) => draw_server(ui, state, &mut server),
         } {
             match event {
                 GuiEvent::Switch(switch) => match switch {
@@ -190,6 +190,7 @@ pub fn manage_gui(
                     connecting.0 = true;
                 }
                 GuiEvent::Join => {
+                    // TODO: commands.trigger
                     client
                         .0
                         .set_player_id(PlayerId(Uuid::parse_str(&server.player_id).unwrap())); // TODO: bof ...
@@ -198,12 +199,13 @@ pub fn manage_gui(
                         .0
                         .send_blocking(ClientToServerMessage::Network(
                             ClientToServerNetworkMessage::Hello(
-                                client.0.clone(),
+                                client.0,
                                 Resolution::new(1, 1), // TODO
                             ),
                         ))
                         .unwrap();
                 }
+                GuiEvent::TakePlace => commands.trigger(TakePlace),
             }
         }
     });
@@ -214,6 +216,7 @@ enum GuiEvent {
     StartLocalGame,
     Connect(ServerAddress), // TODO: server address from state ?
     Join,
+    TakePlace,
 }
 
 enum Switch {
@@ -252,7 +255,6 @@ fn draw_server(
     ui: &mut Ui,
     state: &mut ServerState,
     server: &mut ServerResource,
-    commands: &mut Commands,
 ) -> Option<GuiEvent> {
     let mut event = None;
 
@@ -287,27 +289,25 @@ fn draw_server(
             }
 
             if let Some(resume) = &mut server.resume {
-                if let Some(None) = server.flag {
-                    ui.horizontal_wrapped(|ui| {
-                        egui::ComboBox::from_label("Flag")
-                            .selected_text("TODO FLAG")
-                            .show_ui(ui, |ui| {
-                                for flag_ in Flag::iter() {
-                                    if !resume.flags().contains(&flag_) {
-                                        ui.selectable_value(
-                                            &mut server.flag,
-                                            Some(Some(flag_)), // TODO ?
-                                            flag_.to_string(),
-                                        );
-                                    }
+                ui.horizontal_wrapped(|ui| {
+                    egui::ComboBox::from_label("Flag")
+                        .selected_text(server.flag.map(|f| f.to_string()).unwrap_or("".to_string()))
+                        .show_ui(ui, |ui| {
+                            for flag_ in Flag::iter() {
+                                if !resume.flags().contains(&flag_) {
+                                    ui.selectable_value(
+                                        &mut server.flag,
+                                        Some(flag_),
+                                        flag_.to_string(),
+                                    );
                                 }
-                            });
+                            }
+                        });
 
-                        if ui.button("Join").clicked() {
-                            commands.trigger(TakePlace)
-                        }
-                    });
-                }
+                    if ui.button("Join").clicked() {
+                        event = Some(GuiEvent::TakePlace)
+                    }
+                });
             }
             // })
         }

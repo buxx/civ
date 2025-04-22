@@ -33,7 +33,7 @@ pub struct InjectionResource(pub Injection);
 pub struct ServerResource {
     pub connected: Option<ServerAddress>,
     pub resume: Option<ServerResume>,
-    pub flag: Option<Option<Flag>>,
+    pub flag: Option<Flag>,
     pub player_id: String,
     pub keep_connected: bool,
 }
