@@ -5,7 +5,7 @@ use bevy_egui::EguiPlugin;
 use derive_more::Constructor;
 use despawn::despawn_menu;
 use gui::{manage_gui, FlagInput, GuiState, KeepConnectedInput, PlayerIdInput};
-use manage::{auto_login, react_connect, react_establishment, react_take_place};
+use manage::{auto_login, react_connect, react_establishment, take_place};
 use spawn::spawn_menu;
 
 use crate::{context::Context, state::AppState};
@@ -37,7 +37,7 @@ impl Plugin for MenuPlugin {
             .add_systems(Update, manage_gui.run_if(in_state(AppState::Menu)))
             .add_systems(OnExit(AppState::Menu), despawn_menu)
             .add_observer(react_connect)
-            .add_observer(react_take_place)
+            .add_observer(take_place)
             .add_observer(react_establishment);
     }
 }

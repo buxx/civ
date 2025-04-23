@@ -81,7 +81,7 @@ pub fn react_connect(
         .unwrap();
 }
 
-pub fn react_take_place(
+pub fn take_place(
     _trigger: Trigger<TakePlace>,
     to_server_sender: Res<ClientToServerSenderResource>,
     // flag_input: Res<FlagInput>,
