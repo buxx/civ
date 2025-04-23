@@ -1,9 +1,7 @@
 use bevy::prelude::*;
-use bevy_async_task::AsyncTaskRunner;
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use std::sync::mpsc::{channel, Receiver as SyncReceiver, Sender as SyncSender};
 
-use common::{network::message::ClientToServerNetworkMessage, space::window::Resolution};
 use message_io::network::Endpoint;
 
 use super::{
@@ -11,7 +9,6 @@ use super::{
 };
 
 use crate::network::InternalBridgeMessage;
-use crate::state::ClientResource;
 
 use message_io::node;
 use message_io::node::NodeHandler;
@@ -28,10 +25,8 @@ enum Signal {
     ClientToServerMessageAvailable,
 }
 
-pub fn react_join_server(
+pub fn connect(
     trigger: Trigger<JoinServer>,
-    mut _task_runner: AsyncTaskRunner<'_, ()>,
-    client: Res<ClientResource>,
     to_server_receiver: Res<ClientToServerReceiverResource>,
     from_server_sender: Res<ServerToClientSenderResource>,
 ) {
@@ -46,7 +41,6 @@ pub fn react_join_server(
         SyncSender<ClientToServerMessage>,
         SyncReceiver<ClientToServerMessage>,
     ) = channel();
-    let client_ = client.0;
     thread::spawn(move || {
         let (handler, listener) = node::split();
 

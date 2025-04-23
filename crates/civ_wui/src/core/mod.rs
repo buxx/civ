@@ -1,16 +1,21 @@
-pub mod window;
 use bevy::prelude::*;
 use camera::spawn_camera;
 use common::network::message::ServerToClientMessage;
 use establishment::react_establishment;
 use ingame::react_ingame;
+use preferences::PreferencesResource;
 use window::react_game_window_updated;
 
-use crate::network::{EstablishmentMessage, InGameMessage, ServerMessage};
+use crate::{
+    network::{EstablishmentMessage, InGameMessage, ServerMessage},
+    user::preferences::Preferences,
+};
 
 pub mod camera;
 pub mod establishment;
 pub mod ingame;
+pub mod preferences;
+pub mod window;
 
 pub struct CorePlugin;
 
@@ -20,7 +25,10 @@ pub struct Menu;
 
 impl Plugin for CorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_camera)
+        let preferences = PreferencesResource::new(Preferences::from_env().unwrap());
+
+        app.insert_resource(preferences)
+            .add_systems(Startup, spawn_camera)
             .add_observer(react_server)
             .add_observer(react_establishment)
             .add_observer(react_game_window_updated)
@@ -28,12 +36,15 @@ impl Plugin for CorePlugin {
     }
 }
 
+// TODO: move
 #[derive(Event)]
 pub struct GameWindowUpdated;
 
+// TODO: move
 #[derive(Event)]
 pub struct GameSliceUpdated;
 
+// TODO: move in bridge
 fn react_server(trigger: Trigger<ServerMessage>, mut commands: Commands) {
     match &trigger.event().0 {
         ServerToClientMessage::Establishment(message) => {

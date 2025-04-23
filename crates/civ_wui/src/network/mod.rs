@@ -13,7 +13,8 @@ pub mod wasm;
 
 use derive_more::Constructor;
 #[cfg(not(target_arch = "wasm32"))]
-use native::react_join_server;
+use native::connect;
+use serde::{Deserialize, Serialize};
 #[cfg(target_arch = "wasm32")]
 use wasm::setup_network;
 
@@ -57,7 +58,9 @@ pub const DEFAULT_SERVER_PORT: u16 = 9876;
 
 pub trait Bridge: Sync + Send {}
 
-#[derive(Debug, Deref, Constructor, Clone)]
+#[derive(
+    Debug, Deref, DerefMut, Constructor, Clone, Hash, PartialEq, Eq, Serialize, Deserialize,
+)]
 pub struct ServerAddress(pub String);
 
 #[derive(Debug, Builder, Clone)]
@@ -101,7 +104,7 @@ impl Plugin for NetworkPlugin {
             .insert_resource(ServerToClientReceiverResource(from_server_receiver))
             .insert_resource(ClientToServerSenderResource(to_server_sender))
             .insert_resource(ClientToServerReceiverResource(to_server_receiver))
-            .add_observer(react_join_server)
+            .add_observer(connect)
             .add_systems(Update, react_bridge);
     }
 }

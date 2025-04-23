@@ -8,7 +8,6 @@ use thiserror::Error;
 use wasm_cookies::CookieOptions;
 
 const COOKIE_PLAYER_ID: &str = "player_id";
-
 const COOKIE_KEEP_CONNECTED: &str = "keep_connected";
 
 pub struct Cookies;

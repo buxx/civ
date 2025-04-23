@@ -11,5 +11,6 @@ pub mod map;
 pub mod menu;
 pub mod network;
 pub mod state;
+pub mod user;
 pub mod utils;
 pub mod window;

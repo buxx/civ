@@ -46,11 +46,14 @@ wasm-cookies = "0.2.1"
 thiserror.workspace = true
 eval-macro.workspace = true
 derive_more.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 civ_server = { path = "../civ_server" }
 message-io.workspace = true
 clap.workspace = true
+home.workspace = true
 
 [profile.dev]
 opt-level = 1

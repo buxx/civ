@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use derive_more::Constructor;
 
-use crate::menu::gui::{LocalState, ServerState};
+use crate::network::ServerAddress;
 
 #[derive(Resource, Deref, Constructor)]
 pub struct ContextResource(pub Context);
@@ -12,18 +12,18 @@ pub struct Context;
 
 pub enum EntryPoint {
     Root,
-    Server,
+    Join,
 }
 
 #[cfg(target_arch = "wasm32")]
 impl Context {
     pub fn entry_point(&self) -> EntryPoint {
-        EntryPoint::Server
+        EntryPoint::Join
     }
 
     pub fn default_server_address(&self) -> &str {
         // FIXME From query or 127.0.0.1
-        "127.0.0.1:9877"
+        ServerAddress("127.0.0.1:9877".to_string())
     }
 
     pub fn protocol(&self) -> &str {
@@ -37,27 +37,11 @@ impl Context {
         EntryPoint::Root
     }
 
-    pub fn default_server_address(&self) -> &str {
-        "127.0.0.1:9876"
+    pub fn default_server_address(&self) -> ServerAddress {
+        ServerAddress("127.0.0.1:9876".to_string())
     }
 
     pub fn protocol(&self) -> &str {
         ""
-    }
-}
-
-impl From<Context> for LocalState {
-    fn from(_: Context) -> Self {
-        LocalState::new()
-    }
-}
-
-impl From<Context> for ServerState {
-    fn from(value: Context) -> Self {
-        ServerState::new(format!(
-            "{}{}",
-            value.protocol(),
-            value.default_server_address()
-        ))
     }
 }

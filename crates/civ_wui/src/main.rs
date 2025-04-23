@@ -29,6 +29,7 @@ mod map;
 mod menu;
 mod network;
 mod state;
+mod user;
 mod utils;
 mod window;
 
