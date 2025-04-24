@@ -64,7 +64,10 @@ pub enum PreferencesError {
 fn read<T: for<'a> Deserialize<'a>>() -> Result<T, PreferencesError> {
     let file_path = app_dir()
         .ok_or(PreferencesError::CantDetermineHome)?
-        .join(format!("{}.json", type_name::<T>()));
+        .join(format!(
+            "{}.json",
+            type_name::<T>().split("::").last().unwrap()
+        ));
     let raw = match fs::read_to_string(file_path) {
         Ok(raw) => Ok(raw),
         Err(error) => match error.kind() {
@@ -77,9 +80,13 @@ fn read<T: for<'a> Deserialize<'a>>() -> Result<T, PreferencesError> {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn write_<T: Serialize>(value: T) -> Result<(), PreferencesError> {
+    // FIXME: refactor file_path
     let file_path = app_dir()
         .ok_or(PreferencesError::CantDetermineHome)?
-        .join(format!("{}.json", type_name::<T>()));
+        .join(format!(
+            "{}.json",
+            type_name::<T>().split("::").last().unwrap()
+        ));
     fs::create_dir_all(file_path.parent().unwrap()).unwrap();
     fs::write(file_path, serde_json::to_string(&value)?).unwrap();
     Ok(())

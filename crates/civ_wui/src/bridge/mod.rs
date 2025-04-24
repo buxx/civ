@@ -1,14 +1,20 @@
 use async_std::channel::{unbounded, Receiver, Sender};
 
 use bevy::prelude::*;
-use common::network::{
-    message::{ClientToServerMessage, ServerToClientMessage},
-    ServerAddress,
+use common::{
+    network::{
+        message::{ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage},
+        ServerAddress,
+    },
+    space::window::Resolution,
 };
 
 use crate::{
     core::preferences::PreferencesResource,
-    menu::{join::ConnectEvent, state::MenuStateResource},
+    menu::{
+        join::{ConnectEvent, JoinEvent},
+        state::MenuStateResource,
+    },
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -82,6 +88,16 @@ pub fn connect(
         to_server_receiver.0.clone(),
         from_server_sender.0.clone(),
     );
+}
+
+pub fn join(trigger: Trigger<JoinEvent>, mut commands: Commands) {
+    commands.trigger(SendMessageToServerEvent(ClientToServerMessage::Network(
+        ClientToServerNetworkMessage::Hello(
+            client.0,
+            // FIXME BS NOW
+            Resolution::new(1, 1),
+        ),
+    )));
 }
 
 fn send_to_server(
