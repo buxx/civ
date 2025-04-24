@@ -1844,6 +1844,7 @@ dependencies = [
  "bincode",
  "bon",
  "criterion",
+ "derive_more 2.0.1",
  "dyn-clone",
  "env_logger",
  "glam",

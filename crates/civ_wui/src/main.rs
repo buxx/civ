@@ -1,16 +1,16 @@
 use core::CorePlugin;
 
 use bevy::prelude::*;
+use bridge::BridgePlugin;
 #[cfg(not(target_arch = "wasm32"))]
 use clap::Parser;
 use context::{Context, ContextResource};
 #[cfg(feature = "debug")]
 use debug::DebugPlugin;
-use derive_more::Constructor;
 use embedded::EmbeddedPlugin;
 use ingame::InGamePlugin;
 use map::MapPlugin;
-use network::{NetworkPlugin, DEFAULT_SERVER_HOST, DEFAULT_SERVER_PORT};
+use user::UserPlugin;
 use wasm_bindgen::prelude::*;
 
 use menu::MenuPlugin;
@@ -18,6 +18,7 @@ use state::StatePlugin;
 use window::window_plugin;
 
 mod assets;
+mod bridge;
 mod context;
 mod core;
 #[cfg(feature = "debug")]
@@ -44,7 +45,9 @@ fn entrypoint() -> Result<(), JsValue> {
             .set(ImagePlugin::default_nearest()),
         StatePlugin::builder().build(),
         EmbeddedPlugin,
-        NetworkPlugin::default(),
+        BridgePlugin,
+        // NetworkPlugin::default(),
+        UserPlugin,
         MenuPlugin::new(context.clone()),
         CorePlugin,
         MapPlugin,

@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 
+use common::network::ServerAddress;
 use derive_more::Constructor;
-
-use crate::network::ServerAddress;
 
 #[derive(Resource, Deref, Constructor)]
 pub struct ContextResource(pub Context);

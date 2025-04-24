@@ -8,13 +8,13 @@ use common::{
 
 use crate::{
     assets::tile::{layout, texture_atlas_layout, TILES_ATLAS_PATH, TILE_SIZE},
+    bridge::ClientToServerSenderResource,
     ingame::{GameSlice, HexTile},
     utils::assets::AsAtlasIndex,
 };
 use crate::{
     core::GameSliceUpdated,
     ingame::{CameraInitialized, City, Unit},
-    network::ClientToServerSenderResource,
 };
 use common::game::slice::ClientCity;
 use common::game::slice::ClientUnit;

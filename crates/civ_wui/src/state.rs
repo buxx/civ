@@ -5,7 +5,7 @@ use common::{
     network::Client as ClientBase,
 };
 
-use crate::{inject::Injection, network::ServerAddress};
+use crate::inject::Injection;
 
 #[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
 pub enum AppState {
@@ -29,14 +29,14 @@ pub struct ClientResource(pub ClientBase);
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct InjectionResource(pub Injection);
 
-#[derive(Resource, Default, Debug)]
-pub struct ServerResource {
-    pub connected: Option<ServerAddress>,
-    pub resume: Option<ServerResume>,
-    pub flag: Option<Flag>,
-    pub player_id: String,
-    pub keep_connected: bool,
-}
+// #[derive(Resource, Default, Debug)]
+// pub struct ServerResource {
+//     pub connected: Option<ServerAddress>,
+//     pub resume: Option<ServerResume>,
+//     pub flag: Option<Flag>,
+//     pub player_id: String,
+//     pub keep_connected: bool,
+// }
 
 #[derive(Builder)]
 pub struct StatePlugin {
@@ -51,6 +51,7 @@ impl Plugin for StatePlugin {
             .add_sub_state::<InGame>()
             .insert_resource(self.injection.clone())
             .insert_resource(ClientResource::default())
-            .insert_resource(ServerResource::default());
+            // .insert_resource(ServerResource::default());
+    ;
     }
 }

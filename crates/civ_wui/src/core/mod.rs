@@ -1,15 +1,11 @@
 use bevy::prelude::*;
 use camera::spawn_camera;
 use common::network::message::ServerToClientMessage;
-use establishment::react_establishment;
-use ingame::react_ingame;
+// use establishment::react_establishment;
 use preferences::PreferencesResource;
 use window::react_game_window_updated;
 
-use crate::{
-    network::{EstablishmentMessage, InGameMessage, ServerMessage},
-    user::preferences::Preferences,
-};
+use crate::user::preferences::Preferences;
 
 pub mod camera;
 pub mod establishment;
@@ -29,10 +25,11 @@ impl Plugin for CorePlugin {
 
         app.insert_resource(preferences)
             .add_systems(Startup, spawn_camera)
-            .add_observer(react_server)
-            .add_observer(react_establishment)
+            // .add_observer(react_server)
+            // .add_observer(react_establishment)
             .add_observer(react_game_window_updated)
-            .add_observer(react_ingame);
+            // .add_observer(react_ingame);
+            ;
     }
 }
 
@@ -44,16 +41,16 @@ pub struct GameWindowUpdated;
 #[derive(Event)]
 pub struct GameSliceUpdated;
 
-// TODO: move in bridge
-fn react_server(trigger: Trigger<ServerMessage>, mut commands: Commands) {
-    match &trigger.event().0 {
-        ServerToClientMessage::Establishment(message) => {
-            //
-            commands.trigger(EstablishmentMessage(message.clone()))
-        }
-        ServerToClientMessage::InGame(message) => {
-            //
-            commands.trigger(InGameMessage(message.clone()))
-        }
-    }
-}
+// // TODO: move in bridge
+// fn react_server(trigger: Trigger<ServerMessage>, mut commands: Commands) {
+//     match &trigger.event().0 {
+//         ServerToClientMessage::Establishment(message) => {
+//             //
+//             commands.trigger(EstablishmentMessage(message.clone()))
+//         }
+//         ServerToClientMessage::InGame(message) => {
+//             //
+//             commands.trigger(InGameMessage(message.clone()))
+//         }
+//     }
+// }

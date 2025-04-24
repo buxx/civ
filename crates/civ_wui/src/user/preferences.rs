@@ -3,10 +3,10 @@ use std::{collections::HashMap, fs, io};
 
 use bevy::prelude::{Deref, DerefMut};
 use common::game::PlayerId;
+use common::network::ServerAddress;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::network::ServerAddress;
 use crate::utils::app_dir;
 
 #[derive(Debug, Deref, DerefMut, Serialize, Deserialize)]
@@ -38,6 +38,7 @@ impl Preferences {
 
     pub fn set_player_id(&mut self, server: &ServerAddress, value: &PlayerId) {
         self.player_id.insert(server.clone(), *value);
+        write_(&self.player_id);
     }
 
     pub fn keep_connected(&self, server: &ServerAddress) -> Option<&bool> {
@@ -64,7 +65,22 @@ fn read<T: for<'a> Deserialize<'a>>() -> Result<T, PreferencesError> {
     let file_path = app_dir()
         .ok_or(PreferencesError::CantDetermineHome)?
         .join(format!("{}.json", type_name::<T>()));
-    Ok(serde_json::from_str(
-        &fs::read_to_string(file_path).map_err(|e| PreferencesError::Io(e.kind()))?,
-    )?)
+    let raw = match fs::read_to_string(file_path) {
+        Ok(raw) => Ok(raw),
+        Err(error) => match error.kind() {
+            io::ErrorKind::NotFound => Ok("{}".to_string()),
+            _ => Err(PreferencesError::Io(error.kind())),
+        },
+    }?;
+    Ok(serde_json::from_str(&raw)?)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn write_<T: Serialize>(value: T) -> Result<(), PreferencesError> {
+    let file_path = app_dir()
+        .ok_or(PreferencesError::CantDetermineHome)?
+        .join(format!("{}.json", type_name::<T>()));
+    fs::create_dir_all(file_path.parent().unwrap()).unwrap();
+    fs::write(file_path, serde_json::to_string(&value)?).unwrap();
+    Ok(())
 }

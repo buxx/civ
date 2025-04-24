@@ -1,14 +1,14 @@
+use async_std::channel::{Receiver, Sender};
 use bevy::prelude::*;
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
+use common::network::ServerAddress;
 use std::sync::mpsc::{channel, Receiver as SyncReceiver, Sender as SyncSender};
 
 use message_io::network::Endpoint;
 
-use super::{
-    BridgeMessage, ClientToServerReceiverResource, JoinServer, ServerToClientSenderResource,
-};
+use super::BridgeMessage;
 
-use crate::network::InternalBridgeMessage;
+use crate::bridge::InternalBridgeMessage;
 
 use message_io::node;
 use message_io::node::NodeHandler;
@@ -26,17 +26,16 @@ enum Signal {
 }
 
 pub fn connect(
-    trigger: Trigger<JoinServer>,
-    to_server_receiver: Res<ClientToServerReceiverResource>,
-    from_server_sender: Res<ServerToClientSenderResource>,
+    address: ServerAddress,
+    to_server_receiver: Receiver<ClientToServerMessage>,
+    from_server_sender: Sender<BridgeMessage>,
 ) {
-    let config = trigger.event().0.clone();
     let handler: Arc<Mutex<Option<NodeHandler<Signal>>>> = Arc::new(Mutex::new(None));
     let server: Arc<Mutex<Option<Endpoint>>> = Arc::new(Mutex::new(None));
 
     let handler_ = handler.clone();
     let server_ = server.clone();
-    let from_server_sender_ = from_server_sender.0.clone();
+    let from_server_sender_ = from_server_sender.clone();
     let (bridge_sender, bridge_receiver): (
         SyncSender<ClientToServerMessage>,
         SyncReceiver<ClientToServerMessage>,
@@ -46,7 +45,7 @@ pub fn connect(
 
         let (server, _) = handler
             .network()
-            .connect(Transport::FramedTcp, config.server_address.to_string())
+            .connect(Transport::FramedTcp, address.to_string())
             .unwrap();
 
         *handler_.lock().unwrap() = Some(handler.clone());
@@ -69,17 +68,15 @@ pub fn connect(
             },
             NodeEvent::Signal(signal) => match signal {
                 Signal::Connected => {
-                    info!("Connected");
+                    info!("Connected to {}", &address);
                     from_server_sender_
                         .send_blocking(BridgeMessage::Internal(
-                            InternalBridgeMessage::ConnectionEstablished(
-                                config.server_address.clone(),
-                            ),
+                            InternalBridgeMessage::ConnectionEstablished(address.clone()),
                         ))
                         .unwrap();
                 }
                 Signal::Disconnected => {
-                    info!("Disconnected")
+                    info!("Disconnected from {}", &address)
                 }
                 Signal::ClientToServerMessageAvailable => {
                     if let Ok(message) = bridge_receiver.try_recv() {
@@ -91,7 +88,7 @@ pub fn connect(
         });
     });
 
-    let to_server_receiver_ = to_server_receiver.0.clone();
+    let to_server_receiver_ = to_server_receiver.clone();
     thread::spawn(move || {
         while let Ok(message) = to_server_receiver_.recv_blocking() {
             let handler = handler.lock().unwrap();

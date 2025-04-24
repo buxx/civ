@@ -1,16 +1,13 @@
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 
-use common::game::{nation::flag::Flag, PlayerId};
 use derive_more::Constructor;
 use despawn::despawn_menu;
-use join::connect;
-use manage::{auto_login, react_connect, react_establishment, take_place};
 use spawn::spawn_menu;
 use state::{MenuState, MenuStateResource};
 use switch::switch;
 
-use crate::{context::Context, network::ServerAddress, state::AppState};
+use crate::{context::Context, state::AppState};
 
 pub mod despawn;
 pub mod gui;
@@ -40,9 +37,9 @@ impl Plugin for MenuPlugin {
             .add_systems(OnEnter(AppState::Menu), spawn_menu)
             .add_systems(Update, gui::gui.run_if(in_state(AppState::Menu)))
             .add_systems(OnExit(AppState::Menu), despawn_menu)
-            .add_observer(join::connect)
-            .add_observer(take_place)
-            .add_observer(react_establishment)
+            // .add_observer(join::connect)
+            // .add_observer(take_place)
+            // .add_observer(react_establishment)
             .add_observer(switch);
     }
 }

@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -44,5 +45,14 @@ impl Client {
 
     pub fn set_player_id(&mut self, value: PlayerId) {
         self.1 = value
+    }
+}
+
+#[derive(Debug, Constructor, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ServerAddress(pub String);
+
+impl Display for ServerAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
     }
 }

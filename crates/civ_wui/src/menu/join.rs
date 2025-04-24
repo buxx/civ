@@ -2,17 +2,12 @@ use bevy::{animation::transition, prelude::*};
 use bevy_egui::egui::{self, Ui};
 use common::{
     game::{nation::flag::Flag, server::ServerResume, PlayerId},
-    network::message::ClientToServerNetworkMessage,
-    space::window::Resolution,
+    network::ServerAddress,
 };
 use strum::IntoEnumIterator;
 use uuid::Uuid;
 
-use crate::{
-    bridge::SendToServerEvent, context::Context, network::ServerAddress, state::ClientResource,
-};
-
-use super::state::MenuStateResource;
+use crate::{context::Context, user::SetPlayerIdEvent};
 
 #[derive(Event)]
 pub struct ConnectEvent(pub ServerAddress);
@@ -34,7 +29,7 @@ pub struct JoinState {
 }
 
 impl JoinState {
-    fn from_context(context: &Context) -> Self {
+    pub fn from_context(context: &Context) -> Self {
         Self {
             address: context.default_server_address(),
             connected: Default::default(),
@@ -65,6 +60,10 @@ pub fn draw(ui: &mut Ui, state: &mut JoinState, mut commands: Commands) {
                 ui.text_edit_singleline(&mut state.player_id);
                 if ui.button("🔄").clicked() {
                     state.player_id = Uuid::new_v4().to_string();
+                    commands.trigger(SetPlayerIdEvent(
+                        ServerAddress(state.address.0.clone()),
+                        PlayerId(Uuid::parse_str(&state.player_id).unwrap()),
+                    ));
                 }
                 if ui.button("Connect").clicked() {
                     // FIXME BS NOW: trigger must modify ClientResource (used by bridge)
@@ -100,34 +99,34 @@ pub fn draw(ui: &mut Ui, state: &mut JoinState, mut commands: Commands) {
     });
 }
 
-pub fn connect(
-    trigger: Trigger<ConnectEvent>,
-    commands: Commands,
-    mut state: ResMut<MenuStateResource>,
-    // to_server_sender: Res<ClientToServerSenderResource>,
-    // player_id_input: Res<PlayerIdInput>,
-    // keep_connected_input: Res<KeepConnectedInput>,
-    mut client: ResMut<ClientResource>,
-    // mut connecting: ResMut<ConnectingResource>,
-    // mut bridge: ResMut<BridgeResource>,
-) {
-    let address = trigger.event().0;
-    state.0.connecting = true;
-    commands.trigger(SendToServerEvent(
-        ClientToServerNetworkMessage::Hello(
-            client.0,
-            // FIXME
-            Resolution::new(1, 1),
-        )
-        .into(),
-    ));
-}
+// pub fn connect(
+//     trigger: Trigger<ConnectEvent>,
+//     commands: Commands,
+//     mut state: ResMut<MenuStateResource>,
+//     // to_server_sender: Res<ClientToServerSenderResource>,
+//     // player_id_input: Res<PlayerIdInput>,
+//     // keep_connected_input: Res<KeepConnectedInput>,
+//     mut client: ResMut<ClientResource>,
+//     // mut connecting: ResMut<ConnectingResource>,
+//     // mut bridge: ResMut<BridgeResource>,
+// ) {
+//     let address = trigger.event().0;
+//     state.0.connecting = true;
+//     commands.trigger(SendMessageToServerEvent(
+//         ClientToServerNetworkMessage::Hello(
+//             client.0,
+//             // FIXME
+//             Resolution::new(1, 1),
+//         )
+//         .into(),
+//     ));
+// }
 
-pub fn take_place(
-    trigger: Trigger<TakePlaceEvent>,
-    commands: Commands,
-    mut state: ResMut<MenuStateResource>,
-    mut client: ResMut<ClientResource>,
-) {
-    todo!()
-}
+// pub fn take_place(
+//     trigger: Trigger<TakePlaceEvent>,
+//     commands: Commands,
+//     mut state: ResMut<MenuStateResource>,
+//     mut client: ResMut<ClientResource>,
+// ) {
+//     todo!()
+// }
