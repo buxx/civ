@@ -145,6 +145,8 @@ fn listen_from_server(
                         .cloned()
                         .unwrap_or_default()
                         .to_string();
+                    state.join.keep_connected =
+                        *preferences.0.keep_connected(&address).unwrap_or(&false);
                     state.join.connected = true;
                     state.connecting = false;
                 }

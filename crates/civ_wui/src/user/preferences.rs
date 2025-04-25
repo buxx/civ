@@ -38,7 +38,7 @@ impl Preferences {
 
     pub fn set_player_id(&mut self, server: &ServerAddress, value: &PlayerId) {
         self.player_id.insert(server.clone(), *value);
-        write_(&self.player_id);
+        write_(&self.player_id).unwrap();
     }
 
     pub fn keep_connected(&self, server: &ServerAddress) -> Option<&bool> {
@@ -47,6 +47,7 @@ impl Preferences {
 
     pub fn set_keep_connected(&mut self, server: &ServerAddress, value: bool) {
         self.keep_connected.insert(server.clone(), value);
+        write_(&self.keep_connected).unwrap();
     }
 }
 

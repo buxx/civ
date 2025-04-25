@@ -7,7 +7,10 @@ use common::{
 use strum::IntoEnumIterator;
 use uuid::Uuid;
 
-use crate::{context::Context, user::SetPlayerIdEvent};
+use crate::{
+    context::Context,
+    user::{SetKeepConnectedEvent, SetPlayerIdEvent},
+};
 
 #[derive(Event)]
 pub struct ConnectEvent(pub ServerAddress);
@@ -71,7 +74,15 @@ pub fn draw(ui: &mut Ui, state: &mut JoinState, mut commands: Commands) {
                         Uuid::parse_str(&state.player_id).unwrap(),
                     )));
                 }
-                ui.checkbox(&mut state.keep_connected, "Keep connected");
+                if ui
+                    .checkbox(&mut state.keep_connected, "Keep connected")
+                    .changed()
+                {
+                    commands.trigger(SetKeepConnectedEvent(
+                        ServerAddress(state.address.0.clone()),
+                        state.keep_connected,
+                    ));
+                };
             }
 
             if let Some(resume) = &state.resume {
