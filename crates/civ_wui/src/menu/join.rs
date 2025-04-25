@@ -16,7 +16,7 @@ pub struct ConnectEvent(pub ServerAddress);
 pub struct JoinEvent(pub PlayerId);
 
 #[derive(Event)]
-pub struct TakePlaceEvent(Flag);
+pub struct TakePlaceEvent(pub Flag);
 
 #[derive(Debug)]
 pub struct JoinState {
@@ -91,7 +91,7 @@ pub fn draw(ui: &mut Ui, state: &mut JoinState, mut commands: Commands) {
                         });
 
                     if ui.button("Join").clicked() {
-                        commands.trigger(TakePlaceEvent(state.flag.unwrap().clone()));
+                        commands.trigger(TakePlaceEvent(state.flag.unwrap()));
                     }
                 });
             }

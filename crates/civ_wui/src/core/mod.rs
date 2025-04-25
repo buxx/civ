@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use camera::spawn_camera;
 use common::network::message::ServerToClientMessage;
+use ingame::react_server_message;
 // use establishment::react_establishment;
 use preferences::PreferencesResource;
 use window::react_game_window_updated;
@@ -28,8 +29,7 @@ impl Plugin for CorePlugin {
             // .add_observer(react_server)
             // .add_observer(react_establishment)
             .add_observer(react_game_window_updated)
-            // .add_observer(react_ingame);
-            ;
+            .add_observer(react_server_message);
     }
 }
 

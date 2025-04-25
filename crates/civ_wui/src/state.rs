@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bon::Builder;
 use common::{
     game::{nation::flag::Flag, server::ServerResume},
-    network::Client as ClientBase,
+    network::ClientId,
 };
 
 use crate::inject::Injection;
@@ -24,7 +24,7 @@ pub enum InGame {
 }
 
 #[derive(Resource, Default, Deref, DerefMut)]
-pub struct ClientResource(pub ClientBase);
+pub struct ClientIdResource(pub ClientId);
 
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct InjectionResource(pub Injection);
@@ -50,7 +50,7 @@ impl Plugin for StatePlugin {
         app.insert_state(self.init_state.clone().unwrap_or_default())
             .add_sub_state::<InGame>()
             .insert_resource(self.injection.clone())
-            .insert_resource(ClientResource::default())
+            .insert_resource(ClientIdResource::default())
             // .insert_resource(ServerResource::default());
     ;
     }

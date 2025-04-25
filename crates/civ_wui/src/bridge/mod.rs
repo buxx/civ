@@ -3,8 +3,11 @@ use async_std::channel::{unbounded, Receiver, Sender};
 use bevy::prelude::*;
 use common::{
     network::{
-        message::{ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage},
-        ServerAddress,
+        message::{
+            ClientToServerEstablishmentMessage, ClientToServerGameMessage, ClientToServerMessage,
+            ClientToServerNetworkMessage, ServerToClientMessage,
+        },
+        Client, ServerAddress,
     },
     space::window::Resolution,
 };
@@ -12,9 +15,10 @@ use common::{
 use crate::{
     core::preferences::PreferencesResource,
     menu::{
-        join::{ConnectEvent, JoinEvent},
+        join::{ConnectEvent, JoinEvent, TakePlaceEvent},
         state::MenuStateResource,
     },
+    state::ClientIdResource,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -40,7 +44,9 @@ impl Plugin for BridgePlugin {
             .insert_resource(ClientToServerSenderResource(to_server_sender))
             .insert_resource(ClientToServerReceiverResource(to_server_receiver))
             .add_observer(connect)
+            .add_observer(join)
             .add_observer(send_to_server)
+            .add_observer(take_place)
             .add_systems(Update, listen_from_server);
     }
 }
@@ -90,13 +96,26 @@ pub fn connect(
     );
 }
 
-pub fn join(trigger: Trigger<JoinEvent>, mut commands: Commands) {
+pub fn join(trigger: Trigger<JoinEvent>, mut commands: Commands, client_id: Res<ClientIdResource>) {
+    let player_id = trigger.event().0;
+    let client_id = client_id.0;
+    info!("Join as player {} and client {}", &player_id, &client_id);
     commands.trigger(SendMessageToServerEvent(ClientToServerMessage::Network(
         ClientToServerNetworkMessage::Hello(
-            client.0,
+            Client::new(client_id, player_id),
             // FIXME BS NOW
             Resolution::new(1, 1),
         ),
+    )));
+}
+
+pub fn take_place(trigger: Trigger<TakePlaceEvent>, mut commands: Commands) {
+    let flag = trigger.event().0;
+    info!("Take place as {}", &flag);
+    commands.trigger(SendMessageToServerEvent(ClientToServerMessage::Game(
+        ClientToServerGameMessage::Establishment(ClientToServerEstablishmentMessage::TakePlace(
+            flag,
+        )),
     )));
 }
 
