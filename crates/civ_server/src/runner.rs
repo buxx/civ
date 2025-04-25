@@ -6,7 +6,7 @@ use common::{
         unit::{UnitId, UnitType},
         GameFrame, GAME_FRAMES_PER_SECOND,
     },
-    geo::{GeoContext, WorldPoint},
+    geo::GeoContext,
     network::{
         message::{
             ClientStateMessage, ClientToServerCityMessage, ClientToServerEstablishmentMessage,

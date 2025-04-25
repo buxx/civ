@@ -8,7 +8,7 @@ use common::{
 
 use crate::{
     assets::tile::{layout, texture_atlas_layout, TILES_ATLAS_PATH, TILE_SIZE},
-    bridge::ClientToServerSenderResource,
+    bridge::{ClientToServerSenderResource, SendMessageToServerEvent},
     ingame::{GameSlice, HexTile},
     utils::assets::AsAtlasIndex,
 };
@@ -29,10 +29,10 @@ use super::{
 use crate::utils::debug::DebugDisplay;
 
 pub fn refresh_tiles(
+    mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     grid: Res<HexGrid>,
-    client_to_server: Res<ClientToServerSenderResource>,
     current: Res<CurrentCenter>,
 ) {
     let window = windows.single();
@@ -58,15 +58,9 @@ pub fn refresh_tiles(
         // FIXME: called multiple time on same tile
         // FIXME: resolution according to window + zoom + hex size
         let set_window = SetWindow::from_around(&point, &Resolution::new(tiles_size, tiles_size));
-        // TODO: refactor clean
-        client_to_server
-            .0
-            .send_blocking(ClientToServerMessage::Game(
-                ClientToServerGameMessage::InGame(ClientToServerInGameMessage::SetWindow(
-                    set_window,
-                )),
-            ))
-            .unwrap();
+        commands.trigger(SendMessageToServerEvent(ClientToServerMessage::Game(
+            ClientToServerGameMessage::InGame(ClientToServerInGameMessage::SetWindow(set_window)),
+        )));
     }
 }
 

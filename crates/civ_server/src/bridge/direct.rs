@@ -2,7 +2,7 @@ use super::clients::Clients;
 use super::network::NetworkBridge;
 use super::{Bridge, BridgeBuildError, BridgeBuilder, FromClientsChannels, ToClientsChannels};
 use common::network::message::{
-    ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage,
+    ClientToServerMessage, ServerToClientMessage,
 };
 use common::network::{Client, ClientId};
 use crossbeam::channel::{unbounded, Receiver, Sender};

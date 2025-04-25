@@ -82,7 +82,7 @@ impl Window {
     }
 
     pub fn contains(&self, geo: &GeoContext) -> bool {
-        let point: ImaginaryWorldPoint = geo.point().clone().into();
+        let point: ImaginaryWorldPoint = (*geo.point()).into();
 
         point.x >= self.start.x
             && point.x <= self.end.x
