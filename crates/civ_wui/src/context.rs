@@ -20,7 +20,7 @@ impl Context {
         EntryPoint::Join
     }
 
-    pub fn default_server_address(&self) -> &str {
+    pub fn default_server_address(&self) -> ServerAddress {
         // FIXME From query or 127.0.0.1
         ServerAddress("127.0.0.1:9877".to_string())
     }

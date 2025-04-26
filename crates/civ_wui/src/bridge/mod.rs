@@ -17,6 +17,8 @@ mod join;
 #[cfg(not(target_arch = "wasm32"))]
 mod native;
 mod take_place;
+#[cfg(target_arch = "wasm32")]
+mod wasm;
 
 #[derive(Default)]
 pub struct BridgePlugin;

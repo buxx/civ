@@ -7,6 +7,10 @@ use common::network::ServerAddress;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+#[cfg(target_arch = "wasm32")]
+use wasm_cookies::CookieOptions;
+
+#[cfg(not(target_arch = "wasm32"))]
 use crate::utils::app_dir;
 
 #[derive(Debug, Deref, DerefMut, Serialize, Deserialize)]
@@ -59,6 +63,8 @@ pub enum PreferencesError {
     Deserialize(#[from] serde_json::Error),
     #[error("Can't determine home")]
     CantDetermineHome,
+    #[error("Cookies related error: {0}")]
+    CookieRelatedError(String),
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -90,5 +96,24 @@ fn write_<T: Serialize>(value: T) -> Result<(), PreferencesError> {
         ));
     fs::create_dir_all(file_path.parent().unwrap()).unwrap();
     fs::write(file_path, serde_json::to_string(&value)?).unwrap();
+    Ok(())
+}
+
+#[cfg(target_arch = "wasm32")]
+fn read<T: for<'a> Deserialize<'a>>() -> Result<T, PreferencesError> {
+    let key = type_name::<T>().split("::").last().unwrap();
+    let raw = match wasm_cookies::get(key) {
+        Some(Err(error)) => return Err(PreferencesError::CookieRelatedError(error.to_string())),
+        Some(Ok(value)) => value,
+        None => "{}".to_string(),
+    };
+    Ok(serde_json::from_str(&raw)?)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn write_<T: Serialize>(value: T) -> Result<(), PreferencesError> {
+    let key = type_name::<T>().split("::").last().unwrap();
+    let value = serde_json::to_string(&value)?;
+    wasm_cookies::set(key, &value, &CookieOptions::default());
     Ok(())
 }
