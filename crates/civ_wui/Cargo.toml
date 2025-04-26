@@ -51,6 +51,7 @@ serde_json.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 civ_server = { path = "../civ_server" }
+civ_world = { path = "../civ_world" }
 message-io.workspace = true
 clap.workspace = true
 home.workspace = true

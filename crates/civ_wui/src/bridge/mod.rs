@@ -16,6 +16,8 @@ mod connect;
 mod join;
 #[cfg(not(target_arch = "wasm32"))]
 mod native;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod single;
 mod take_place;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
