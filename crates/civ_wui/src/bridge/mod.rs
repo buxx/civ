@@ -6,7 +6,11 @@ use common::network::{
     ServerAddress,
 };
 
-use crate::{core::preferences::PreferencesResource, menu::state::MenuStateResource};
+use crate::{
+    core::preferences::PreferencesResource,
+    menu::state::{MenuState, MenuStateResource},
+    user::preferences::Preferences,
+};
 
 mod connect;
 mod join;
@@ -53,7 +57,6 @@ pub enum InternalBridgeMessage {
 #[derive(Resource)]
 pub struct ClientToServerReceiverResource(pub Receiver<ClientToServerMessage>);
 
-// FIXME BS NOW: replaces usages by commands.trigger
 #[derive(Resource)]
 pub struct ClientToServerSenderResource(pub Sender<ClientToServerMessage>);
 
@@ -89,16 +92,7 @@ fn listen_from_server(
         match message {
             BridgeMessage::Internal(message) => match message {
                 InternalBridgeMessage::ConnectionEstablished(address) => {
-                    state.join.player_id = preferences
-                        .0
-                        .player_id(&address)
-                        .cloned()
-                        .unwrap_or_default()
-                        .to_string();
-                    state.join.keep_connected =
-                        *preferences.0.keep_connected(&address).unwrap_or(&false);
-                    state.join.connected = true;
-                    state.connecting = false;
+                    connection_established(&mut state, &preferences, address);
                 }
             },
             BridgeMessage::Server(message) => {
@@ -106,4 +100,19 @@ fn listen_from_server(
             }
         }
     }
+}
+
+fn connection_established(
+    state: &mut MenuState,
+    preferences: &Preferences,
+    address: ServerAddress,
+) {
+    state.join.player_id = preferences
+        .player_id(&address)
+        .cloned()
+        .unwrap_or_default()
+        .to_string();
+    state.join.keep_connected = *preferences.keep_connected(&address).unwrap_or(&false);
+    state.join.connected = true;
+    state.connecting = false;
 }

@@ -52,6 +52,18 @@ pub enum ClientToServerInGameMessage {
     City(CityId, ClientToServerCityMessage),
 }
 
+impl From<ClientToServerInGameMessage> for ClientToServerGameMessage {
+    fn from(value: ClientToServerInGameMessage) -> Self {
+        ClientToServerGameMessage::InGame(value)
+    }
+}
+
+impl From<ClientToServerInGameMessage> for ClientToServerMessage {
+    fn from(value: ClientToServerInGameMessage) -> Self {
+        ClientToServerMessage::Game(ClientToServerGameMessage::InGame(value))
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerUnitMessage {
     Settle(String), // CityName

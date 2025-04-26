@@ -28,6 +28,12 @@ use super::{
 #[cfg(feature = "debug_tiles")]
 use crate::utils::debug::DebugDisplay;
 
+macro_rules! to_server {
+    ($commands:expr, $msg:expr) => {
+        $commands.trigger(SendMessageToServerEvent($msg.into()));
+    };
+}
+
 pub fn refresh_tiles(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
@@ -57,10 +63,8 @@ pub fn refresh_tiles(
 
         // FIXME: called multiple time on same tile
         // FIXME: resolution according to window + zoom + hex size
-        let set_window = SetWindow::from_around(&point, &Resolution::new(tiles_size, tiles_size));
-        commands.trigger(SendMessageToServerEvent(ClientToServerMessage::Game(
-            ClientToServerGameMessage::InGame(ClientToServerInGameMessage::SetWindow(set_window)),
-        )));
+        let window = SetWindow::from_around(&point, &Resolution::new(tiles_size, tiles_size));
+        to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
     }
 }
 
