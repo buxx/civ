@@ -23,17 +23,21 @@ pub struct Snapshot {
     client_states: HashMap<PlayerId, ClientState>,
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum SnapshotError {
     #[error("Serialize/Deserialize error: {0}")]
-    Serialize(#[from] bincode::Error),
+    Serialize(String),
     #[error("I/O error: {0}")]
-    Io(#[from] io::Error),
+    Io(io::ErrorKind),
 }
 
 impl Snapshot {
     pub fn dump(&self, path: &PathBuf) -> Result<(), SnapshotError> {
-        fs::write(path, bincode::serialize(&self)?)?;
+        fs::write(
+            path,
+            bincode::serialize(&self).map_err(|e| SnapshotError::Serialize(e.to_string()))?,
+        )
+        .map_err(|e| SnapshotError::Io(e.kind()))?;
         Ok(())
     }
 
@@ -80,7 +84,10 @@ impl TryFrom<&PathBuf> for Snapshot {
     type Error = SnapshotError;
 
     fn try_from(value: &PathBuf) -> Result<Self, Self::Error> {
-        Ok(bincode::deserialize(&fs::read(value)?)?)
+        Ok(
+            bincode::deserialize(&fs::read(value).map_err(|e| SnapshotError::Io(e.kind()))?)
+                .map_err(|e| SnapshotError::Serialize(e.to_string()))?,
+        )
     }
 }
 

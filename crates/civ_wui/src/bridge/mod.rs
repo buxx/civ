@@ -1,6 +1,7 @@
 use async_std::channel::{unbounded, Receiver, Sender};
 
 use bevy::prelude::*;
+use civ_server::Error as ServerError;
 use civ_world::WorldGeneratorError;
 use common::{
     network::{
@@ -8,8 +9,9 @@ use common::{
         ServerAddress,
     },
     utils::Progress,
+    world::reader::WorldReaderError,
 };
-use single::{listen_world_generated, listen_world_generation_progress};
+use single::{listen_world_generation_progress, start_embedded_server};
 
 use crate::{
     core::preferences::PreferencesResource,
@@ -53,7 +55,7 @@ impl Plugin for BridgePlugin {
             .add_observer(send_to_server)
             .add_observer(take_place::take_place)
             .add_observer(single::start_single)
-            .add_observer(listen_world_generated)
+            .add_observer(start_embedded_server)
             .add_systems(
                 Update,
                 listen_world_generation_progress.run_if(in_state(AppState::Menu)),
@@ -88,8 +90,11 @@ pub struct WorldGenerationProgressReceiverResource(
     pub Option<Receiver<Progress<WorldGeneratorError>>>,
 );
 
+#[derive(Resource)]
+pub struct StartEmbeddedServerReceiverResource(pub Option<Receiver<Progress<WorldReaderError>>>);
+
 #[derive(Event)]
-pub struct WorldGenerated;
+pub struct StartEmbeddedServer;
 
 #[derive(Event)]
 pub struct SendMessageToServerEvent(pub ClientToServerMessage);

@@ -3,6 +3,11 @@ use std::thread;
 use async_std::channel::{unbounded, Receiver};
 use bevy::prelude::*;
 use civ_server::config::ServerConfig;
+// TODO: not in wasm32
+use civ_server::{
+    bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs,
+    Error as ServerError,
+};
 use civ_world::config::WorldConfig;
 use civ_world::{self, WorldGeneratorError};
 use common::game::GameFrame;
@@ -15,7 +20,10 @@ use crate::{
     utils::app_dir,
 };
 
-use super::{WorldGenerated, WorldGenerationProgressReceiverResource};
+use super::{
+    StartEmbeddedServer, StartEmbeddedServerReceiverResource,
+    WorldGenerationProgressReceiverResource,
+};
 
 pub enum SingleConfiguration {
     FromScratch(FromScratchConfig),
@@ -100,7 +108,7 @@ pub fn listen_world_generation_progress(
                 Progress::Finished => {
                     info!("World generation finished");
                     state.0.progress = None;
-                    commands.trigger(WorldGenerated);
+                    commands.trigger(StartEmbeddedServer);
                 }
                 Progress::Error(error) => {
                     // FIXME (gui display this error)
@@ -112,7 +120,26 @@ pub fn listen_world_generation_progress(
     }
 }
 
-pub fn listen_world_generated(_trigger: Trigger<WorldGenerated>, state: Res<MenuStateResource>) {
+pub fn start_embedded_server(
+    _trigger: Trigger<StartEmbeddedServer>,
+    mut progress: ResMut<StartEmbeddedServerReceiverResource>,
+    mut state: ResMut<MenuStateResource>,
+) {
+    state.0.connecting = true;
     let conf = SingleConfiguration::from_state(&state.0.single);
-    todo!();
+
+    let (progress_sender, progress_receiver) = unbounded();
+    *progress = Some(progress_receiver);
+
+    info!("Start embedded server ...");
+    let args = ServerArgs::builder().build();
+    thread::spawn(move || {
+        let bridge = DirectBridgeBuilder::new(
+            client_to_server_sender,
+            client_to_server_receiver,
+            server_to_client_sender,
+            server_to_client_receiver,
+        );
+        start_server(args, &bridge);
+    });
 }
