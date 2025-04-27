@@ -1,3 +1,5 @@
+use std::error::Error;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rectangle<T> {
     pub left: T,
@@ -21,4 +23,11 @@ impl<T: Copy> From<[T; 4]> for Rectangle<T> {
             bottom: value[3],
         }
     }
+}
+
+#[derive(Debug)]
+pub enum Progress<E: Error + Clone> {
+    InProgress(f32),
+    Finished,
+    Error(E),
 }

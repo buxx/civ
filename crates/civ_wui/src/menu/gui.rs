@@ -32,6 +32,10 @@ pub fn gui(
             ui.label("Taking place...");
             return;
         }
+        if let Some(progress) = state.progress {
+            ui.label(format!("{}%", (progress * 100.) as isize));
+            return;
+        }
 
         match &mut state.screen {
             Screen::Root => root::draw(ui, &mut state.root, commands),

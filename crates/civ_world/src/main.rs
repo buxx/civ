@@ -5,5 +5,5 @@ mod generator;
 mod writer;
 
 fn main() -> Result<(), WorldGeneratorError> {
-    run(Args::parse())
+    run().args(Args::parse()).call()
 }

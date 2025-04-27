@@ -1,16 +1,21 @@
 use std::thread;
 
+use async_std::channel::{unbounded, Receiver};
 use bevy::prelude::*;
 use civ_server::config::ServerConfig;
 use civ_world::config::WorldConfig;
-use civ_world::{self};
+use civ_world::{self, WorldGeneratorError};
 use common::game::GameFrame;
+use common::utils::Progress;
 use uuid::Uuid;
 
+use crate::menu::state::MenuStateResource;
 use crate::{
     menu::single::{SingleState, StartSingleEvent},
     utils::app_dir,
 };
+
+use super::{WorldGenerated, WorldGenerationProgressReceiverResource};
 
 pub enum SingleConfiguration {
     FromScratch(FromScratchConfig),
@@ -26,8 +31,9 @@ impl SingleConfiguration {
         Self::FromScratch(FromScratchConfig {
             world: WorldConfig::builder()
                 .target(world)
-                .width(100)
-                .height(100)
+                .width(500)
+                .height(500)
+                .chunk_size(100)
                 .build(), // TODO
             // TODO: specific config ?
             server: ServerConfig::new(
@@ -48,18 +54,65 @@ pub struct FromScratchConfig {
 
 pub struct LoadFromConfig;
 
-pub fn start_single(trigger: Trigger<StartSingleEvent>) {
-    match &trigger.event().0 {
+pub fn start_single(
+    _trigger: Trigger<StartSingleEvent>,
+    state: Res<MenuStateResource>,
+    mut progress: ResMut<WorldGenerationProgressReceiverResource>,
+) {
+    info!("Start single ...");
+    let conf = SingleConfiguration::from_state(&state.0.single);
+    match conf {
         SingleConfiguration::FromScratch(config) => {
-            create_single(config.clone());
+            create_single(config.clone(), &mut progress.0);
         }
         SingleConfiguration::LoadFrom(_config) => todo!(),
     };
 }
 
-fn create_single(config: FromScratchConfig) {
+fn create_single(
+    config: FromScratchConfig,
+    progress: &mut Option<Receiver<Progress<WorldGeneratorError>>>,
+) {
     let world = config.world.clone();
+    let (progress_sender, progress_receiver) = unbounded();
+    *progress = Some(progress_receiver);
+
     thread::spawn(move || {
-        civ_world::run(world.into());
+        let _ = civ_world::run()
+            .args(world.into())
+            .progress(progress_sender)
+            .call();
     });
+}
+
+pub fn listen_world_generation_progress(
+    mut commands: Commands,
+    progress: Res<WorldGenerationProgressReceiverResource>,
+    mut state: ResMut<MenuStateResource>,
+) {
+    if let Some(progress) = &progress.0 {
+        if let Ok(progress) = progress.try_recv() {
+            match progress {
+                Progress::InProgress(value) => {
+                    info!("World generation progress {:?} ...", &value);
+                    state.0.progress = Some(value);
+                }
+                Progress::Finished => {
+                    info!("World generation finished");
+                    state.0.progress = None;
+                    commands.trigger(WorldGenerated);
+                }
+                Progress::Error(error) => {
+                    // FIXME (gui display this error)
+                    info!("World generation error: {}", &error);
+                    state.0.progress = None;
+                }
+            }
+        }
+    }
+}
+
+pub fn listen_world_generated(_trigger: Trigger<WorldGenerated>, state: Res<MenuStateResource>) {
+    let conf = SingleConfiguration::from_state(&state.0.single);
+    todo!();
 }

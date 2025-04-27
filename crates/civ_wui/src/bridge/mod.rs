@@ -1,14 +1,20 @@
 use async_std::channel::{unbounded, Receiver, Sender};
 
 use bevy::prelude::*;
-use common::network::{
-    message::{ClientToServerMessage, ServerToClientMessage},
-    ServerAddress,
+use civ_world::WorldGeneratorError;
+use common::{
+    network::{
+        message::{ClientToServerMessage, ServerToClientMessage},
+        ServerAddress,
+    },
+    utils::Progress,
 };
+use single::{listen_world_generated, listen_world_generation_progress};
 
 use crate::{
     core::preferences::PreferencesResource,
     menu::state::{MenuState, MenuStateResource},
+    state::AppState,
     user::preferences::Preferences,
 };
 
@@ -41,10 +47,17 @@ impl Plugin for BridgePlugin {
             .insert_resource(ServerToClientReceiverResource(from_server_receiver))
             .insert_resource(ClientToServerSenderResource(to_server_sender))
             .insert_resource(ClientToServerReceiverResource(to_server_receiver))
+            .insert_resource(WorldGenerationProgressReceiverResource(None))
             .add_observer(connect::connect)
             .add_observer(join::join)
             .add_observer(send_to_server)
             .add_observer(take_place::take_place)
+            .add_observer(single::start_single)
+            .add_observer(listen_world_generated)
+            .add_systems(
+                Update,
+                listen_world_generation_progress.run_if(in_state(AppState::Menu)),
+            )
             .add_systems(Update, listen_from_server);
     }
 }
@@ -69,6 +82,14 @@ pub struct ServerToClientReceiverResource(pub Receiver<BridgeMessage>);
 
 #[derive(Resource)]
 pub struct ServerToClientSenderResource(pub Sender<BridgeMessage>);
+
+#[derive(Resource)]
+pub struct WorldGenerationProgressReceiverResource(
+    pub Option<Receiver<Progress<WorldGeneratorError>>>,
+);
+
+#[derive(Event)]
+pub struct WorldGenerated;
 
 #[derive(Event)]
 pub struct SendMessageToServerEvent(pub ClientToServerMessage);

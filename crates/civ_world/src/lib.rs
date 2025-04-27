@@ -1,9 +1,9 @@
-use std::{default, io, path::PathBuf};
+use std::{io, path::PathBuf};
 
-use bincode::ErrorKind;
-use bon::Builder;
+use async_std::channel::Sender;
+use bon::{builder, Builder};
 use clap::Parser;
-use common::world::World;
+use common::{utils::Progress, world::World};
 use generator::Generator;
 use thiserror::Error;
 use writer::FilesWriter;
@@ -23,7 +23,23 @@ pub struct Args {
     chunk_size: usize,
 }
 
-pub fn run(args: Args) -> Result<(), WorldGeneratorError> {
+#[builder]
+pub fn run(
+    args: Args,
+    progress: Option<Sender<Progress<WorldGeneratorError>>>,
+) -> Result<(), WorldGeneratorError> {
+    if let Err(error) = run_(args, progress.clone()) {
+        progress.map(|p| p.send_blocking(Progress::Error(error.clone())));
+        return Err(error);
+    }
+
+    Ok(())
+}
+
+pub fn run_(
+    args: Args,
+    progress: Option<Sender<Progress<WorldGeneratorError>>>,
+) -> Result<(), WorldGeneratorError> {
     if args.width % args.chunk_size > 0 || args.height % args.chunk_size > 0 {
         return Err(WorldGeneratorError::NotChunkSizeMultiplier(args.chunk_size));
     }
@@ -42,21 +58,21 @@ pub fn run(args: Args) -> Result<(), WorldGeneratorError> {
         Box::new(FilesWriter::new(args.target.clone())),
         args.target,
     )
-    .generate()?;
+    .generate(progress)?;
 
     Ok(())
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum WorldGeneratorError {
     #[error("Please use chunk size multiplier for height and with ({0})")]
     NotChunkSizeMultiplier(usize),
     #[error("Target path already exist")]
     TargetAlreadyExist,
     #[error("Disk error: {0}")]
-    DiskError(#[from] io::Error),
-    #[error("Serialization error: {0}")]
+    DiskError(io::ErrorKind),
+    #[error("Serialization (ron) error: {0}")]
     RonError(#[from] ron::Error),
-    #[error("Serialization error: {0}")]
-    BincodeError(#[from] Box<ErrorKind>),
+    #[error("Serialization (bin) error: {0}")]
+    BincodeError(String),
 }

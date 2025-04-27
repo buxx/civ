@@ -1909,6 +1909,7 @@ dependencies = [
 name = "civ_world"
 version = "0.1.0"
 dependencies = [
+ "async-std",
  "bincode",
  "bon",
  "civ_common",
