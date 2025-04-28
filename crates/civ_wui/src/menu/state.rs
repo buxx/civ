@@ -15,7 +15,7 @@ pub struct MenuState {
     pub join: JoinState,
     pub connecting: bool,
     pub taking_place: bool,
-    pub progress: Option<f32>,
+    pub progress: Option<(String, f32)>,
 }
 
 impl MenuState {

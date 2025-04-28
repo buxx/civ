@@ -24,16 +24,16 @@ pub fn gui(
     set_scale_factor(egui);
 
     egui::TopBottomPanel::top("menu").show(contexts.ctx_mut(), |ui| {
+        if let Some((label, progress)) = &state.progress {
+            ui.label(format!("{} {}%", label, (progress * 100.) as isize));
+            return;
+        }
         if state.connecting {
             ui.label("Connecting...");
             return;
         }
         if state.taking_place {
             ui.label("Taking place...");
-            return;
-        }
-        if let Some(progress) = state.progress {
-            ui.label(format!("{}%", (progress * 100.) as isize));
             return;
         }
 

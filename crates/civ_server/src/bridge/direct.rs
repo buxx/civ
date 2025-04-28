@@ -1,96 +1,89 @@
-use super::clients::Clients;
-use super::network::NetworkBridge;
-use super::{Bridge, BridgeBuildError, BridgeBuilder, FromClientsChannels, ToClientsChannels};
-use common::network::message::{
-    ClientToServerMessage, ServerToClientMessage,
-};
+use super::{Bridge, BridgeBuildError, BridgeBuilder};
+use async_std::channel::{unbounded, Receiver, Sender};
+use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use common::network::{Client, ClientId};
-use crossbeam::channel::{unbounded, Receiver, Sender};
 use derive_more::Constructor;
-use log::info;
 use std::sync::{Arc, RwLock};
-use std::{io, thread};
+use std::thread;
 
 use crate::config::ServerConfig;
 use crate::context::Context;
 use crate::state::State;
 
 #[derive(Debug, Constructor)]
-pub struct DirectBridgeBuilder {
-    client_to_server_sender: Sender<(Client, ClientToServerMessage)>,
-    client_to_server_receiver: Receiver<(Client, ClientToServerMessage)>,
-    server_to_client_sender: Sender<(ClientId, ServerToClientMessage)>,
-    server_to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
+pub struct DirectBridgeBuilder<T: Send + From<ServerToClientMessage> + 'static> {
+    client: Client,
+    client_to_server_receiver: Receiver<ClientToServerMessage>,
+    server_to_client_sender: Sender<T>,
 }
 
-impl BridgeBuilder<NetworkBridge> for DirectBridgeBuilder {
+impl<T: Send + From<ServerToClientMessage> + 'static> BridgeBuilder<DirectBridge<T>>
+    for DirectBridgeBuilder<T>
+{
     fn build(
         &self,
-        context: Context,
-        state: Arc<RwLock<State>>,
-        config: &ServerConfig,
+        _context: Context,
+        _state: Arc<RwLock<State>>,
+        _config: &ServerConfig,
     ) -> Result<
         (
-            NetworkBridge,
+            DirectBridge<T>,
             Receiver<(Client, ClientToServerMessage)>,
             Sender<(ClientId, ServerToClientMessage)>,
         ),
         BridgeBuildError,
     > {
-        let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
-        let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
-        let bridge = NetworkBridge::new(
-            context.clone(),
-            Arc::clone(&state),
-            config.tcp_listen_address().to_string(),
-            config.ws_listen_address().to_string(),
-            from_clients_sender,
-            to_clients_receiver,
-        )
-        .map_err(|e| BridgeBuildError::Io(e.kind()))?;
-        Ok((bridge, from_clients_receiver, to_clients_sender))
+        let (client_to_server_sender_proxy, client_to_server_receiver_proxy) = unbounded();
+        let (server_to_client_sender_proxy, server_to_client_receiver_proxy) = unbounded();
+        let bridge = DirectBridge::new(
+            self.client,
+            self.client_to_server_receiver.clone(),
+            client_to_server_sender_proxy,
+            server_to_client_receiver_proxy,
+            self.server_to_client_sender.clone(),
+        );
+
+        Ok((
+            bridge,
+            client_to_server_receiver_proxy,
+            server_to_client_sender_proxy,
+        ))
     }
 }
 
-enum Signal {
-    SendServerToClientsMessages,
-    CheckStopRequired,
+#[derive(Debug, Constructor)]
+pub struct DirectBridge<T: Send + From<ServerToClientMessage> + 'static> {
+    client: Client,
+    client_to_server_receiver: Receiver<ClientToServerMessage>,
+    client_to_server_sender_proxy: Sender<(Client, ClientToServerMessage)>,
+    server_to_client_receiver_proxy: Receiver<(ClientId, ServerToClientMessage)>,
+    server_to_client_sender: Sender<T>,
 }
 
-pub struct DirectBridge {
-    state: Arc<RwLock<State>>,
-    from_clients_sender: Sender<(Client, ClientToServerMessage)>,
-    to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
-    clients: Clients,
-}
-
-// TODO: unwraps
-// TODO: stop required
-impl DirectBridge {
-    pub fn new(
-        state: Arc<RwLock<State>>,
-        from_clients_sender: Sender<(Client, ClientToServerMessage)>,
-        to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
-    ) -> io::Result<Self> {
-        Ok(Self {
-            state,
-            from_clients_sender,
-            to_client_receiver,
-            clients: Clients::default(),
-        })
-    }
-}
-
-impl Bridge for DirectBridge {
+impl<T: Send + From<ServerToClientMessage> + 'static> Bridge for DirectBridge<T> {
     fn run(&mut self) {
-        let from_clients_sender = self.from_clients_sender.clone();
-
-        thread::spawn(move || {
-            // while let Ok(message) = x {
-            //     //
-            // }
+        let client_to_server_receiver_ = self.client_to_server_receiver.clone();
+        let client_to_server_sender_proxy_ = self.client_to_server_sender_proxy.clone();
+        let client_ = self.client;
+        let t1 = thread::spawn(move || {
+            while let Ok(message) = client_to_server_receiver_.recv_blocking() {
+                client_to_server_sender_proxy_
+                    .send_blocking((client_, message))
+                    .unwrap();
+            }
         });
 
-        info!("Direct finished running");
+        let server_to_client_receiver_proxy_ = self.server_to_client_receiver_proxy.clone();
+        let server_to_client_sender_ = self.server_to_client_sender.clone();
+        let t2 = thread::spawn(move || {
+            while let Ok(message) = server_to_client_receiver_proxy_.recv_blocking() {
+                server_to_client_sender_
+                    .send_blocking(message.1.into())
+                    .unwrap();
+            }
+        });
+
+        t1.join().unwrap();
+        t2.join().unwrap();
     }
 }

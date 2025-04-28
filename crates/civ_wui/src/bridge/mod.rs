@@ -1,7 +1,6 @@
 use async_std::channel::{unbounded, Receiver, Sender};
 
 use bevy::prelude::*;
-use civ_server::Error as ServerError;
 use civ_world::WorldGeneratorError;
 use common::{
     network::{
@@ -11,7 +10,9 @@ use common::{
     utils::Progress,
     world::reader::WorldReaderError,
 };
-use single::{listen_world_generation_progress, start_embedded_server};
+use single::{
+    listen_start_embedded_server_progress, listen_world_generation_progress, start_embedded_server,
+};
 
 use crate::{
     core::preferences::PreferencesResource,
@@ -50,6 +51,7 @@ impl Plugin for BridgePlugin {
             .insert_resource(ClientToServerSenderResource(to_server_sender))
             .insert_resource(ClientToServerReceiverResource(to_server_receiver))
             .insert_resource(WorldGenerationProgressReceiverResource(None))
+            .insert_resource(StartEmbeddedServerReceiverResource(None))
             .add_observer(connect::connect)
             .add_observer(join::join)
             .add_observer(send_to_server)
@@ -60,6 +62,10 @@ impl Plugin for BridgePlugin {
                 Update,
                 listen_world_generation_progress.run_if(in_state(AppState::Menu)),
             )
+            .add_systems(
+                Update,
+                listen_start_embedded_server_progress.run_if(in_state(AppState::Menu)),
+            )
             .add_systems(Update, listen_from_server);
     }
 }
@@ -67,6 +73,12 @@ impl Plugin for BridgePlugin {
 pub enum BridgeMessage {
     Internal(InternalBridgeMessage),
     Server(ServerToClientMessage),
+}
+
+impl From<ServerToClientMessage> for BridgeMessage {
+    fn from(value: ServerToClientMessage) -> Self {
+        BridgeMessage::Server(value)
+    }
 }
 
 pub enum InternalBridgeMessage {
@@ -95,6 +107,9 @@ pub struct StartEmbeddedServerReceiverResource(pub Option<Receiver<Progress<Worl
 
 #[derive(Event)]
 pub struct StartEmbeddedServer;
+
+#[derive(Event)]
+pub struct EmbeddedServerReady;
 
 #[derive(Event)]
 pub struct SendMessageToServerEvent(pub ClientToServerMessage);

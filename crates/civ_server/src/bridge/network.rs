@@ -1,10 +1,10 @@
 use super::clients::Clients;
 use super::{Bridge, BridgeBuildError, BridgeBuilder, FromClientsChannels, ToClientsChannels};
+use async_std::channel::{unbounded, Receiver, Sender};
 use common::network::message::{
     ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage,
 };
 use common::network::{Client, ClientId};
-use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::info;
 use message_io::network::{NetEvent, Transport};
 use message_io::node::{self};
@@ -120,7 +120,7 @@ impl Bridge for NetworkBridge {
                                 info!("DEBUG: client hello");
                                 self.clients.insert(*client, endpoint);
                                 self.from_clients_sender
-                                    .send((*client, message.clone()))
+                                    .send_blocking((*client, message.clone()))
                                     .unwrap();
                             }
                             ClientToServerNetworkMessage::Goodbye => {
@@ -137,7 +137,7 @@ impl Bridge for NetworkBridge {
                             info!("DEBUG game clients: {:?}", self.clients);
                             let client = self.clients.client_for_endpoint(&endpoint).unwrap();
                             self.from_clients_sender
-                                .send((*client, message.clone()))
+                                .send_blocking((*client, message.clone()))
                                 .unwrap();
                         }
                     }

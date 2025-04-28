@@ -1,7 +1,7 @@
 pub mod direct;
+use async_std::channel::{Receiver, Sender};
 use common::network::message::{ClientToServerMessage, ServerToClientMessage};
 use common::network::{Client, ClientId};
-use crossbeam::channel::{Receiver, Sender};
 use std::io;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;

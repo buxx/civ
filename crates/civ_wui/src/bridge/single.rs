@@ -1,19 +1,19 @@
+use std::path::PathBuf;
 use std::thread;
 
 use async_std::channel::{unbounded, Receiver};
 use bevy::prelude::*;
 use civ_server::config::ServerConfig;
 // TODO: not in wasm32
-use civ_server::{
-    bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs,
-    Error as ServerError,
-};
+use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
 use civ_world::config::WorldConfig;
 use civ_world::{self, WorldGeneratorError};
 use common::game::GameFrame;
+use common::network::Client;
 use common::utils::Progress;
 use uuid::Uuid;
 
+use crate::bridge::EmbeddedServerReady;
 use crate::menu::state::MenuStateResource;
 use crate::{
     menu::single::{SingleState, StartSingleEvent},
@@ -21,8 +21,8 @@ use crate::{
 };
 
 use super::{
-    StartEmbeddedServer, StartEmbeddedServerReceiverResource,
-    WorldGenerationProgressReceiverResource,
+    ClientToServerSenderResource, ServerToClientReceiverResource, StartEmbeddedServer,
+    StartEmbeddedServerReceiverResource, WorldGenerationProgressReceiverResource,
 };
 
 pub enum SingleConfiguration {
@@ -51,6 +51,20 @@ impl SingleConfiguration {
                 "".to_string(),
             ),
         })
+    }
+
+    fn snapshot(&self) -> Option<&PathBuf> {
+        match self {
+            SingleConfiguration::FromScratch(config) => config.server.snapshot(),
+            SingleConfiguration::LoadFrom(_config) => todo!(),
+        }
+    }
+
+    fn snapshot_interval(&self) -> &GameFrame {
+        match self {
+            SingleConfiguration::FromScratch(config) => config.server.snapshot_interval(),
+            SingleConfiguration::LoadFrom(_config) => todo!(),
+        }
     }
 }
 
@@ -103,7 +117,7 @@ pub fn listen_world_generation_progress(
             match progress {
                 Progress::InProgress(value) => {
                     info!("World generation progress {:?} ...", &value);
-                    state.0.progress = Some(value);
+                    state.0.progress = Some(("Generate world".to_string(), value));
                 }
                 Progress::Finished => {
                     info!("World generation finished");
@@ -122,24 +136,65 @@ pub fn listen_world_generation_progress(
 
 pub fn start_embedded_server(
     _trigger: Trigger<StartEmbeddedServer>,
+    mut to_server_sender: ResMut<ClientToServerSenderResource>,
+    mut from_server_receiver: ResMut<ServerToClientReceiverResource>,
     mut progress: ResMut<StartEmbeddedServerReceiverResource>,
     mut state: ResMut<MenuStateResource>,
 ) {
+    let client = Client::default();
+
     state.0.connecting = true;
     let conf = SingleConfiguration::from_state(&state.0.single);
 
     let (progress_sender, progress_receiver) = unbounded();
-    *progress = Some(progress_receiver);
+    progress.0 = Some(progress_receiver);
 
     info!("Start embedded server ...");
-    let args = ServerArgs::builder().build();
+    let args = ServerArgs::builder()
+        .maybe_snapshot(conf.snapshot().cloned())
+        .snapshot_interval(conf.snapshot_interval().0)
+        .tcp_listen_address("".to_string())
+        .ws_listen_address("".to_string())
+        .build();
+    let (client_to_server_sender, client_to_server_receiver) = unbounded();
+    let (server_to_client_sender, server_to_client_receiver) = unbounded();
     thread::spawn(move || {
-        let bridge = DirectBridgeBuilder::new(
-            client_to_server_sender,
-            client_to_server_receiver,
-            server_to_client_sender,
-            server_to_client_receiver,
-        );
-        start_server(args, &bridge);
+        let bridge =
+            DirectBridgeBuilder::new(client, client_to_server_receiver, server_to_client_sender);
+        let _ = start_server()
+            .args(args)
+            .bridge_builder(&bridge)
+            .progress(progress_sender)
+            .call();
     });
+
+    to_server_sender.0 = client_to_server_sender;
+    from_server_receiver.0 = server_to_client_receiver;
+}
+
+pub fn listen_start_embedded_server_progress(
+    mut commands: Commands,
+    progress: Res<StartEmbeddedServerReceiverResource>,
+    mut state: ResMut<MenuStateResource>,
+) {
+    if let Some(progress) = &progress.0 {
+        if let Ok(progress) = progress.try_recv() {
+            match progress {
+                Progress::InProgress(value) => {
+                    info!("Start embedded server progress {:?} ...", &value);
+                    state.0.progress = Some(("Load world".to_string(), value));
+                }
+                Progress::Finished => {
+                    info!("Start embedded server finished");
+                    state.0.progress = None;
+                    commands.trigger(EmbeddedServerReady);
+                }
+                Progress::Error(error) => {
+                    // FIXME (gui display this error)
+                    info!("Start embedded server error: {}", &error);
+                    state.0.progress = None;
+                }
+            }
+        }
+    }
 }

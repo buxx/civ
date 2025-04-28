@@ -25,7 +25,7 @@ impl Runner {
                         for client_id in client_ids {
                             self.context
                                 .to_client_sender
-                                .send((client_id, message.clone()))
+                                .send_blocking((client_id, message.clone()))
                                 .unwrap();
                         }
                     }

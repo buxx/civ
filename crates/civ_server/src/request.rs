@@ -44,7 +44,7 @@ impl<'a> SetWindowRequestDealer<'a> {
         ] {
             self.context
                 .to_client_sender
-                .send((*self.client.client_id(), message))
+                .send_blocking((*self.client.client_id(), message))
                 .unwrap();
         }
 

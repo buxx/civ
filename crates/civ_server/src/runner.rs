@@ -1,3 +1,4 @@
+use async_std::channel::{unbounded, Receiver, Sender};
 use bon::{builder, Builder};
 use common::{
     game::{
@@ -21,7 +22,6 @@ use common::{
     task::{CreateTaskError, GamePlayReason},
     world::reader::WorldReader,
 };
-use crossbeam::channel::{unbounded, Receiver, Sender};
 use log::{debug, error, info};
 use std::{
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
@@ -180,7 +180,7 @@ impl Runner {
             let state = Arc::clone(&self.context.state);
             let context = self.context.clone();
             thread::spawn(move || {
-                while start_work_receiver.recv().is_ok() {
+                while start_work_receiver.recv_blocking().is_ok() {
                     let state = state.read().expect("Assume state is always accessible");
                     let frame = *state.frame();
                     let tasks_count = state.tasks().len();
@@ -200,7 +200,7 @@ impl Runner {
                         };
                     }
 
-                    if results_sender.send(effects).is_err() {
+                    if results_sender.send_blocking(effects).is_err() {
                         error!("Channel closed in tasks scope: abort");
                         return;
                     }
@@ -236,7 +236,7 @@ impl Runner {
                         DealClientRequestError::Unfeasible(message) => {
                             self.context
                                 .to_client_sender
-                                .send((
+                                .send_blocking((
                                     *client.client_id(),
                                     ServerToClientMessage::InGame(
                                         ServerToClientInGameMessage::Notification(
@@ -253,7 +253,7 @@ impl Runner {
                         DealClientRequestError::Unauthorized => self
                             .context
                             .to_client_sender
-                            .send((
+                            .send_blocking((
                                 *client.client_id(),
                                 ServerToClientMessage::InGame(
                                     ServerToClientInGameMessage::Notification(
@@ -329,13 +329,13 @@ impl Runner {
         let mut effects = vec![];
 
         for (i, (start_sender, _)) in self.workers_channels.iter().enumerate() {
-            if start_sender.send(()).is_err() {
+            if start_sender.send_blocking(()).is_err() {
                 debug!("Worker {} start channel is closed", i)
             }
         }
 
         for (_, results_receiver) in &self.workers_channels {
-            effects.extend(results_receiver.recv().unwrap_or_default());
+            effects.extend(results_receiver.recv_blocking().unwrap_or_default());
         }
 
         effects
@@ -678,7 +678,6 @@ mod test {
             unit::Unit,
         },
         state::clients::Clients,
-        FromClientsChannels, ToClientsChannels,
     };
 
     use super::*;
@@ -882,7 +881,10 @@ mod test {
         );
 
         // WHEN/THEN
-        testing.from_clients_sender.send((client, place)).unwrap();
+        testing
+            .from_clients_sender
+            .send_blocking((client, place))
+            .unwrap();
         runner.do_one_iteration();
 
         assert_eq!(testing.to_clients_receiver.len(), 4);
@@ -940,7 +942,7 @@ mod test {
         ));
         testing
             .from_clients_sender
-            .send((client, create_task))
+            .send_blocking((client, create_task))
             .unwrap();
         runner.do_one_iteration();
 
