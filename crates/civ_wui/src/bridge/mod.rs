@@ -10,9 +10,6 @@ use common::{
     utils::Progress,
     world::reader::WorldReaderError,
 };
-use single::{
-    listen_start_embedded_server_progress, listen_world_generation_progress, start_embedded_server,
-};
 
 use crate::{
     core::preferences::PreferencesResource,
@@ -57,14 +54,15 @@ impl Plugin for BridgePlugin {
             .add_observer(send_to_server)
             .add_observer(take_place::take_place)
             .add_observer(single::start_single)
-            .add_observer(start_embedded_server)
+            .add_observer(single::start_embedded_server)
+            .add_observer(single::join_embedded_server)
             .add_systems(
                 Update,
-                listen_world_generation_progress.run_if(in_state(AppState::Menu)),
+                single::listen_world_generation_progress.run_if(in_state(AppState::Menu)),
             )
             .add_systems(
                 Update,
-                listen_start_embedded_server_progress.run_if(in_state(AppState::Menu)),
+                single::listen_start_embedded_server_progress.run_if(in_state(AppState::Menu)),
             )
             .add_systems(Update, listen_from_server);
     }

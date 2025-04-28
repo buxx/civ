@@ -8,13 +8,16 @@ use civ_server::config::ServerConfig;
 use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
 use civ_world::config::WorldConfig;
 use civ_world::{self, WorldGeneratorError};
+use common::game::nation::flag::Flag;
 use common::game::GameFrame;
+use common::network::message::ClientToServerEstablishmentMessage;
 use common::network::Client;
 use common::utils::Progress;
 use uuid::Uuid;
 
 use crate::bridge::EmbeddedServerReady;
 use crate::menu::state::MenuStateResource;
+use crate::to_server;
 use crate::{
     menu::single::{SingleState, StartSingleEvent},
     utils::app_dir,
@@ -39,8 +42,8 @@ impl SingleConfiguration {
         Self::FromScratch(FromScratchConfig {
             world: WorldConfig::builder()
                 .target(world)
-                .width(500)
-                .height(500)
+                .width(100)
+                .height(100)
                 .chunk_size(100)
                 .build(), // TODO
             // TODO: specific config ?
@@ -65,6 +68,11 @@ impl SingleConfiguration {
             SingleConfiguration::FromScratch(config) => config.server.snapshot_interval(),
             SingleConfiguration::LoadFrom(_config) => todo!(),
         }
+    }
+
+    fn flag(&self) -> Flag {
+        // FIXME
+        Flag::Abkhazia
     }
 }
 
@@ -197,4 +205,16 @@ pub fn listen_start_embedded_server_progress(
             }
         }
     }
+}
+
+pub fn join_embedded_server(
+    _trigger: Trigger<EmbeddedServerReady>,
+    mut commands: Commands,
+    state: Res<MenuStateResource>,
+) {
+    let conf = SingleConfiguration::from_state(&state.0.single);
+    to_server!(
+        commands,
+        ClientToServerEstablishmentMessage::TakePlace(conf.flag())
+    );
 }

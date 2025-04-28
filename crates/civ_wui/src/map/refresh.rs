@@ -10,6 +10,7 @@ use crate::{
     assets::tile::{layout, texture_atlas_layout, TILES_ATLAS_PATH, TILE_SIZE},
     bridge::{ClientToServerSenderResource, SendMessageToServerEvent},
     ingame::{GameSlice, HexTile},
+    to_server,
     utils::assets::AsAtlasIndex,
 };
 use crate::{
@@ -27,12 +28,6 @@ use super::{
 
 #[cfg(feature = "debug_tiles")]
 use crate::utils::debug::DebugDisplay;
-
-macro_rules! to_server {
-    ($commands:expr, $msg:expr) => {
-        $commands.trigger(SendMessageToServerEvent($msg.into()));
-    };
-}
 
 pub fn refresh_tiles(
     mut commands: Commands,

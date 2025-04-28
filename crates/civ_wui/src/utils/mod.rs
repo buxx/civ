@@ -1,3 +1,4 @@
+pub mod bridge;
 use std::path::PathBuf;
 
 #[cfg(not(target_arch = "wasm32"))]
