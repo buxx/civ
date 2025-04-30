@@ -1861,6 +1861,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "civ_gui"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "async-wsocket",
+ "bevy",
+ "bevy_async_task",
+ "bevy_egui",
+ "bincode",
+ "bon",
+ "civ_common",
+ "civ_server",
+ "civ_world",
+ "clap",
+ "crossbeam",
+ "derive_more 2.0.1",
+ "env_logger",
+ "eval-macro",
+ "futures",
+ "glam",
+ "hexx",
+ "home",
+ "image",
+ "js-sys",
+ "log",
+ "message-io",
+ "rand",
+ "serde",
+ "serde_json",
+ "strum 0.26.3",
+ "strum_macros 0.26.4",
+ "thiserror 2.0.6",
+ "uuid",
+ "wasm-bindgen",
+ "wasm-cookies",
+ "web-sys",
+]
+
+[[package]]
 name = "civ_server"
 version = "0.1.0"
 dependencies = [
@@ -1921,45 +1960,6 @@ dependencies = [
  "serde",
  "thiserror 2.0.6",
  "weighted_rand",
-]
-
-[[package]]
-name = "civ_wui"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "async-wsocket",
- "bevy",
- "bevy_async_task",
- "bevy_egui",
- "bincode",
- "bon",
- "civ_common",
- "civ_server",
- "civ_world",
- "clap",
- "crossbeam",
- "derive_more 2.0.1",
- "env_logger",
- "eval-macro",
- "futures",
- "glam",
- "hexx",
- "home",
- "image",
- "js-sys",
- "log",
- "message-io",
- "rand",
- "serde",
- "serde_json",
- "strum 0.26.3",
- "strum_macros 0.26.4",
- "thiserror 2.0.6",
- "uuid",
- "wasm-bindgen",
- "wasm-cookies",
- "web-sys",
 ]
 
 [[package]]

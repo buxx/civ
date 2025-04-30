@@ -33,13 +33,9 @@ impl Plugin for MenuPlugin {
 
         app.add_plugins(EguiPlugin)
             .insert_resource(state)
-            // .add_systems(OnEnter(AppState::Menu), (spawn_menu, auto_login))
             .add_systems(OnEnter(AppState::Menu), spawn_menu)
             .add_systems(Update, gui::gui.run_if(in_state(AppState::Menu)))
             .add_systems(OnExit(AppState::Menu), despawn_menu)
-            // .add_observer(join::connect)
-            // .add_observer(take_place)
-            // .add_observer(react_establishment)
             .add_observer(switch);
     }
 }

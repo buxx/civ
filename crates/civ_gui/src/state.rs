@@ -29,15 +29,6 @@ pub struct ClientIdResource(pub ClientId);
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct InjectionResource(pub Injection);
 
-// #[derive(Resource, Default, Debug)]
-// pub struct ServerResource {
-//     pub connected: Option<ServerAddress>,
-//     pub resume: Option<ServerResume>,
-//     pub flag: Option<Flag>,
-//     pub player_id: String,
-//     pub keep_connected: bool,
-// }
-
 #[derive(Builder)]
 pub struct StatePlugin {
     init_state: Option<AppState>,

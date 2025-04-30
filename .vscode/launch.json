@@ -48,7 +48,7 @@
                 "args": [
                     "build",
                     "--example=map_display",
-                    "--package=civ_wui"
+                    "--package=civ_gui"
                 ],
                 "filter": {
                     "name": "map_display",

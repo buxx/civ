@@ -748,8 +748,8 @@ mod test {
 
     impl TestingRunnerContext {
         fn new() -> Self {
-            let (from_clients_sender, from_clients_receiver): FromClientsChannels = unbounded();
-            let (to_clients_sender, to_clients_receiver): ToClientsChannels = unbounded();
+            let (from_clients_sender, from_clients_receiver) = unbounded();
+            let (to_clients_sender, to_clients_receiver) = unbounded();
 
             Self {
                 from_clients_sender,

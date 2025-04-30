@@ -4,15 +4,17 @@ use std::thread;
 use async_std::channel::{unbounded, Receiver, Sender};
 use async_std::task;
 use bevy::prelude::*;
-use civ_wui::map::MapPlugin;
+use civ_gui::bridge::BridgePlugin;
+use civ_gui::context::Context;
+use civ_gui::inject::Injection;
+use civ_gui::map::MapPlugin;
 use wasm_bindgen::prelude::*;
 
-use civ_wui::core::CorePlugin;
-use civ_wui::ingame::InGamePlugin;
-use civ_wui::menu::MenuPlugin;
-use civ_wui::network::NetworkPlugin;
-use civ_wui::state::{AppState, StatePlugin};
-use civ_wui::window::window_plugin;
+use civ_gui::core::CorePlugin;
+use civ_gui::ingame::InGamePlugin;
+use civ_gui::menu::MenuPlugin;
+use civ_gui::state::{AppState, StatePlugin};
+use civ_gui::window::window_plugin;
 use common::game::slice::GameSlice;
 use common::geo::ImaginaryWorldPoint;
 use common::network::message::{
@@ -25,7 +27,7 @@ use common::world::reader::WorldReader;
 use common::world::{CtxTile, TerrainType, Tile};
 
 #[cfg(feature = "debug")]
-use civ_wui::debug::DebugPlugin;
+use civ_gui::debug::DebugPlugin;
 
 #[wasm_bindgen(start)]
 fn entrypoint() -> Result<(), JsValue> {
@@ -158,14 +160,14 @@ fn entrypoint() -> Result<(), JsValue> {
     let cities = vec![];
     let units = vec![];
     let game_slice = GameSlice::new(partial_world, cities, units);
-    // let injection = Injection::builder().game_slice(game_slice).build();
+    let injection = Injection::builder().game_slice(game_slice).build();
 
     let (to_server_sender, to_server_receiver): (
         Sender<ClientToServerMessage>,
         Receiver<ClientToServerMessage>,
     ) = unbounded();
 
-    let (from_server_sender, from_server_receiver): (
+    let (from_server_sender, _): (
         Sender<ServerToClientMessage>,
         Receiver<ServerToClientMessage>,
     ) = unbounded();
@@ -227,19 +229,17 @@ fn entrypoint() -> Result<(), JsValue> {
     });
 
     let mut app = App::new();
+    let context = Context::new();
     app.add_plugins((
         DefaultPlugins
             .set(window_plugin())
             .set(ImagePlugin::default_nearest()),
         StatePlugin::builder()
             .init_state(AppState::InGame)
-            // .injection(injection)
+            .injection(injection)
             .build(),
-        NetworkPlugin::builder()
-            .to_server_channels((to_server_sender, to_server_receiver))
-            .from_server_channels((from_server_sender, from_server_receiver))
-            .build(),
-        MenuPlugin,
+        BridgePlugin,
+        MenuPlugin::new(context.clone()),
         CorePlugin,
         InGamePlugin,
         MapPlugin,

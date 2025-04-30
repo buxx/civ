@@ -1,5 +1,5 @@
 [package]
-name = "civ_wui"
+name = "civ_gui"
 version = "0.1.0"
 edition = "2021"
 
