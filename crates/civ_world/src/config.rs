@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 
 use bon::Builder;
+use derive_more::Constructor;
 
 use crate::Args;
 
 // TODO: For now, contain same than Args, but will contains climatic info, etc
-#[derive(Debug, Builder, Clone)]
+#[derive(Debug, Builder, Clone, Constructor)]
 pub struct WorldConfig {
     target: PathBuf,
     width: usize,

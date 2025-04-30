@@ -13,6 +13,7 @@ use common::game::GameFrame;
 use common::network::message::ClientToServerEstablishmentMessage;
 use common::network::Client;
 use common::utils::Progress;
+use derive_more::Constructor;
 use uuid::Uuid;
 
 use crate::bridge::EmbeddedServerReady;
@@ -76,7 +77,7 @@ impl SingleConfiguration {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Constructor)]
 pub struct FromScratchConfig {
     world: WorldConfig,
     server: ServerConfig,

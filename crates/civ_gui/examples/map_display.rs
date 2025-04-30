@@ -238,7 +238,7 @@ fn entrypoint() -> Result<(), JsValue> {
             .init_state(AppState::InGame)
             .injection(injection)
             .build(),
-        BridgePlugin,
+        BridgePlugin::builder().build(),
         MenuPlugin::new(context.clone()),
         CorePlugin,
         InGamePlugin,

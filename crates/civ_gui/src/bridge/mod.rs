@@ -1,6 +1,7 @@
 use async_std::channel::{unbounded, Receiver, Sender};
 
 use bevy::prelude::*;
+use bon::Builder;
 #[cfg(not(target_arch = "wasm32"))]
 use civ_world::WorldGeneratorError;
 use common::{
@@ -29,8 +30,11 @@ mod take_place;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
 
-#[derive(Default)]
-pub struct BridgePlugin;
+#[derive(Builder)]
+pub struct BridgePlugin {
+    to_server_sender: Option<ClientToServerSenderResource>,
+    from_server_receiver: Option<ServerToClientReceiverResource>,
+}
 
 impl Plugin for BridgePlugin {
     fn build(&self, app: &mut App) {
@@ -45,8 +49,18 @@ impl Plugin for BridgePlugin {
         ) = unbounded();
 
         app.insert_resource(ServerToClientSenderResource(from_server_sender))
-            .insert_resource(ServerToClientReceiverResource(from_server_receiver))
-            .insert_resource(ClientToServerSenderResource(to_server_sender))
+            .insert_resource(
+                self.from_server_receiver
+                    .as_ref()
+                    .unwrap_or(&ServerToClientReceiverResource(from_server_receiver))
+                    .clone(),
+            )
+            .insert_resource(
+                self.to_server_sender
+                    .as_ref()
+                    .unwrap_or(&ClientToServerSenderResource(to_server_sender))
+                    .clone(),
+            )
             .insert_resource(ClientToServerReceiverResource(to_server_receiver))
             .add_observer(connect::connect)
             .add_observer(join::join)
@@ -91,10 +105,10 @@ pub enum InternalBridgeMessage {
 #[derive(Resource)]
 pub struct ClientToServerReceiverResource(pub Receiver<ClientToServerMessage>);
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct ClientToServerSenderResource(pub Sender<ClientToServerMessage>);
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct ServerToClientReceiverResource(pub Receiver<BridgeMessage>);
 
 #[derive(Resource)]

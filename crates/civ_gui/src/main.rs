@@ -45,7 +45,7 @@ fn entrypoint() -> Result<(), JsValue> {
             .set(ImagePlugin::default_nearest()),
         StatePlugin::builder().build(),
         EmbeddedPlugin,
-        BridgePlugin,
+        BridgePlugin::builder().build(),
         // NetworkPlugin::default(),
         UserPlugin,
         MenuPlugin::new(context.clone()),
