@@ -77,6 +77,13 @@ impl SingleConfiguration {
         // FIXME
         Flag::Abkhazia
     }
+
+    fn target(&self) -> &PathBuf {
+        match self {
+            SingleConfiguration::FromScratch(config) => &config.world.target,
+            SingleConfiguration::LoadFrom(_) => todo!(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Constructor)]
@@ -167,6 +174,7 @@ pub fn start_embedded_server(
 
     info!("Start embedded server ...");
     let args = ServerArgs::builder()
+        .world(conf.target().clone())
         .maybe_snapshot(conf.snapshot().cloned())
         .snapshot_interval(conf.snapshot_interval().0)
         .tcp_listen_address("".to_string())

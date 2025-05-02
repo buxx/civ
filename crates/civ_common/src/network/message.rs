@@ -34,6 +34,12 @@ pub enum ClientToServerNetworkMessage {
     Goodbye,
 }
 
+impl From<ClientToServerNetworkMessage> for ClientToServerMessage {
+    fn from(value: ClientToServerNetworkMessage) -> Self {
+        Self::Network(value)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerGameMessage {
     Establishment(ClientToServerEstablishmentMessage),

@@ -32,7 +32,6 @@ pub struct InjectionResource(pub Injection);
 #[derive(Builder)]
 pub struct StatePlugin {
     init_state: Option<AppState>,
-    #[builder(default)]
     injection: Injection,
 }
 
@@ -41,8 +40,6 @@ impl Plugin for StatePlugin {
         app.insert_state(self.init_state.clone().unwrap_or_default())
             .add_sub_state::<InGame>()
             .insert_resource(self.injection.clone())
-            .insert_resource(ClientIdResource::default())
-            // .insert_resource(ServerResource::default());
-    ;
+            .insert_resource(ClientIdResource::default());
     }
 }

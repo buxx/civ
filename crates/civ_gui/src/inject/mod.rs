@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bon::Builder;
 use common::game::slice::GameSlice as BaseGameSlice;
 
-#[derive(Clone, Resource, Debug, Default, Builder)]
+#[derive(Clone, Resource, Default, Builder)]
 pub struct Injection {
     game_slice: Option<BaseGameSlice>,
 }

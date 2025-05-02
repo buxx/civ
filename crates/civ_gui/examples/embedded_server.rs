@@ -1,9 +1,15 @@
 use async_std::channel::unbounded;
 use bevy::prelude::*;
+use civ_gui::inject::Injection;
 use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
 use civ_world::config::WorldConfig;
 use civ_world::writer::FilesWriter;
+use common::game::nation::flag::Flag;
+use common::network::message::{
+    ClientToServerEstablishmentMessage, ClientToServerMessage, ClientToServerNetworkMessage,
+};
 use common::network::Client;
+use common::space::window::Resolution;
 use common::utils::Progress;
 use common::world::TerrainType;
 use std::error::Error;
@@ -33,10 +39,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let world_config = WorldConfig::new(world_path.clone(), 10, 10, 10);
     let client = Client::default();
     let server_config = ServerArgs::builder()
+        .world(world_path.clone())
         .snapshot_interval(0)
         .tcp_listen_address("".to_string())
         .ws_listen_address("".to_string())
         .build();
+    println!("Game data: {}", game_path.display());
 
     let (client_to_server_sender, client_to_server_receiver) = unbounded();
     let (server_to_client_sender, server_to_client_receiver) = unbounded();
@@ -78,7 +86,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let to_server_sender = ClientToServerSenderResource(client_to_server_sender);
     let from_server_receiver = ServerToClientReceiverResource(server_to_client_receiver);
 
-    // FIXME: inject things like ClientToServerEstablishmentMessage
+    let injection = Injection::builder()
+        .to_server_messages(vec![
+            ClientToServerNetworkMessage::Hello(client, Resolution::new(1, 1)).into(),
+            ClientToServerEstablishmentMessage::TakePlace(Flag::Abkhazia).into(),
+        ])
+        .build();
+
+    to_server_sender
+        .0
+        .send_blocking(ClientToServerNetworkMessage::Hello(client, Resolution::new(1, 1)).into())
+        .unwrap();
+    to_server_sender
+        .0
+        .send_blocking(ClientToServerEstablishmentMessage::TakePlace(Flag::Abkhazia).into())
+        .unwrap();
 
     let mut app = App::new();
     let context = Context::new();
@@ -88,7 +110,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .set(ImagePlugin::default_nearest()),
         StatePlugin::builder()
             .init_state(AppState::InGame)
-            // .injection(injection)
+            .injection(injection)
             .build(),
         BridgePlugin::builder()
             .to_server_sender(to_server_sender)
