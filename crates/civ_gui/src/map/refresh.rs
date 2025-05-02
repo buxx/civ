@@ -9,13 +9,13 @@ use common::{
 use crate::{
     assets::tile::{layout, texture_atlas_layout, TILES_ATLAS_PATH, TILE_SIZE},
     bridge::{ClientToServerSenderResource, SendMessageToServerEvent},
-    ingame::{GameSlice, HexTile},
+    ingame::{GameSliceResource, HexTile},
     to_server,
     utils::assets::AsAtlasIndex,
 };
 use crate::{
     core::GameSliceUpdated,
-    ingame::{CameraInitialized, City, Unit},
+    ingame::{CameraInitializedResource, City, Unit},
 };
 use common::game::slice::ClientCity;
 use common::game::slice::ClientUnit;
@@ -73,9 +73,9 @@ pub fn react_game_slice_updated(
     tiles: Query<Entity, With<HexTile>>,
     cities: Query<Entity, With<City>>,
     units: Query<Entity, With<Unit>>,
-    game_slice: Res<GameSlice>,
+    game_slice: Res<GameSliceResource>,
     mut center: ResMut<CurrentCenter>,
-    mut camera_initialized: ResMut<CameraInitialized>,
+    mut camera_initialized: ResMut<CameraInitializedResource>,
 ) {
     if let Some(game_slice) = &game_slice.0 {
         // Tiles

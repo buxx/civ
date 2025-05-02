@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 
-use crate::{core::GameSliceUpdated, ingame::GameWindow};
+use crate::{core::GameSliceUpdated, ingame::GameWindowResource};
 
 pub fn react_game_window_updated(
     _trigger: Trigger<GameSliceUpdated>,
-    window: Res<GameWindow>,
+    window: Res<GameWindowResource>,
     mut _camera: Query<&mut Transform, With<Camera2d>>,
 ) {
     if let Some(_window) = &window.0 {

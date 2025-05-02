@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use common::geo::ImaginaryWorldPoint;
 
-use crate::ingame::LastKnownCursorPosition;
+use crate::ingame::LastKnownCursorPositionResource;
 
 use super::{grid::HexGrid, CenterCameraOnGrid};
 
@@ -52,7 +52,7 @@ pub fn handle_map_offset_by_keys(
 // TODO: claim map only when "x" tiles distance from last. To avoid refreshing too much times.
 pub fn map_dragging(
     buttons: Res<ButtonInput<MouseButton>>,
-    last_position: Res<LastKnownCursorPosition>,
+    last_position: Res<LastKnownCursorPositionResource>,
     windows: Query<&Window, With<PrimaryWindow>>,
     mut camera_query: Query<&mut Transform, With<Camera2d>>,
     mut dragging: ResMut<DraggingMap>,

@@ -17,11 +17,11 @@ pub struct InGamePlugin;
 
 impl Plugin for InGamePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<GameWindow>()
-            .init_resource::<CameraInitialized>()
-            .init_resource::<GameFrame>()
-            .init_resource::<GameSlice>()
-            .init_resource::<LastKnownCursorPosition>()
+        app.init_resource::<GameWindowResource>()
+            .init_resource::<CameraInitializedResource>()
+            .init_resource::<GameFrameResource>()
+            .init_resource::<GameSliceResource>()
+            .init_resource::<LastKnownCursorPositionResource>()
             .add_systems(Startup, inject)
             // TODO: on state ingame only
             .add_systems(
@@ -32,19 +32,19 @@ impl Plugin for InGamePlugin {
 }
 
 #[derive(Resource, Default)]
-pub struct CameraInitialized(pub bool);
+pub struct CameraInitializedResource(pub bool);
 
 #[derive(Resource, Default)]
-pub struct LastKnownCursorPosition(pub Vec2);
+pub struct LastKnownCursorPositionResource(pub Vec2);
 
 #[derive(Resource, Default)]
-pub struct GameFrame(pub Option<BaseGameFrame>);
+pub struct GameFrameResource(pub Option<BaseGameFrame>);
 
 #[derive(Resource, Default, Deref, DerefMut)]
-pub struct GameSlice(pub Option<BaseGameSlice>);
+pub struct GameSliceResource(pub Option<BaseGameSlice>);
 
 #[derive(Resource, Default, Deref, DerefMut)]
-pub struct GameWindow(pub Option<BaseWindow>);
+pub struct GameWindowResource(pub Option<BaseWindow>);
 
 #[derive(Component, Debug)]
 pub struct HexTile;
@@ -61,7 +61,7 @@ pub struct Point(pub WorldPoint);
 pub fn inject(
     mut commands: Commands,
     injection: ResMut<Injection>,
-    mut game_slice: ResMut<GameSlice>,
+    mut game_slice: ResMut<GameSliceResource>,
 ) {
     if let Some(game_slice_) = injection.game_slice() {
         game_slice.0 = Some(game_slice_.clone());

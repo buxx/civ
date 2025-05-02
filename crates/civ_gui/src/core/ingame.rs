@@ -7,7 +7,7 @@ use common::network::message::{
 
 use crate::{
     bridge::MessageReceivedFromServerEvent,
-    ingame::{GameFrame, GameSlice, GameWindow},
+    ingame::{GameFrameResource, GameSliceResource, GameWindowResource},
     menu::state::MenuStateResource,
     state::AppState,
 };
@@ -20,9 +20,9 @@ pub fn react_server_message(
     trigger: Trigger<MessageReceivedFromServerEvent>,
     mut commands: Commands,
     mut state: ResMut<MenuStateResource>,
-    mut frame: ResMut<GameFrame>,
-    mut game_slice: ResMut<GameSlice>,
-    mut window: ResMut<GameWindow>,
+    mut frame: ResMut<GameFrameResource>,
+    mut game_slice: ResMut<GameSliceResource>,
+    mut window: ResMut<GameWindowResource>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
     match &trigger.event().0 {
