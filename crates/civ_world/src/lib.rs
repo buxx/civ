@@ -6,29 +6,32 @@ use clap::Parser;
 use common::{utils::Progress, world::World};
 use generator::Generator;
 use thiserror::Error;
-use writer::FilesWriter;
+use writer::Writer;
 
 pub mod config;
-mod generator;
-mod writer;
+pub mod generator;
+pub mod writer;
 
 #[derive(Parser, Debug, Builder)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    target: PathBuf,
-    width: usize,
-    height: usize,
+    pub target: PathBuf,
+    pub width: usize,
+    pub height: usize,
     #[builder(default = 5000)]
     #[arg(short, long, default_value_t = 5000)]
-    chunk_size: usize,
+    pub chunk_size: usize,
 }
 
 #[builder]
-pub fn run(
-    args: Args,
+pub fn run<T: Generator>(
+    generator: T,
+    world: &World,
+    target: &PathBuf,
+    writer: &dyn Writer,
     progress: Option<Sender<Progress<WorldGeneratorError>>>,
 ) -> Result<(), WorldGeneratorError> {
-    if let Err(error) = run_(args, progress.clone()) {
+    if let Err(error) = run_(generator, world, target, writer, progress.clone()) {
         progress.map(|p| p.send_blocking(Progress::Error(error.clone())));
         return Err(error);
     }
@@ -36,29 +39,29 @@ pub fn run(
     Ok(())
 }
 
-pub fn run_(
-    args: Args,
+pub fn run_<T: Generator>(
+    generator: T,
+    world: &World,
+    target: &PathBuf,
+    writer: &dyn Writer,
     progress: Option<Sender<Progress<WorldGeneratorError>>>,
 ) -> Result<(), WorldGeneratorError> {
-    if args.width % args.chunk_size > 0 || args.height % args.chunk_size > 0 {
-        return Err(WorldGeneratorError::NotChunkSizeMultiplier(args.chunk_size));
+    if world.width % world.chunk_size > 0 || world.height % world.chunk_size > 0 {
+        return Err(WorldGeneratorError::NotChunkSizeMultiplier(
+            world.chunk_size as usize,
+        ));
     }
 
-    if args.target.exists() {
+    if target.exists() {
         return Err(WorldGeneratorError::TargetAlreadyExist);
     }
 
     let world = World::builder()
-        .chunk_size(args.chunk_size as u64)
-        .width(args.width as u64)
-        .height(args.height as u64)
+        .chunk_size(world.chunk_size)
+        .width(world.width)
+        .height(world.height)
         .build();
-    Generator::new(
-        world,
-        Box::new(FilesWriter::new(args.target.clone())),
-        args.target,
-    )
-    .generate(progress)?;
+    generator.generate(&world, target, writer, progress)?;
 
     Ok(())
 }
@@ -75,4 +78,14 @@ pub enum WorldGeneratorError {
     RonError(#[from] ron::Error),
     #[error("Serialization (bin) error: {0}")]
     BincodeError(String),
+}
+
+impl From<Args> for World {
+    fn from(value: Args) -> Self {
+        Self::builder()
+            .width(value.width as u64)
+            .height(value.height as u64)
+            .chunk_size(value.chunk_size as u64)
+            .build()
+    }
 }

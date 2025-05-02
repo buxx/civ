@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use bon::Builder;
+use common::world::World;
 use derive_more::Constructor;
 
 use crate::Args;
@@ -8,11 +9,11 @@ use crate::Args;
 // TODO: For now, contain same than Args, but will contains climatic info, etc
 #[derive(Debug, Builder, Clone, Constructor)]
 pub struct WorldConfig {
-    target: PathBuf,
-    width: usize,
-    height: usize,
+    pub target: PathBuf,
+    pub width: usize,
+    pub height: usize,
     #[builder(default = 5000)]
-    chunk_size: usize,
+    pub chunk_size: usize,
 }
 
 impl From<WorldConfig> for Args {
@@ -29,5 +30,15 @@ impl From<WorldConfig> for Args {
             height,
             chunk_size,
         }
+    }
+}
+
+impl From<WorldConfig> for World {
+    fn from(value: WorldConfig) -> Self {
+        Self::builder()
+            .width(value.width as u64)
+            .height(value.height as u64)
+            .chunk_size(value.chunk_size as u64)
+            .build()
     }
 }

@@ -7,6 +7,8 @@ use civ_server::config::ServerConfig;
 // TODO: not in wasm32
 use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
 use civ_world::config::WorldConfig;
+use civ_world::generator::random::RandomGenerator;
+use civ_world::writer::FilesWriter;
 use civ_world::{self, WorldGeneratorError};
 use common::game::nation::flag::Flag;
 use common::game::GameFrame;
@@ -104,13 +106,18 @@ fn create_single(
     config: FromScratchConfig,
     progress: &mut Option<Receiver<Progress<WorldGeneratorError>>>,
 ) {
-    let world = config.world.clone();
     let (progress_sender, progress_receiver) = unbounded();
     *progress = Some(progress_receiver);
 
     thread::spawn(move || {
+        let writer = FilesWriter::new(config.world.target.clone());
+        let target = config.world.target.clone();
+        let world = config.world.into();
         let _ = civ_world::run()
-            .args(world.into())
+            .generator(RandomGenerator)
+            .target(&target)
+            .world(&world)
+            .writer(&writer)
             .progress(progress_sender)
             .call();
     });

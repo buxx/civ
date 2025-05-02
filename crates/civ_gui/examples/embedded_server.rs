@@ -2,11 +2,14 @@ use async_std::channel::unbounded;
 use bevy::prelude::*;
 use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
 use civ_world::config::WorldConfig;
+use civ_world::writer::FilesWriter;
 use common::network::Client;
 use common::utils::Progress;
+use common::world::TerrainType;
 use std::error::Error;
 use std::thread;
 use uuid::Uuid;
+use world::generator::PatternGenerator;
 
 use civ_gui::bridge::{BridgePlugin, ClientToServerSenderResource, ServerToClientReceiverResource};
 use civ_gui::context::Context;
@@ -17,15 +20,17 @@ use civ_gui::menu::MenuPlugin;
 use civ_gui::state::{AppState, StatePlugin};
 use civ_gui::window::window_plugin;
 
+mod world;
+
 fn main() -> Result<(), Box<dyn Error>> {
     // let env = env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info");
     // env_logger::init_from_env(env);
 
-    info!("Initialize ...");
+    println!("Initialize ...");
     let tmp_path = std::env::temp_dir();
     let game_path = tmp_path.join(Uuid::new_v4().to_string());
     let world_path = game_path.join("world");
-    let world_config = WorldConfig::new(world_path, 10, 10, 10);
+    let world_config = WorldConfig::new(world_path.clone(), 10, 10, 10);
     let client = Client::default();
     let server_config = ServerArgs::builder()
         .snapshot_interval(0)
@@ -38,11 +43,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (progress_sender, progress_receiver) = unbounded();
 
     // Generate world
-    info!("Generate world");
-    civ_world::run().args(world_config.into()).call()?;
+    println!("Generate world");
+    let generator = PatternGenerator::new([TerrainType::Plain, TerrainType::GrassLand].to_vec());
+    let writer = FilesWriter::new(world_path.clone());
+    let world = world_config.into();
+    civ_world::run()
+        // TODO: Choose generator type by arg
+        .generator(generator)
+        .target(&world_path)
+        .world(&world)
+        .writer(&writer)
+        .call()?;
 
     // Start server
-    info!("Start server");
+    println!("Start server");
     thread::spawn(move || {
         let bridge =
             DirectBridgeBuilder::new(client, client_to_server_receiver, server_to_client_sender);
@@ -54,13 +68,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     });
 
     // Wait server ready
-    info!("Wait server is ready ...");
+    println!("Wait server is ready ...");
     while let Ok(message) = progress_receiver.recv_blocking() {
         if let Progress::Finished = message {
             break;
         }
     }
-    info!("Server ready, start GUI");
+    println!("Server ready, start GUI");
     let to_server_sender = ClientToServerSenderResource(client_to_server_sender);
     let from_server_receiver = ServerToClientReceiverResource(server_to_client_receiver);
 
