@@ -32,6 +32,7 @@ pub struct InjectionResource(pub Injection);
 #[derive(Builder)]
 pub struct StatePlugin {
     init_state: Option<AppState>,
+    #[builder(default)]
     injection: Injection,
 }
 
