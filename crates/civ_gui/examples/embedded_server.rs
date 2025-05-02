@@ -86,13 +86,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let to_server_sender = ClientToServerSenderResource(client_to_server_sender);
     let from_server_receiver = ServerToClientReceiverResource(server_to_client_receiver);
 
-    let injection = Injection::builder()
-        .to_server_messages(vec![
-            ClientToServerNetworkMessage::Hello(client, Resolution::new(1, 1)).into(),
-            ClientToServerEstablishmentMessage::TakePlace(Flag::Abkhazia).into(),
-        ])
-        .build();
-
     to_server_sender
         .0
         .send_blocking(ClientToServerNetworkMessage::Hello(client, Resolution::new(1, 1)).into())
@@ -108,10 +101,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         DefaultPlugins
             .set(window_plugin())
             .set(ImagePlugin::default_nearest()),
-        StatePlugin::builder()
-            .init_state(AppState::InGame)
-            .injection(injection)
-            .build(),
+        StatePlugin::builder().init_state(AppState::InGame).build(),
         BridgePlugin::builder()
             .to_server_sender(to_server_sender)
             .from_server_receiver(from_server_receiver)
