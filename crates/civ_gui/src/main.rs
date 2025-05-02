@@ -25,7 +25,6 @@ mod core;
 mod debug;
 mod embedded;
 mod ingame;
-mod inject;
 mod map;
 mod menu;
 mod network;
@@ -51,7 +50,7 @@ fn entrypoint() -> Result<(), JsValue> {
         MenuPlugin::new(context.clone()),
         CorePlugin,
         MapPlugin,
-        InGamePlugin,
+        InGamePlugin::builder().build(),
     ))
     .insert_resource(ContextResource::new(context));
 

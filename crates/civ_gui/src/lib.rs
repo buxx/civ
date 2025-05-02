@@ -6,7 +6,6 @@ pub mod core;
 pub mod debug;
 pub mod embedded;
 pub mod ingame;
-pub mod inject;
 pub mod map;
 pub mod menu;
 pub mod network;

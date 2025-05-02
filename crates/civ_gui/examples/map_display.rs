@@ -4,14 +4,15 @@ use std::thread;
 use async_std::channel::{unbounded, Receiver, Sender};
 use async_std::task;
 use bevy::prelude::*;
-use civ_gui::bridge::BridgePlugin;
+use civ_gui::bridge::{
+    BridgeMessage, BridgePlugin, ClientToServerSenderResource, ServerToClientReceiverResource,
+};
 use civ_gui::context::Context;
-use civ_gui::inject::Injection;
 use civ_gui::map::MapPlugin;
 use wasm_bindgen::prelude::*;
 
-use civ_gui::core::CorePlugin;
-use civ_gui::ingame::InGamePlugin;
+use civ_gui::core::{CorePlugin, GameSliceUpdated};
+use civ_gui::ingame::{GameSliceResource, InGamePlugin};
 use civ_gui::menu::MenuPlugin;
 use civ_gui::state::{AppState, StatePlugin};
 use civ_gui::window::window_plugin;
@@ -160,14 +161,13 @@ fn entrypoint() -> Result<(), JsValue> {
     let cities = vec![];
     let units = vec![];
     let game_slice = GameSlice::new(partial_world, cities, units);
-    let injection = Injection::builder().game_slice(game_slice).build();
 
     let (to_server_sender, to_server_receiver): (
         Sender<ClientToServerMessage>,
         Receiver<ClientToServerMessage>,
     ) = unbounded();
 
-    let (from_server_sender, _): (
+    let (from_server_sender, from_server_receiver): (
         Sender<ServerToClientMessage>,
         Receiver<ServerToClientMessage>,
     ) = unbounded();
@@ -228,22 +228,38 @@ fn entrypoint() -> Result<(), JsValue> {
         })
     });
 
+    let (from_server_sender_proxy, from_server_receiver_proxy) = unbounded();
+    thread::spawn(move || {
+        while let Ok(message) = from_server_receiver.recv_blocking() {
+            from_server_sender_proxy
+                .send_blocking(BridgeMessage::Server(message))
+                .unwrap();
+        }
+    });
+
+    let init = |mut commands: Commands| {
+        commands.trigger(GameSliceUpdated);
+    };
+
     let mut app = App::new();
     let context = Context::new();
     app.add_plugins((
         DefaultPlugins
             .set(window_plugin())
             .set(ImagePlugin::default_nearest()),
-        StatePlugin::builder()
-            .init_state(AppState::InGame)
-            .injection(injection)
+        StatePlugin::builder().init_state(AppState::InGame).build(),
+        BridgePlugin::builder()
+            .to_server_sender(ClientToServerSenderResource(to_server_sender))
+            .from_server_receiver(ServerToClientReceiverResource(from_server_receiver_proxy))
             .build(),
-        BridgePlugin::builder().build(),
         MenuPlugin::new(context.clone()),
         CorePlugin,
-        InGamePlugin,
+        InGamePlugin::builder()
+            .game_slice(GameSliceResource(Some(game_slice)))
+            .build(),
         MapPlugin,
-    ));
+    ))
+    .add_systems(Startup, init);
 
     #[cfg(feature = "debug")]
     {
