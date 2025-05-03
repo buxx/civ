@@ -1,15 +1,14 @@
 use async_std::channel::unbounded;
 use bevy::prelude::*;
-use civ_gui::inject::Injection;
+use civ_server::state::clients::{ClientState, Clients};
 use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
 use civ_world::config::WorldConfig;
 use civ_world::writer::FilesWriter;
 use common::game::nation::flag::Flag;
-use common::network::message::{
-    ClientToServerEstablishmentMessage, ClientToServerMessage, ClientToServerNetworkMessage,
-};
+use common::geo::ImaginaryWorldPoint;
+use common::network::message::ClientToServerNetworkMessage;
 use common::network::Client;
-use common::space::window::Resolution;
+use common::space::window::{DisplayStep, Resolution, Window};
 use common::utils::Progress;
 use common::world::TerrainType;
 use std::error::Error;
@@ -63,13 +62,37 @@ fn main() -> Result<(), Box<dyn Error>> {
         .writer(&writer)
         .call()?;
 
+    let resolution = Resolution::new(5, 5);
+    let window = Window::new(
+        ImaginaryWorldPoint::new(-3, -3),
+        ImaginaryWorldPoint::new(7, 7),
+        DisplayStep::Close,
+    );
+
     // Start server
     println!("Start server");
     thread::spawn(move || {
+        let clients = Clients::default()
+            .with_count(1)
+            .with_clients(
+                [(*client.client_id(), (resolution, window.clone()))]
+                    .into_iter()
+                    .collect(),
+            )
+            .with_states(
+                [(
+                    *client.player_id(),
+                    ClientState::new(Flag::Abkhazia, window),
+                )]
+                .into_iter()
+                .collect(),
+            );
+        let state = civ_server::state::State::default().with_clients(clients);
         let bridge =
             DirectBridgeBuilder::new(client, client_to_server_receiver, server_to_client_sender);
         let _ = start_server()
             .args(server_config)
+            .state(state)
             .bridge_builder(&bridge)
             .progress(progress_sender)
             .call();
@@ -90,10 +113,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         .0
         .send_blocking(ClientToServerNetworkMessage::Hello(client, Resolution::new(1, 1)).into())
         .unwrap();
-    to_server_sender
-        .0
-        .send_blocking(ClientToServerEstablishmentMessage::TakePlace(Flag::Abkhazia).into())
-        .unwrap();
+    // to_server_sender
+    //     .0
+    //     .send_blocking(ClientToServerEstablishmentMessage::TakePlace(Flag::Abkhazia).into())
+    //     .unwrap();
 
     let mut app = App::new();
     let context = Context::new();
@@ -108,7 +131,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .build(),
         MenuPlugin::new(context.clone()),
         CorePlugin,
-        InGamePlugin,
+        InGamePlugin::builder().build(),
         MapPlugin,
     ));
 

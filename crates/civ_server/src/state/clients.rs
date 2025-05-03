@@ -41,6 +41,21 @@ impl Clients {
         }
     }
 
+    pub fn with_count(mut self, value: usize) -> Self {
+        self.count = value;
+        self
+    }
+
+    pub fn with_clients(mut self, value: HashMap<ClientId, (Resolution, Window)>) -> Self {
+        self.clients = value;
+        self
+    }
+
+    pub fn with_states(mut self, value: HashMap<PlayerId, ClientState>) -> Self {
+        self.states = value;
+        self
+    }
+
     pub fn count(&self) -> usize {
         self.count
     }

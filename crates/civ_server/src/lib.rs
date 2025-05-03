@@ -73,43 +73,17 @@ pub enum Error {
 pub fn start<B: Bridge + 'static>(
     args: Args,
     bridge_builder: &dyn BridgeBuilder<B>,
+    state: Option<State>,
     progress: Option<Sender<Progress<WorldReaderError>>>,
 ) -> Result<(), Error> {
     progress
         .as_ref()
         .map(|s| s.send_blocking(Progress::InProgress(0.)));
     let config = ServerConfig::from(args.clone());
-
     let rules = Std1RuleSet;
-    // TODO: move this code ?
-    let state = match config.snapshot() {
-        Some(snapshot_path) => {
-            let snapshot_task = Box::new(SnapshotTask::new(
-                TaskContext::builder()
-                    .id(TaskId::default())
-                    .start(GameFrame(0))
-                    .end(*config.snapshot_interval())
-                    .build(),
-                snapshot_path.clone(),
-            ));
-
-            match Snapshot::try_from(snapshot_path) {
-                Ok(snapshot) => State::from(snapshot),
-                Err(SnapshotError::Io(error)) => match error {
-                    io::ErrorKind::NotFound => {
-                        info!(
-                            "No snapshot found at {}: create empty state",
-                            snapshot_path.display()
-                        );
-                        State::default()
-                    }
-                    _ => return Err(Error::from(SnapshotError::Io(error))),
-                },
-                Err(error) => return Err(Error::from(error)),
-            }
-            .with_replaced_task_type(TaskType::System(SystemTaskType::Snapshot), snapshot_task)
-        }
-        None => State::default(),
+    let state = match state {
+        Some(state) => state,
+        None => build_state(&config)?,
     };
 
     info!("Read world ...");
@@ -141,4 +115,37 @@ pub fn start<B: Bridge + 'static>(
     runner.join().unwrap();
 
     Ok(())
+}
+
+fn build_state(config: &ServerConfig) -> Result<State, Error> {
+    let state = match config.snapshot() {
+        Some(snapshot_path) => {
+            let snapshot_task = Box::new(SnapshotTask::new(
+                TaskContext::builder()
+                    .id(TaskId::default())
+                    .start(GameFrame(0))
+                    .end(*config.snapshot_interval())
+                    .build(),
+                snapshot_path.clone(),
+            ));
+
+            match Snapshot::try_from(snapshot_path) {
+                Ok(snapshot) => State::from(snapshot),
+                Err(SnapshotError::Io(error)) => match error {
+                    io::ErrorKind::NotFound => {
+                        info!(
+                            "No snapshot found at {}: create empty state",
+                            snapshot_path.display()
+                        );
+                        State::default()
+                    }
+                    _ => return Err(Error::from(SnapshotError::Io(error))),
+                },
+                Err(error) => return Err(Error::from(error)),
+            }
+            .with_replaced_task_type(TaskType::System(SystemTaskType::Snapshot), snapshot_task)
+        }
+        None => State::default(),
+    };
+    Ok(state)
 }

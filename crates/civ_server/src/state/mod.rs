@@ -65,6 +65,11 @@ impl State {
         self
     }
 
+    pub fn with_clients(mut self, clients: Clients) -> Self {
+        self.clients = clients;
+        self
+    }
+
     pub fn frame(&self) -> &GameFrame {
         &self.frame_i
     }
