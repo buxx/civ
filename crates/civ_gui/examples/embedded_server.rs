@@ -1,12 +1,12 @@
 use async_std::channel::unbounded;
 use bevy::prelude::*;
+use civ_gui::menu::join::JoinEvent;
 use civ_server::state::clients::{ClientState, Clients};
 use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
 use civ_world::config::WorldConfig;
 use civ_world::writer::FilesWriter;
 use common::game::nation::flag::Flag;
 use common::geo::ImaginaryWorldPoint;
-use common::network::message::ClientToServerNetworkMessage;
 use common::network::Client;
 use common::space::window::{DisplayStep, Resolution, Window};
 use common::utils::Progress;
@@ -22,7 +22,7 @@ use civ_gui::core::CorePlugin;
 use civ_gui::ingame::InGamePlugin;
 use civ_gui::map::MapPlugin;
 use civ_gui::menu::MenuPlugin;
-use civ_gui::state::{AppState, StatePlugin};
+use civ_gui::state::{AppState, ClientIdResource, StatePlugin};
 use civ_gui::window::window_plugin;
 
 mod world;
@@ -55,7 +55,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let writer = FilesWriter::new(world_path.clone());
     let world = world_config.into();
     civ_world::run()
-        // TODO: Choose generator type by arg
         .generator(generator)
         .target(&world_path)
         .world(&world)
@@ -109,14 +108,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let to_server_sender = ClientToServerSenderResource(client_to_server_sender);
     let from_server_receiver = ServerToClientReceiverResource(server_to_client_receiver);
 
-    to_server_sender
-        .0
-        .send_blocking(ClientToServerNetworkMessage::Hello(client, Resolution::new(1, 1)).into())
-        .unwrap();
-    // to_server_sender
-    //     .0
-    //     .send_blocking(ClientToServerEstablishmentMessage::TakePlace(Flag::Abkhazia).into())
-    //     .unwrap();
+    let init = move |mut commands: Commands| {
+        commands.trigger(JoinEvent(*client.player_id()));
+    };
 
     let mut app = App::new();
     let context = Context::new();
@@ -124,7 +118,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         DefaultPlugins
             .set(window_plugin())
             .set(ImagePlugin::default_nearest()),
-        StatePlugin::builder().init_state(AppState::InGame).build(),
+        StatePlugin::builder()
+            .init_state(AppState::InGame)
+            .client_id(ClientIdResource(*client.client_id()))
+            .build(),
         BridgePlugin::builder()
             .to_server_sender(to_server_sender)
             .from_server_receiver(from_server_receiver)
@@ -133,7 +130,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         CorePlugin,
         InGamePlugin::builder().build(),
         MapPlugin,
-    ));
+    ))
+    .add_systems(Startup, init);
 
     #[cfg(feature = "debug")]
     {

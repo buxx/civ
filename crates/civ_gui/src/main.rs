@@ -2,8 +2,6 @@ use core::CorePlugin;
 
 use bevy::prelude::*;
 use bridge::BridgePlugin;
-#[cfg(not(target_arch = "wasm32"))]
-use clap::Parser;
 use context::{Context, ContextResource};
 #[cfg(feature = "debug")]
 use debug::DebugPlugin;
