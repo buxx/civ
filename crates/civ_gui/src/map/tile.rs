@@ -1,37 +1,23 @@
 use bevy::prelude::*;
 
 use common::geo::{ImaginaryWorldPoint, WorldPoint};
-use common::world::{CtxTile, Tile as BaseTile};
+// use common::world::{CtxTile, Tile as BaseTile};
+use derive_more::Constructor;
 
 use super::AtlasIndex;
 
 #[allow(unused)]
-#[derive(Debug)]
-pub struct HexTileMeta {
+#[derive(Debug, Constructor)]
+pub struct HexTileMeta<T> {
     entity: Entity,
     imaginary: ImaginaryWorldPoint,
     point: Option<WorldPoint>,
-    tile: Option<CtxTile<BaseTile>>,
+    // tile: Option<CtxTile<BaseTile>>,
+    tile: Option<T>,
     atlas: AtlasIndex,
 }
 
-impl HexTileMeta {
-    pub fn new(
-        entity: Entity,
-        imaginary: ImaginaryWorldPoint,
-        point: Option<WorldPoint>,
-        tile: Option<CtxTile<BaseTile>>,
-        atlas: AtlasIndex,
-    ) -> Self {
-        Self {
-            entity,
-            imaginary,
-            point,
-            tile,
-            atlas,
-        }
-    }
-
+impl<T> HexTileMeta<T> {
     pub fn imaginary(&self) -> ImaginaryWorldPoint {
         self.imaginary
     }

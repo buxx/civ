@@ -1,6 +1,7 @@
 pub mod tile;
 use bevy::prelude::*;
-use grid::{CurrentCursorHex, HexGrid};
+use common::world::{CtxTile, Tile};
+use grid::{CurrentCursorHex, HexGridResource};
 use move_::{
     handle_map_offset_by_keys, map_dragging, map_dragging_teardown, react_center_camera_on_grid,
     CurrentCenter, DraggingMap,
@@ -20,7 +21,7 @@ pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<HexGrid>()
+        app.init_resource::<HexGridResource<CtxTile<Tile>>>()
             .init_resource::<CurrentCursorHex>()
             .init_resource::<CurrentCenter>()
             .init_resource::<DraggingMap>()

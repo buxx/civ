@@ -1,14 +1,12 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use common::{
-    network::message::{
-        ClientToServerGameMessage, ClientToServerInGameMessage, ClientToServerMessage,
-    },
+    network::message::ClientToServerInGameMessage,
     space::window::{Resolution, SetWindow},
+    world::{CtxTile, Tile},
 };
 
 use crate::{
     assets::tile::{layout, texture_atlas_layout, TILES_ATLAS_PATH, TILE_SIZE},
-    bridge::{ClientToServerSenderResource, SendMessageToServerEvent},
     ingame::{GameSliceResource, HexTile},
     to_server,
     utils::assets::AsAtlasIndex,
@@ -22,9 +20,7 @@ use common::game::slice::ClientUnit;
 use common::game::slice::GameSlice as BaseGameSlice;
 use hexx::{shapes, *};
 
-use super::{
-    grid::HexGrid, move_::CurrentCenter, tile::HexTileMeta, AtlasIndex, CenterCameraOnGrid,
-};
+use super::{grid::HexGridResource, move_::CurrentCenter, tile::HexTileMeta, CenterCameraOnGrid};
 
 #[cfg(feature = "debug_tiles")]
 use crate::utils::debug::DebugDisplay;
@@ -33,7 +29,7 @@ pub fn refresh_tiles(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
-    grid: Res<HexGrid>,
+    grid: Res<HexGridResource<CtxTile<Tile>>>,
     current: Res<CurrentCenter>,
 ) {
     let window = windows.single();
@@ -63,6 +59,10 @@ pub fn refresh_tiles(
     }
 }
 
+// FIXME Optimizations :
+// - load more than screen
+// - despawn only outdated tiles
+// - manage unit & cities like tiles at server side
 pub fn react_game_slice_updated(
     _trigger: Trigger<GameSliceUpdated>,
     mut commands: Commands,
@@ -152,7 +152,18 @@ pub fn spawn_tiles(
         let tile = world_point.and_then(|p| world.get_tile(&p));
         let relative_point = layout.hex_to_world_pos(hex);
         let atlas_index = tile.atlas_index();
-        let entity_ = hex_tile_entity(&texture, &atlas_layout, relative_point, &atlas_index);
+        let entity_ = (
+            HexTile,
+            Sprite {
+                image: texture.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    index: *atlas_index,
+                    layout: atlas_layout.clone(),
+                }),
+                ..default()
+            },
+            Transform::from_xyz(relative_point.x, relative_point.y, 0.0),
+        );
 
         #[cfg(feature = "debug_tiles")]
         let mut entity = commands.spawn(entity_);
@@ -191,27 +202,7 @@ pub fn spawn_tiles(
     })
     .collect();
 
-    commands.insert_resource(HexGrid::new(entities, layout));
-}
-
-fn hex_tile_entity(
-    texture: &Handle<Image>,
-    atlas_layout: &Handle<TextureAtlasLayout>,
-    relative_point: Vec2,
-    atlas_index: &AtlasIndex,
-) -> (HexTile, Sprite, Transform) {
-    (
-        HexTile,
-        Sprite {
-            image: texture.clone(),
-            texture_atlas: Some(TextureAtlas {
-                index: **atlas_index,
-                layout: atlas_layout.clone(),
-            }),
-            ..default()
-        },
-        Transform::from_xyz(relative_point.x, relative_point.y, 0.0),
-    )
+    commands.insert_resource(HexGridResource::new(entities, layout));
 }
 
 pub fn city_bundle(city: &ClientCity) -> (City, Transform) {

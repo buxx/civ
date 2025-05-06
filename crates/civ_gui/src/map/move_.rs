@@ -1,9 +1,12 @@
 use bevy::{prelude::*, window::PrimaryWindow};
-use common::geo::ImaginaryWorldPoint;
+use common::{
+    geo::ImaginaryWorldPoint,
+    world::{CtxTile, Tile},
+};
 
 use crate::ingame::LastKnownCursorPositionResource;
 
-use super::{grid::HexGrid, CenterCameraOnGrid};
+use super::{grid::HexGridResource, CenterCameraOnGrid};
 
 #[derive(Resource, Deref, DerefMut, Default)]
 pub struct CurrentCenter(pub Option<ImaginaryWorldPoint>);
@@ -85,7 +88,7 @@ pub fn map_dragging_teardown(
 pub fn react_center_camera_on_grid(
     _trigger: Trigger<CenterCameraOnGrid>,
     mut camera: Query<&mut Transform, With<Camera2d>>,
-    grid: Res<HexGrid>,
+    grid: Res<HexGridResource<CtxTile<Tile>>>,
 ) {
     let origin = grid.layout.origin;
     let translation = camera.single().translation;
