@@ -1,12 +1,14 @@
 use async_std::channel::unbounded;
 use bevy::prelude::*;
 use civ_gui::menu::join::JoinEvent;
+use civ_server::game::unit::Unit;
 use civ_server::state::clients::{ClientState, Clients};
 use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
 use civ_world::config::WorldConfig;
 use civ_world::writer::FilesWriter;
 use common::game::nation::flag::Flag;
-use common::geo::ImaginaryWorldPoint;
+use common::game::unit::UnitType;
+use common::geo::{GeoContext, ImaginaryWorldPoint, WorldPoint};
 use common::network::Client;
 use common::space::window::{DisplayStep, Resolution, Window};
 use common::utils::Progress;
@@ -68,6 +70,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         DisplayStep::Close,
     );
 
+    let settler = Unit::builder()
+        .id(Uuid::new_v4().into())
+        .type_(UnitType::Settlers)
+        .flag(Flag::Abkhazia)
+        .geo(GeoContext::builder().point(WorldPoint::new(5, 5)).build())
+        .build();
+
+    let cities = vec![];
+    let units = vec![settler];
+
     // Start server
     println!("Start server");
     thread::spawn(move || {
@@ -86,7 +98,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .into_iter()
                 .collect(),
             );
-        let state = civ_server::state::State::default().with_clients(clients);
+        let state = civ_server::state::State::default()
+            .with_clients(clients)
+            .with_cities(cities)
+            .with_units(units);
         let bridge =
             DirectBridgeBuilder::new(client, client_to_server_receiver, server_to_client_sender);
         let _ = start_server()

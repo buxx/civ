@@ -26,6 +26,12 @@ impl Display for UnitId {
     }
 }
 
+impl From<Uuid> for UnitId {
+    fn from(value: Uuid) -> Self {
+        Self(value)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum UnitType {
     Warriors,

@@ -35,7 +35,7 @@ pub fn react_server_message(
                     next_state.set(AppState::InGame);
                 }
             }
-            ServerToClientEstablishmentMessage::TakePlaceRefused(reason) => {
+            ServerToClientEstablishmentMessage::TakePlaceRefused(_reason) => {
                 todo!()
             }
         },

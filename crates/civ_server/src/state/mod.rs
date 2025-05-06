@@ -70,6 +70,18 @@ impl State {
         self
     }
 
+    pub fn with_cities(mut self, cities: Vec<City>) -> Self {
+        self.cities = cities;
+        self.index.reindex_cities(&self.cities);
+        self
+    }
+
+    pub fn with_units(mut self, units: Vec<Unit>) -> Self {
+        self.units = units;
+        self.index.reindex_units(&self.units);
+        self
+    }
+
     pub fn frame(&self) -> &GameFrame {
         &self.frame_i
     }
