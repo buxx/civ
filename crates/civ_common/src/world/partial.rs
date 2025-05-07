@@ -1,4 +1,7 @@
-use crate::geo::{ImaginaryWorldPoint, WorldPoint};
+use crate::{
+    game::slice::{ClientCity, ClientUnit},
+    geo::{ImaginaryWorldPoint, WorldPoint},
+};
 use serde::{Deserialize, Serialize};
 
 use super::{CtxTile, Tile};
@@ -92,12 +95,17 @@ impl PartialWorld {
         ImaginaryWorldPoint::new(world_x as i64, world_y as i64)
     }
 
-    pub fn get_tile(&self, point: &WorldPoint) -> Option<&CtxTile<Tile>> {
-        let rel_point = self
-            .original
-            .relative_to((point.x as i32, point.y as i32))?;
+    pub fn tile_at(&self, point: &WorldPoint) -> Vec<&CtxTile<Tile>> {
+        let rel_point = match self.original.relative_to((point.x as i32, point.y as i32)) {
+            Some(rel_point) => rel_point,
+            None => return vec![],
+        };
         let index = (rel_point.y * self.height as i64) + (rel_point.x % self.width as i64);
-        self.tiles.get(index as usize)
+
+        match self.tiles.get(index as usize) {
+            Some(tile) => vec![tile],
+            None => vec![],
+        }
     }
 }
 
@@ -145,7 +153,7 @@ mod test {
             ],
         );
         assert_eq!(
-            world.get_tile(&WorldPoint::new(6, 6)),
+            world.tile_at(&WorldPoint::new(6, 6)),
             Some(&CtxTile::Visible(Tile::new(TerrainType::GrassLand)))
         );
     }
@@ -221,7 +229,7 @@ mod test {
     fn test_get_tile_by_one(#[case] point: (u64, u64), #[case] expected_terrain: TerrainType) {
         let world = partial_world_by_one();
         assert_eq!(
-            world.get_tile(&point.into()),
+            world.tile_at(&point.into()),
             Some(&CtxTile::Visible(Tile::new(expected_terrain)))
         );
     }
@@ -301,7 +309,7 @@ mod test {
     fn test_get_tile_by_two(#[case] point: (u64, u64), #[case] expected_terrain: TerrainType) {
         let world = create_partial_world_various_by_two();
         assert_eq!(
-            world.get_tile(&point.into()),
+            world.tile_at(&point.into()),
             Some(&CtxTile::Visible(Tile::new(expected_terrain)))
         );
     }

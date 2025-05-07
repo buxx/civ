@@ -1877,6 +1877,7 @@ dependencies = [
  "clap",
  "crossbeam",
  "derive_more 2.0.1",
+ "dyn-clone",
  "env_logger",
  "eval-macro",
  "futures",

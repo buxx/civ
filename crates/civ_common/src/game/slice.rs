@@ -1,7 +1,10 @@
 use bon::Builder;
 use serde::{Deserialize, Serialize};
 
-use crate::{geo::GeoContext, world::partial::PartialWorld};
+use crate::{
+    geo::{GeoContext, WorldPoint},
+    world::partial::PartialWorld,
+};
 
 use super::{
     city::{CityExploitation, CityId, CityProduction},
@@ -45,6 +48,22 @@ impl GameSlice {
 
     pub fn units_mut(&mut self) -> &mut Vec<ClientUnit> {
         &mut self.units
+    }
+
+    // FIXME: cities by index like tiles
+    pub fn cities_at(&self, point: &WorldPoint) -> Vec<&ClientCity> {
+        self.cities
+            .iter()
+            .filter(|c| c.geo().point() == point)
+            .collect()
+    }
+
+    // FIXME: cities by index like tiles
+    pub fn units_at(&self, point: &WorldPoint) -> Vec<&ClientUnit> {
+        self.units
+            .iter()
+            .filter(|c| c.geo().point() == point)
+            .collect()
     }
 }
 

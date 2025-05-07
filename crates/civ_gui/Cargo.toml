@@ -16,6 +16,7 @@ env_logger.workspace = true
 log.workspace = true
 bon.workspace = true
 uuid.workspace = true
+dyn-clone.workspace = true
 crossbeam.workspace = true
 js-sys = "0.3.77"
 wasm-bindgen = "0.2.100"

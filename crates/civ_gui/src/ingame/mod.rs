@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 use bon::Builder;
-use common::game::slice::ClientCity;
-use common::game::{
-    slice::ClientUnit, slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame,
-};
+use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame};
 use common::geo::WorldPoint;
 use common::space::window::Window as BaseWindow;
 use input::update_last_known_cursor_position;
@@ -51,14 +48,14 @@ pub struct GameSliceResource(pub Option<BaseGameSlice>);
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct GameWindowResource(pub Option<BaseWindow>);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Clone, Copy)]
 pub struct HexTile;
 
-#[derive(Component, Deref, DerefMut)]
-pub struct Unit(pub ClientUnit);
+#[derive(Component, Debug, Clone, Copy)]
+pub struct Unit;
 
-#[derive(Component, Deref, DerefMut)]
-pub struct City(pub ClientCity);
+#[derive(Component, Debug, Clone, Copy)]
+pub struct City;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct Point(pub WorldPoint);

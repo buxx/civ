@@ -1,24 +1,10 @@
 use common::{
-    game::slice::GameSlice,
-    geo::WorldPoint,
+    game::slice::{ClientCity, ClientUnit},
     world::{CtxTile, TerrainType, Tile},
 };
+use dyn_clone::DynClone;
 
 use crate::map::AtlasIndex;
-
-pub trait AsAtlasIndex {
-    fn atlas_index(&self) -> AtlasIndex;
-}
-
-impl AsAtlasIndex for Option<&CtxTile<Tile>> {
-    fn atlas_index(&self) -> AtlasIndex {
-        self.map(|tile| match tile {
-            CtxTile::Outside => AtlasIndex(4),
-            CtxTile::Visible(tile) => terrain_type_index(&tile.type_()),
-        })
-        .unwrap_or(AtlasIndex(3))
-    }
-}
 
 fn terrain_type_index(terrain: &TerrainType) -> AtlasIndex {
     match terrain {
@@ -27,13 +13,28 @@ fn terrain_type_index(terrain: &TerrainType) -> AtlasIndex {
     }
 }
 
-pub trait Displayable {
+pub trait Displayable: DynClone {
     fn atlas_index(&self) -> AtlasIndex;
 }
+dyn_clone::clone_trait_object!(Displayable);
 
-pub fn tile_display<'a>(
-    game_slice: &'a GameSlice,
-    point: &'a WorldPoint,
-) -> Option<Box<&'a dyn Displayable>> {
-    todo!()
+impl Displayable for CtxTile<Tile> {
+    fn atlas_index(&self) -> AtlasIndex {
+        match self {
+            CtxTile::Outside => AtlasIndex(4),
+            CtxTile::Visible(tile) => terrain_type_index(&tile.type_()),
+        }
+    }
+}
+
+impl Displayable for ClientUnit {
+    fn atlas_index(&self) -> AtlasIndex {
+        AtlasIndex(4)
+    }
+}
+
+impl Displayable for ClientCity {
+    fn atlas_index(&self) -> AtlasIndex {
+        AtlasIndex(4)
+    }
 }
