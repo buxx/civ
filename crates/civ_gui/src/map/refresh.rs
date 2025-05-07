@@ -100,6 +100,7 @@ pub fn react_game_slice_updated(
                     .collect::<Vec<CtxTile<Tile>>>()
             },
             HexTile,
+            0.0,
         );
 
         // Cities
@@ -122,6 +123,7 @@ pub fn react_game_slice_updated(
                     .collect::<Vec<ClientCity>>()
             },
             City,
+            1.0,
         );
 
         // Units
@@ -144,6 +146,7 @@ pub fn react_game_slice_updated(
                     .collect::<Vec<ClientUnit>>()
             },
             Unit,
+            1.0,
         );
 
         if !camera_initialized.0 && center.0.is_some() {
@@ -163,6 +166,7 @@ fn spawn_game_slice<F, T, C>(
     current: &mut ResMut<CurrentCenter>,
     getter: F,
     component: C,
+    z: f32,
 ) where
     F: Fn(&WorldPoint) -> Vec<T>,
     T: Displayable + Clone + Send + Sync + 'static,
@@ -213,7 +217,7 @@ fn spawn_game_slice<F, T, C>(
                             }),
                             ..default()
                         },
-                        Transform::from_xyz(relative_point.x, relative_point.y, 0.0),
+                        Transform::from_xyz(relative_point.x, relative_point.y, z),
                     );
 
                     #[cfg(feature = "debug_tiles")]

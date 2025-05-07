@@ -29,7 +29,7 @@ impl Displayable for CtxTile<Tile> {
 
 impl Displayable for ClientUnit {
     fn atlas_index(&self) -> AtlasIndex {
-        AtlasIndex(4)
+        AtlasIndex(5)
     }
 }
 
