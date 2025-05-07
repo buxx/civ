@@ -1,5 +1,6 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use common::{
+    geo::ImaginaryWorldPoint,
     network::message::ClientToServerInGameMessage,
     space::window::{Resolution, SetWindow},
     world::{CtxTile, Tile},
@@ -9,7 +10,7 @@ use crate::{
     assets::tile::{layout, texture_atlas_layout, TILES_ATLAS_PATH, TILE_SIZE},
     ingame::{GameSliceResource, HexTile},
     to_server,
-    utils::assets::AsAtlasIndex,
+    utils::assets::{tile_display, AsAtlasIndex},
 };
 use crate::{
     core::GameSliceUpdated,
@@ -82,7 +83,7 @@ pub fn react_game_slice_updated(
         for entity in tiles.iter() {
             commands.entity(entity).despawn_recursive();
         }
-        spawn_tiles(
+        spawn_game_slice(
             &mut commands,
             windows,
             cameras,
@@ -115,7 +116,7 @@ pub fn react_game_slice_updated(
     }
 }
 
-pub fn spawn_tiles(
+pub fn spawn_game_slice(
     commands: &mut Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
@@ -127,10 +128,11 @@ pub fn spawn_tiles(
     let window = windows.single();
     let (_, cam_transform) = cameras.single();
     let texture = asset_server.load(TILES_ATLAS_PATH);
+    // FIXME: .add ?
     let atlas_layout = atlas_layouts.add(texture_atlas_layout());
     let world = game_slice.world();
     let center = world.imaginary_world_point_for_center_rel((0, 0));
-    let layout = layout(&center);
+
     current.0 = Some(center);
 
     let window_width = window.width() * cam_transform.scale().x;
@@ -141,6 +143,27 @@ pub fn spawn_tiles(
     let tiles_size = tiles_size * 2;
 
     // FIXME size according to window + zoom + hex size
+    spawn_game_slice_(
+        commands,
+        game_slice,
+        &center,
+        tiles_size,
+        texture,
+        atlas_layout,
+    );
+}
+
+fn spawn_game_slice_(
+    commands: &mut Commands,
+    game_slice: &BaseGameSlice,
+    center: &ImaginaryWorldPoint,
+    tiles_size: i32,
+    texture: Handle<Image>,
+    atlas_layout: Handle<TextureAtlasLayout>,
+) {
+    let layout = layout(center);
+    let world = game_slice.world();
+
     let entities = shapes::parallelogram(
         hex(-(tiles_size / 2), -(tiles_size / 2)),
         hex(tiles_size / 2, tiles_size / 2),

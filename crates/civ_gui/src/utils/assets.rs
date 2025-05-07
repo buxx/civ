@@ -1,4 +1,8 @@
-use common::world::{CtxTile, TerrainType, Tile};
+use common::{
+    game::slice::GameSlice,
+    geo::WorldPoint,
+    world::{CtxTile, TerrainType, Tile},
+};
 
 use crate::map::AtlasIndex;
 
@@ -21,4 +25,15 @@ fn terrain_type_index(terrain: &TerrainType) -> AtlasIndex {
         TerrainType::GrassLand => AtlasIndex(0),
         TerrainType::Plain => AtlasIndex(1),
     }
+}
+
+pub trait Displayable {
+    fn atlas_index(&self) -> AtlasIndex;
+}
+
+pub fn tile_display<'a>(
+    game_slice: &'a GameSlice,
+    point: &'a WorldPoint,
+) -> Option<Box<&'a dyn Displayable>> {
+    todo!()
 }
