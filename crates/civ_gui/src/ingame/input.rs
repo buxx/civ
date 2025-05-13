@@ -1,4 +1,7 @@
 use bevy::{prelude::*, window::PrimaryWindow};
+use common::game::slice::{ClientCity, ClientUnit};
+
+use crate::map::grid::HexGridResource;
 
 use super::LastKnownCursorPositionResource;
 

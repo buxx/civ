@@ -1,5 +1,7 @@
 use async_std::channel::unbounded;
 use bevy::prelude::*;
+#[cfg(feature = "debug")]
+use civ_gui::debug::DebugPlugin;
 use civ_gui::menu::join::JoinEvent;
 use civ_server::game::unit::Unit;
 use civ_server::state::clients::{ClientState, Clients};

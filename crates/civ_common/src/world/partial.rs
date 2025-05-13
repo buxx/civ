@@ -154,7 +154,7 @@ mod test {
         );
         assert_eq!(
             world.tile_at(&WorldPoint::new(6, 6)),
-            Some(&CtxTile::Visible(Tile::new(TerrainType::GrassLand)))
+            vec!(&CtxTile::Visible(Tile::new(TerrainType::GrassLand)))
         );
     }
 
@@ -230,7 +230,7 @@ mod test {
         let world = partial_world_by_one();
         assert_eq!(
             world.tile_at(&point.into()),
-            Some(&CtxTile::Visible(Tile::new(expected_terrain)))
+            vec!(&CtxTile::Visible(Tile::new(expected_terrain)))
         );
     }
 
@@ -310,7 +310,7 @@ mod test {
         let world = create_partial_world_various_by_two();
         assert_eq!(
             world.tile_at(&point.into()),
-            Some(&CtxTile::Visible(Tile::new(expected_terrain)))
+            vec!(&CtxTile::Visible(Tile::new(expected_terrain)))
         );
     }
 }

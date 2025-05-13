@@ -384,42 +384,45 @@ mod test {
         }
 
         for (relative, expected) in vec![
-            ((-2, -2), Some(TerrainType::Plain)),
-            ((-2, -1), Some(TerrainType::GrassLand)),
-            ((-2, 0), Some(TerrainType::Plain)),
-            ((-2, 1), Some(TerrainType::GrassLand)),
-            ((-2, 2), Some(TerrainType::Plain)),
-            ((-1, -2), Some(TerrainType::Plain)),
-            ((-1, -1), Some(TerrainType::GrassLand)),
-            ((-1, 0), Some(TerrainType::Plain)),
-            ((-1, 1), Some(TerrainType::GrassLand)),
-            ((-1, 2), Some(TerrainType::Plain)),
-            ((0, -2), Some(TerrainType::Plain)),
-            ((0, -1), Some(TerrainType::GrassLand)),
-            ((0, 0), Some(TerrainType::Plain)),
-            ((0, 1), Some(TerrainType::GrassLand)),
-            ((0, 2), Some(TerrainType::Plain)),
-            ((1, -2), Some(TerrainType::Plain)),
-            ((1, -1), Some(TerrainType::GrassLand)),
-            ((1, 0), Some(TerrainType::Plain)),
-            ((1, 1), Some(TerrainType::GrassLand)),
-            ((1, 2), Some(TerrainType::Plain)),
-            ((2, -2), Some(TerrainType::Plain)),
-            ((2, -1), Some(TerrainType::GrassLand)),
-            ((2, 0), Some(TerrainType::Plain)),
-            ((2, 1), Some(TerrainType::GrassLand)),
-            ((2, 2), Some(TerrainType::Plain)),
+            ((-2, -2), TerrainType::Plain),
+            ((-2, -1), TerrainType::GrassLand),
+            ((-2, 0), TerrainType::Plain),
+            ((-2, 1), TerrainType::GrassLand),
+            ((-2, 2), TerrainType::Plain),
+            ((-1, -2), TerrainType::Plain),
+            ((-1, -1), TerrainType::GrassLand),
+            ((-1, 0), TerrainType::Plain),
+            ((-1, 1), TerrainType::GrassLand),
+            ((-1, 2), TerrainType::Plain),
+            ((0, -2), TerrainType::Plain),
+            ((0, -1), TerrainType::GrassLand),
+            ((0, 0), TerrainType::Plain),
+            ((0, 1), TerrainType::GrassLand),
+            ((0, 2), TerrainType::Plain),
+            ((1, -2), TerrainType::Plain),
+            ((1, -1), TerrainType::GrassLand),
+            ((1, 0), TerrainType::Plain),
+            ((1, 1), TerrainType::GrassLand),
+            ((1, 2), TerrainType::Plain),
+            ((2, -2), TerrainType::Plain),
+            ((2, -1), TerrainType::GrassLand),
+            ((2, 0), TerrainType::Plain),
+            ((2, 1), TerrainType::GrassLand),
+            ((2, 2), TerrainType::Plain),
         ] {
-            assert_eq!(
-                match world
-                    .tile_at(world.try_world_point_for_center_rel(&relative).unwrap())
-                    .unwrap()
-                {
+            let value: Vec<Option<TerrainType>> = world
+                .tile_at(
+                    &world
+                        .try_world_point_for_center_rel((relative.0 as isize, relative.1 as isize))
+                        .unwrap(),
+                )
+                .iter()
+                .map(|v| match v {
                     CtxTile::Outside => None,
                     CtxTile::Visible(tile) => Some(tile.type_()),
-                },
-                expected
-            );
+                })
+                .collect();
+            assert_eq!(value, vec![Some(expected)]);
         }
     }
 }

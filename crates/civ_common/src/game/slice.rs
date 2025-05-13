@@ -51,6 +51,7 @@ impl GameSlice {
     }
 
     // FIXME: cities by index like tiles
+    // FIXME: should be one Option<city>, (and its complicated for refresh)
     pub fn cities_at(&self, point: &WorldPoint) -> Vec<&ClientCity> {
         self.cities
             .iter()
