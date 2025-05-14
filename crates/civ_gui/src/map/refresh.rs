@@ -1,4 +1,4 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use common::{
     geo::WorldPoint,
     network::message::ClientToServerInGameMessage,
@@ -7,21 +7,25 @@ use common::{
 };
 
 use crate::{
-    assets::tile::{layout, texture_atlas_layout, TILES_ATLAS_PATH, TILE_SIZE},
+    assets::tile::{layout, tiles_texture_atlas_layout, TILES_ATLAS_PATH, TILE_SIZE},
     ingame::{GameSliceResource, HexTile},
     to_server,
-    utils::assets::Displayable,
+    utils::assets::IntoBundle,
 };
 use crate::{
     core::GameSliceUpdated,
-    ingame::{CameraInitializedResource, City, Unit},
+    ingame::{CameraInitializedResource, HexCity, HexUnit},
 };
 use common::game::slice::ClientCity;
 use common::game::slice::ClientUnit;
 use common::game::slice::GameSlice as BaseGameSlice;
 use hexx::{shapes, *};
 
-use super::{grid::HexGridResource, move_::CurrentCenter, tile::HexMeta, CenterCameraOnGrid};
+use super::{
+    grid::{GridTile, HexGridResource},
+    move_::CurrentCenter,
+    CenterCameraOnGrid,
+};
 
 #[cfg(feature = "debug_tiles")]
 use crate::utils::debug::DebugDisplay;
@@ -38,7 +42,7 @@ pub fn refresh_tiles(
     let (camera, cam_transform) = cameras.single();
     if let Ok(world_point) = camera.viewport_to_world_2d(cam_transform, center) {
         let hex_pos = grid.layout.world_pos_to_hex(world_point);
-        let Some(hex_tile_meta) = grid.entities.get(&hex_pos) else {
+        let Some(hex_tile_meta) = grid.grid.get(&hex_pos) else {
             return;
         };
         let point = hex_tile_meta.imaginary();
@@ -72,18 +76,20 @@ pub fn react_game_slice_updated(
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     asset_server: Res<AssetServer>,
     tiles: Query<Entity, With<HexTile>>,
-    cities: Query<Entity, With<City>>,
-    units: Query<Entity, With<Unit>>,
+    cities: Query<Entity, With<HexCity>>,
+    units: Query<Entity, With<HexUnit>>,
     game_slice: Res<GameSliceResource>,
     mut center: ResMut<CurrentCenter>,
     mut camera_initialized: ResMut<CameraInitializedResource>,
 ) {
     if let Some(game_slice) = &game_slice.0 {
+        info!("Refresh from game slice");
+
         // Tiles
         for entity in tiles.iter() {
             commands.entity(entity).despawn_recursive();
         }
-        spawn_game_slice(
+        let resource = spawn_game_slice(
             &mut commands,
             &windows,
             &cameras,
@@ -91,72 +97,84 @@ pub fn react_game_slice_updated(
             &asset_server,
             game_slice,
             &mut center,
-            |p| {
-                game_slice
-                    .world()
-                    .tile_at(p)
-                    .into_iter()
-                    .cloned()
-                    .collect::<Vec<CtxTile<Tile>>>()
-            },
-            HexTile,
+            |p| game_slice.world().tile(p).clone(),
             0.0,
+            true,
         );
+        commands.insert_resource(resource);
+        // let resource: HexGridResource<CtxTile<Tile>> = spawn_game_slice(
+        //     &mut commands,
+        //     &windows,
+        //     &cameras,
+        //     &mut atlas_layouts,
+        //     &asset_server,
+        //     game_slice,
+        //     &mut center,
+        //     |p| game_slice.world().tile(p).clone(),
+        //     0.0,
+        //     true,
+        // );
+        // grid_resource.grid = resource.grid;
+        // grid_resource.layout = resource.layout;
 
-        // Cities
-        for entity in cities.iter() {
-            commands.entity(entity).despawn_recursive();
-        }
-        spawn_game_slice(
-            &mut commands,
-            &windows,
-            &cameras,
-            &mut atlas_layouts,
-            &asset_server,
-            game_slice,
-            &mut center,
-            |p| {
-                game_slice
-                    .cities_at(p)
-                    .into_iter()
-                    .cloned()
-                    .collect::<Vec<ClientCity>>()
-            },
-            City,
-            1.0,
-        );
+        // // Cities
+        // for entity in cities.iter() {
+        //     commands.entity(entity).despawn_recursive();
+        // }
+        // let resource: HexGridResource<Vec<ClientCity>> = spawn_game_slice(
+        //     &mut commands,
+        //     &windows,
+        //     &cameras,
+        //     &mut atlas_layouts,
+        //     &asset_server,
+        //     game_slice,
+        //     &mut center,
+        //     |p| {
+        //         game_slice
+        //             .cities_at(p)
+        //             .into_iter()
+        //             .cloned()
+        //             .collect::<Vec<ClientCity>>()
+        //     },
+        //     City,
+        //     1.0,
+        // );
+        // cities_resource.grid = resource.grid;
+        // cities_resource.layout = resource.layout;
 
-        // Units
-        for entity in units.iter() {
-            commands.entity(entity).despawn_recursive();
-        }
-        spawn_game_slice(
-            &mut commands,
-            &windows,
-            &cameras,
-            &mut atlas_layouts,
-            &asset_server,
-            game_slice,
-            &mut center,
-            |p| {
-                game_slice
-                    .units_at(p)
-                    .into_iter()
-                    .cloned()
-                    .collect::<Vec<ClientUnit>>()
-            },
-            Unit,
-            1.0,
-        );
+        // // Units
+        // for entity in units.iter() {
+        //     commands.entity(entity).despawn_recursive();
+        // }
+        // let resource: HexGridResource<Vec<ClientUnit>> = spawn_game_slice(
+        //     &mut commands,
+        //     &windows,
+        //     &cameras,
+        //     &mut atlas_layouts,
+        //     &asset_server,
+        //     game_slice,
+        //     &mut center,
+        //     |p| {
+        //         game_slice
+        //             .units_at(p)
+        //             .into_iter()
+        //             .cloned()
+        //             .collect::<Vec<ClientUnit>>()
+        //     },
+        //     Unit,
+        //     1.0,
+        // );
+        // units_resource.grid = resource.grid;
+        // units_resource.layout = resource.layout;
 
-        if !camera_initialized.0 && center.0.is_some() {
-            camera_initialized.0 = true;
-            commands.trigger(CenterCameraOnGrid)
-        }
+        // if !camera_initialized.0 && center.0.is_some() {
+        //     camera_initialized.0 = true;
+        //     commands.trigger(CenterCameraOnGrid)
+        // }
     }
 }
 
-fn spawn_game_slice<F, T, C>(
+fn spawn_game_slice<F, T>(
     commands: &mut Commands,
     windows: &Query<&Window, With<PrimaryWindow>>,
     cameras: &Query<(&Camera, &GlobalTransform)>,
@@ -165,18 +183,15 @@ fn spawn_game_slice<F, T, C>(
     game_slice: &BaseGameSlice,
     current: &mut ResMut<CurrentCenter>,
     getter: F,
-    component: C,
     z: f32,
-) where
-    F: Fn(&WorldPoint) -> Vec<T>,
-    T: Displayable + Clone + Send + Sync + 'static,
-    C: Component + Clone + Copy,
+    debug: bool,
+) -> HexGridResource<T>
+where
+    F: Fn(&WorldPoint) -> T,
+    T: IntoBundle + std::fmt::Debug + Clone + Send + Sync + 'static,
 {
     let window = windows.single();
     let (_, cam_transform) = cameras.single();
-    let texture = asset_server.load(TILES_ATLAS_PATH);
-    // FIXME: .add ?
-    let atlas_layout = atlas_layouts.add(texture_atlas_layout());
     let world = game_slice.world();
     let center = world.imaginary_world_point_for_center_rel((0, 0));
 
@@ -192,78 +207,64 @@ fn spawn_game_slice<F, T, C>(
     let layout = layout(&center);
     let world = game_slice.world();
 
-    let entities = shapes::parallelogram(
+    let shape = shapes::parallelogram(
         hex(-(tiles_size / 2), -(tiles_size / 2)),
         hex(tiles_size / 2, tiles_size / 2),
-    )
-    .flat_map(|hex| {
+    );
+    let mut grid = HashMap::with_capacity(shape.len());
+    for hex in shape {
         let imaginary_world_point =
             world.imaginary_world_point_for_center_rel((hex.x as isize, hex.y as isize));
         let world_point = world.try_world_point_for_center_rel((hex.x as isize, hex.y as isize));
+        let Some(items) = world_point.map(|p| getter(&p)) else {
+            continue;
+        };
+        let entity_ = items.bundle(asset_server, atlas_layouts, &layout, hex, z);
 
-        if let Some(items) = world_point.map(|p| getter(&p)) {
-            let relative_point = layout.hex_to_world_pos(hex);
-            items
-                .into_iter()
-                .map(|item| {
-                    let atlas_index = item.atlas_index();
-                    let entity_ = (
-                        component,
-                        Sprite {
-                            image: texture.clone(),
-                            texture_atlas: Some(TextureAtlas {
-                                index: *atlas_index,
-                                layout: atlas_layout.clone(),
-                            }),
-                            ..default()
-                        },
-                        Transform::from_xyz(relative_point.x, relative_point.y, z),
-                    );
+        #[cfg(feature = "debug_tiles")]
+        let mut entity = commands.spawn(entity_);
 
-                    #[cfg(feature = "debug_tiles")]
-                    let mut entity = commands.spawn(entity_);
+        #[cfg(not(feature = "debug_tiles"))]
+        let entity = commands.spawn(entity_);
 
-                    #[cfg(not(feature = "debug_tiles"))]
-                    let entity = commands.spawn(entity_);
-
-                    #[cfg(feature = "debug_tiles")]
-                    {
-                        let debug_info = (hex, world_point).display();
-                        let hex_tile_text = (
-                            Text2d(debug_info),
-                            TextColor(Color::BLACK),
-                            TextFont {
-                                font_size: 12.0,
-                                ..default()
-                            },
-                            Transform::from_xyz(0.0, 0.0, 10.0),
-                        );
-                        entity.with_children(|b| {
-                            b.spawn(hex_tile_text);
-                        });
-                    }
-                    let entity = entity.id();
-
-                    (
-                        hex,
-                        HexMeta::new(
-                            entity,
-                            imaginary_world_point,
-                            world_point,
-                            item,
-                            atlas_index,
-                        ),
-                    )
-                })
-                .collect()
-        } else {
-            vec![]
+        #[cfg(feature = "debug_tiles")]
+        {
+            let debug_info = (hex, world_point).display();
+            let hex_tile_text = (
+                Text2d(debug_info),
+                TextColor(Color::BLACK),
+                TextFont {
+                    font_size: 12.0,
+                    ..default()
+                },
+                Transform::from_xyz(0.0, 0.0, z + 0.1),
+            );
+            entity.with_children(|b| {
+                b.spawn(hex_tile_text);
+            });
         }
-    })
-    .collect();
 
-    commands.insert_resource(HexGridResource::new(entities, layout));
+        let entity = entity.id();
+        let tile = GridTile::new(entity, imaginary_world_point, world_point, items);
+        grid.insert(hex, tile);
+    }
+
+    HexGridResource::new(grid, layout)
 }
+
+// #[cfg(feature = "debug_tiles")]
+// fn debug_tile(world_point: Option<WorldPoint>, z: f32) {
+//     let debug_info = (hex, world_point).display();
+//     let hex_tile_text = (
+//         Text2d(debug_info),
+//         TextColor(Color::BLACK),
+//         TextFont {
+//             font_size: 12.0,
+//             ..default()
+//         },
+//         Transform::from_xyz(0.0, 0.0, z + 0.1),
+//     );
+// }
 
 #[cfg(test)]
 mod test {
@@ -411,7 +412,7 @@ mod test {
             ((2, 2), TerrainType::Plain),
         ] {
             let value: Vec<Option<TerrainType>> = world
-                .tile_at(
+                .tile(
                     &world
                         .try_world_point_for_center_rel((relative.0 as isize, relative.1 as isize))
                         .unwrap(),

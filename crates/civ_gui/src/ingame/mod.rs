@@ -52,10 +52,10 @@ pub struct GameWindowResource(pub Option<BaseWindow>);
 pub struct HexTile;
 
 #[derive(Component, Debug, Clone, Copy)]
-pub struct Unit;
+pub struct HexUnit;
 
 #[derive(Component, Debug, Clone, Copy)]
-pub struct City;
+pub struct HexCity;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct Point(pub WorldPoint);

@@ -176,7 +176,6 @@ impl Runner {
                 .expect("Consider world as always readable"),
         )
         .game_slice(client, &window);
-        info!("DEBUG::{:?}", &window);
 
         Ok(vec![
             (

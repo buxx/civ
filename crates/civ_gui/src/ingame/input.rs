@@ -1,7 +1,10 @@
 use bevy::{prelude::*, window::PrimaryWindow};
-use common::game::slice::{ClientCity, ClientUnit};
+use common::{
+    game::slice::{ClientCity, ClientUnit},
+    world::{CtxTile, Tile},
+};
 
-use crate::map::grid::HexGridResource;
+use crate::map::{grid::HexGridResource, move_::DraggingMap};
 
 use super::LastKnownCursorPositionResource;
 
@@ -11,5 +14,38 @@ pub fn update_last_known_cursor_position(
 ) {
     if let Some(position) = windows.single().cursor_position() {
         last_position.0 = position;
+    }
+}
+
+pub fn on_click(
+    click: Trigger<Pointer<Click>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<(&Camera, &GlobalTransform)>,
+    grid: Res<HexGridResource<CtxTile<Tile>>>,
+    cities: Res<HexGridResource<Vec<ClientCity>>>,
+    units: Res<HexGridResource<Vec<ClientUnit>>>,
+    dragging: Res<DraggingMap>,
+) {
+    // FIXME: not sure done before dragging teardown
+    // if dragging.0 {
+    //     return;
+    // }
+
+    let window = windows.single();
+    let (camera, cam_transform) = cameras.single();
+    if let Some(world_point) = window
+        .cursor_position()
+        .and_then(|p| camera.viewport_to_world_2d(cam_transform, p).ok())
+    {
+        let hex = grid.layout.world_pos_to_hex(world_point);
+        if let Some(Some(city)) = cities.grid.get(&hex).map(|cities| cities.item.first()) {
+            println!("{city:?}");
+            return;
+        }
+        dbg!(&hex);
+        dbg!(&units);
+        if let Some(units) = units.grid.get(&hex) {
+            println!("{units:?}");
+        }
     }
 }

@@ -62,7 +62,7 @@ pub fn color_tile_on_hover(
         }
 
         {
-            let Some(hex_tile_meta) = grid.entities.get(&hex_pos) else {
+            let Some(hex_tile_meta) = grid.grid.get(&hex_pos) else {
                 return;
             };
 
@@ -71,12 +71,13 @@ pub fn color_tile_on_hover(
             };
 
             if let Some(new_atlas) = new_sprite.texture_atlas.as_mut() {
-                new_atlas.index = 2;
+                // Find an other way than store atlas index
+                // new_atlas.index = 2;
             }
         }
 
         if let Some(current_hex) = current_hex.0 {
-            let Some(old_entity) = grid.entities.get(&current_hex) else {
+            let Some(old_entity) = grid.grid.get(&current_hex) else {
                 return;
             };
 
@@ -85,7 +86,8 @@ pub fn color_tile_on_hover(
             };
 
             if let Some(old_atlas) = old_sprite.texture_atlas.as_mut() {
-                old_atlas.index = *old_entity.atlas;
+                // Find an other way than store atlas index
+                // old_atlas.index = *old_entity.atlas;
             }
         }
 
