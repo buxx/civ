@@ -1,10 +1,9 @@
 use bevy::{prelude::*, window::PrimaryWindow};
-use common::world::{CtxTile, Tile};
 
 use crate::{
     assets::tile::TILE_SIZE,
     map::{
-        grid::{CurrentCursorHex, HexGridResource},
+        grid::{CurrentCursorHex, GridResource},
         move_::DraggingMap,
     },
 };
@@ -41,7 +40,7 @@ pub fn update_debug_circle_position(
 pub fn color_tile_on_hover(
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
-    grid: Res<HexGridResource<CtxTile<Tile>>>,
+    grid: Res<GridResource>,
     mut tiles: Query<&mut Sprite>,
     mut current_hex: ResMut<CurrentCursorHex>,
     dragging: Res<DraggingMap>,
@@ -62,30 +61,32 @@ pub fn color_tile_on_hover(
         }
 
         {
-            let Some(hex_tile_meta) = grid.entities.get(&hex_pos) else {
+            let Some(grid_hex) = grid.grid.get(&hex_pos) else {
                 return;
             };
 
-            let Ok(mut new_sprite) = tiles.get_mut(hex_tile_meta.entity) else {
+            let Ok(mut new_sprite) = tiles.get_mut(grid_hex.tile.entity) else {
                 return;
             };
 
             if let Some(new_atlas) = new_sprite.texture_atlas.as_mut() {
-                new_atlas.index = 2;
+                // Find an other way than store atlas index
+                // new_atlas.index = 2;
             }
         }
 
         if let Some(current_hex) = current_hex.0 {
-            let Some(old_entity) = grid.entities.get(&current_hex) else {
+            let Some(old_entity) = grid.grid.get(&current_hex) else {
                 return;
             };
 
-            let Ok(mut old_sprite) = tiles.get_mut(old_entity.entity) else {
+            let Ok(mut old_sprite) = tiles.get_mut(old_entity.tile.entity) else {
                 return;
             };
 
             if let Some(old_atlas) = old_sprite.texture_atlas.as_mut() {
-                old_atlas.index = *old_entity.atlas;
+                // Find an other way than store atlas index
+                // old_atlas.index = *old_entity.atlas;
             }
         }
 

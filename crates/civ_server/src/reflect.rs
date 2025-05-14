@@ -6,7 +6,7 @@ use common::{
     },
     space::window::{SetWindow, Window},
 };
-use log::{error, info};
+use log::error;
 use thiserror::Error;
 
 use crate::{
@@ -176,7 +176,6 @@ impl Runner {
                 .expect("Consider world as always readable"),
         )
         .game_slice(client, &window);
-        info!("DEBUG::{:?}", &window);
 
         Ok(vec![
             (

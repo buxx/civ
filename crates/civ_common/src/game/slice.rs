@@ -2,7 +2,7 @@ use bon::Builder;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    geo::{GeoContext, WorldPoint},
+    geo::{GeoContext, ImaginaryWorldPoint, WorldPoint},
     world::partial::PartialWorld,
 };
 
@@ -34,6 +34,10 @@ impl GameSlice {
         &self.world
     }
 
+    pub fn center(&self) -> ImaginaryWorldPoint {
+        self.world().imaginary_world_point_for_center_rel((0, 0))
+    }
+
     pub fn cities(&self) -> &[ClientCity] {
         &self.cities
     }
@@ -51,20 +55,23 @@ impl GameSlice {
     }
 
     // FIXME: cities by index like tiles
-    // FIXME: should be one Option<city>, (and its complicated for refresh)
-    pub fn cities_at(&self, point: &WorldPoint) -> Vec<&ClientCity> {
-        self.cities
-            .iter()
-            .filter(|c| c.geo().point() == point)
-            .collect()
+    pub fn city_at(&self, point: &WorldPoint) -> Option<&ClientCity> {
+        self.cities.iter().find(|c| c.geo().point() == point)
     }
 
     // FIXME: cities by index like tiles
-    pub fn units_at(&self, point: &WorldPoint) -> Vec<&ClientUnit> {
-        self.units
+    pub fn units_at(&self, point: &WorldPoint) -> Option<Vec<&ClientUnit>> {
+        let units: Vec<&ClientUnit> = self
+            .units
             .iter()
             .filter(|c| c.geo().point() == point)
-            .collect()
+            .collect();
+
+        if units.is_empty() {
+            return None;
+        }
+
+        Some(units)
     }
 }
 

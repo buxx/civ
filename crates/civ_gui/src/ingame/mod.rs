@@ -3,7 +3,7 @@ use bon::Builder;
 use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame};
 use common::geo::WorldPoint;
 use common::space::window::Window as BaseWindow;
-use input::update_last_known_cursor_position;
+use input::{on_click, update_last_known_cursor_position};
 
 use crate::state::AppState;
 
@@ -29,7 +29,8 @@ impl Plugin for InGamePlugin {
             .add_systems(
                 Update,
                 (update_last_known_cursor_position,).run_if(in_state(AppState::InGame)),
-            );
+            )
+            .add_observer(on_click);
     }
 }
 
@@ -52,10 +53,10 @@ pub struct GameWindowResource(pub Option<BaseWindow>);
 pub struct HexTile;
 
 #[derive(Component, Debug, Clone, Copy)]
-pub struct Unit;
+pub struct HexUnit;
 
 #[derive(Component, Debug, Clone, Copy)]
-pub struct City;
+pub struct HexCity;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct Point(pub WorldPoint);

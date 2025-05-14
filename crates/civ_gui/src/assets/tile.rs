@@ -20,7 +20,7 @@ pub fn layout(origin: &ImaginaryWorldPoint) -> HexLayout {
         .with_origin(origin)
 }
 
-pub fn texture_atlas_layout() -> TextureAtlasLayout {
+pub fn tiles_texture_atlas_layout() -> TextureAtlasLayout {
     TextureAtlasLayout::from_grid(
         TILE_SIZE,
         TILES_ATLAS_COLUMNS,
