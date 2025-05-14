@@ -15,7 +15,7 @@ use hexx::{Hex, HexLayout};
 
 use crate::{
     assets::tile::{tiles_texture_atlas_layout, TILES_ATLAS_PATH},
-    ingame::HexTile,
+    ingame::{HexCity, HexTile, HexUnit},
     map::AtlasIndex,
 };
 
@@ -36,7 +36,7 @@ pub trait IntoBundle {
         layout: &HexLayout,
         hex: Hex,
         z: f32,
-    ) -> Self::BundleType;
+    ) -> Option<Self::BundleType>;
 }
 // dyn_clone::clone_trait_object!(IntoBundle);
 
@@ -57,7 +57,7 @@ impl IntoBundle for CtxTile<Tile> {
         layout: &HexLayout,
         hex: Hex,
         z: f32,
-    ) -> HexTileBundle {
+    ) -> Option<HexTileBundle> {
         // FIXME: should not do this once (at startup ?)
         let atlas_layout = atlas_layouts.add(tiles_texture_atlas_layout());
         let texture = assets.load(TILES_ATLAS_PATH);
@@ -67,7 +67,7 @@ impl IntoBundle for CtxTile<Tile> {
             CtxTile::Visible(tile) => terrain_type_index(&tile.type_()),
         };
 
-        HexTileBundle::new(
+        Some(HexTileBundle::new(
             HexTile,
             Sprite {
                 image: texture.clone(),
@@ -78,18 +78,94 @@ impl IntoBundle for CtxTile<Tile> {
                 ..default()
             },
             Transform::from_xyz(relative_point.x, relative_point.y, z),
-        )
+        ))
     }
 }
 
-// impl IntoBundle for ClientUnit {
-//     fn atlas_index(&self) -> AtlasIndex {
-//         AtlasIndex(5)
-//     }
-// }
+#[derive(Bundle, Constructor)]
+pub struct HexUnitBundle {
+    pub marker: HexUnit,
+    pub sprite: Sprite,
+    pub transform: Transform,
+}
 
-// impl IntoBundle for ClientCity {
-//     fn atlas_index(&self) -> AtlasIndex {
-//         AtlasIndex(4)
-//     }
-// }
+impl IntoBundle for Vec<ClientUnit> {
+    type BundleType = HexUnitBundle;
+
+    fn bundle(
+        &self,
+        assets: &AssetServer,
+        atlas_layouts: &mut Assets<TextureAtlasLayout>,
+        layout: &HexLayout,
+        hex: Hex,
+        z: f32,
+    ) -> Option<Self::BundleType> {
+        if self.is_empty() {
+            return None;
+        }
+
+        // FIXME: should not do this once (at startup ?)
+        let atlas_layout = atlas_layouts.add(tiles_texture_atlas_layout());
+        let texture = assets.load(TILES_ATLAS_PATH);
+        let relative_point = layout.hex_to_world_pos(hex);
+        let atlas_index = AtlasIndex(5);
+
+        // FIXME: Must be computed from list (first, for example)
+        Some(HexUnitBundle::new(
+            HexUnit,
+            Sprite {
+                image: texture.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    index: *atlas_index,
+                    layout: atlas_layout.clone(),
+                }),
+                ..default()
+            },
+            Transform::from_xyz(relative_point.x, relative_point.y, z),
+        ))
+    }
+}
+
+#[derive(Bundle, Constructor)]
+pub struct HexCityBundle {
+    pub marker: HexCity,
+    pub sprite: Sprite,
+    pub transform: Transform,
+}
+
+impl IntoBundle for Vec<ClientCity> {
+    type BundleType = HexUnitBundle;
+
+    fn bundle(
+        &self,
+        assets: &AssetServer,
+        atlas_layouts: &mut Assets<TextureAtlasLayout>,
+        layout: &HexLayout,
+        hex: Hex,
+        z: f32,
+    ) -> Option<Self::BundleType> {
+        if self.is_empty() {
+            return None;
+        }
+
+        // FIXME: should not do this once (at startup ?)
+        let atlas_layout = atlas_layouts.add(tiles_texture_atlas_layout());
+        let texture = assets.load(TILES_ATLAS_PATH);
+        let relative_point = layout.hex_to_world_pos(hex);
+        let atlas_index = AtlasIndex(4);
+
+        // FIXME: Must be computed from list (first, for example)
+        Some(HexUnitBundle::new(
+            HexUnit,
+            Sprite {
+                image: texture.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    index: *atlas_index,
+                    layout: atlas_layout.clone(),
+                }),
+                ..default()
+            },
+            Transform::from_xyz(relative_point.x, relative_point.y, z),
+        ))
+    }
+}

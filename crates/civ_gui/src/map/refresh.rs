@@ -7,7 +7,7 @@ use common::{
 };
 
 use crate::{
-    assets::tile::{layout, tiles_texture_atlas_layout, TILES_ATLAS_PATH, TILE_SIZE},
+    assets::tile::{layout, TILE_SIZE},
     ingame::{GameSliceResource, HexTile},
     to_server,
     utils::assets::IntoBundle,
@@ -102,70 +102,54 @@ pub fn react_game_slice_updated(
             true,
         );
         commands.insert_resource(resource);
-        // let resource: HexGridResource<CtxTile<Tile>> = spawn_game_slice(
-        //     &mut commands,
-        //     &windows,
-        //     &cameras,
-        //     &mut atlas_layouts,
-        //     &asset_server,
-        //     game_slice,
-        //     &mut center,
-        //     |p| game_slice.world().tile(p).clone(),
-        //     0.0,
-        //     true,
-        // );
-        // grid_resource.grid = resource.grid;
-        // grid_resource.layout = resource.layout;
 
-        // // Cities
-        // for entity in cities.iter() {
-        //     commands.entity(entity).despawn_recursive();
-        // }
-        // let resource: HexGridResource<Vec<ClientCity>> = spawn_game_slice(
-        //     &mut commands,
-        //     &windows,
-        //     &cameras,
-        //     &mut atlas_layouts,
-        //     &asset_server,
-        //     game_slice,
-        //     &mut center,
-        //     |p| {
-        //         game_slice
-        //             .cities_at(p)
-        //             .into_iter()
-        //             .cloned()
-        //             .collect::<Vec<ClientCity>>()
-        //     },
-        //     City,
-        //     1.0,
-        // );
-        // cities_resource.grid = resource.grid;
-        // cities_resource.layout = resource.layout;
+        // Cities
+        for entity in cities.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+        let resource = spawn_game_slice(
+            &mut commands,
+            &windows,
+            &cameras,
+            &mut atlas_layouts,
+            &asset_server,
+            game_slice,
+            &mut center,
+            |p| {
+                game_slice
+                    .cities_at(p)
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<ClientCity>>()
+            },
+            2.0,
+            false,
+        );
+        commands.insert_resource(resource);
 
-        // // Units
-        // for entity in units.iter() {
-        //     commands.entity(entity).despawn_recursive();
-        // }
-        // let resource: HexGridResource<Vec<ClientUnit>> = spawn_game_slice(
-        //     &mut commands,
-        //     &windows,
-        //     &cameras,
-        //     &mut atlas_layouts,
-        //     &asset_server,
-        //     game_slice,
-        //     &mut center,
-        //     |p| {
-        //         game_slice
-        //             .units_at(p)
-        //             .into_iter()
-        //             .cloned()
-        //             .collect::<Vec<ClientUnit>>()
-        //     },
-        //     Unit,
-        //     1.0,
-        // );
-        // units_resource.grid = resource.grid;
-        // units_resource.layout = resource.layout;
+        // Units
+        for entity in units.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+        let resource = spawn_game_slice(
+            &mut commands,
+            &windows,
+            &cameras,
+            &mut atlas_layouts,
+            &asset_server,
+            game_slice,
+            &mut center,
+            |p| {
+                game_slice
+                    .units_at(p)
+                    .into_iter()
+                    .cloned()
+                    .collect::<Vec<ClientUnit>>()
+            },
+            2.0,
+            false,
+        );
+        commands.insert_resource(resource);
 
         // if !camera_initialized.0 && center.0.is_some() {
         //     camera_initialized.0 = true;
@@ -219,7 +203,9 @@ where
         let Some(items) = world_point.map(|p| getter(&p)) else {
             continue;
         };
-        let entity_ = items.bundle(asset_server, atlas_layouts, &layout, hex, z);
+        let Some(entity_) = items.bundle(asset_server, atlas_layouts, &layout, hex, z) else {
+            continue;
+        };
 
         #[cfg(feature = "debug_tiles")]
         let mut entity = commands.spawn(entity_);

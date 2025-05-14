@@ -6,7 +6,7 @@ use common::{
     },
     space::window::{SetWindow, Window},
 };
-use log::{error, info};
+use log::error;
 use thiserror::Error;
 
 use crate::{
