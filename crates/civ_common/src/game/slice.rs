@@ -51,12 +51,8 @@ impl GameSlice {
     }
 
     // FIXME: cities by index like tiles
-    // FIXME: should be one Option<city>, (and its complicated for refresh)
-    pub fn cities_at(&self, point: &WorldPoint) -> Vec<&ClientCity> {
-        self.cities
-            .iter()
-            .filter(|c| c.geo().point() == point)
-            .collect()
+    pub fn city_at(&self, point: &WorldPoint) -> Option<&ClientCity> {
+        self.cities.iter().find(|c| c.geo().point() == point)
     }
 
     // FIXME: cities by index like tiles

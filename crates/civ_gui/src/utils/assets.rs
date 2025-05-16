@@ -133,7 +133,7 @@ pub struct HexCityBundle {
     pub transform: Transform,
 }
 
-impl IntoBundle for Vec<ClientCity> {
+impl IntoBundle for Option<ClientCity> {
     type BundleType = HexUnitBundle;
 
     fn bundle(
@@ -144,9 +144,7 @@ impl IntoBundle for Vec<ClientCity> {
         hex: Hex,
         z: f32,
     ) -> Option<Self::BundleType> {
-        if self.is_empty() {
-            return None;
-        }
+        let Some(_city) = self else { return None };
 
         // FIXME: should not do this once (at startup ?)
         let atlas_layout = atlas_layouts.add(tiles_texture_atlas_layout());

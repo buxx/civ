@@ -22,7 +22,7 @@ pub fn on_click(
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     grid: Res<HexGridResource<CtxTile<Tile>>>,
-    cities: Res<HexGridResource<Vec<ClientCity>>>,
+    cities: Res<HexGridResource<Option<ClientCity>>>,
     units: Res<HexGridResource<Vec<ClientUnit>>>,
     dragging: Res<DraggingMap>,
 ) {
@@ -31,21 +31,21 @@ pub fn on_click(
     //     return;
     // }
 
+    info!("click");
+
     let window = windows.single();
     let (camera, cam_transform) = cameras.single();
-    if let Some(world_point) = window
+    if let Some(hex) = window
         .cursor_position()
         .and_then(|p| camera.viewport_to_world_2d(cam_transform, p).ok())
+        .map(|p| grid.layout.world_pos_to_hex(p))
     {
-        let hex = grid.layout.world_pos_to_hex(world_point);
-        if let Some(Some(city)) = cities.grid.get(&hex).map(|cities| cities.item.first()) {
+        if let Some(Some(city)) = cities.grid.get(&hex).map(|cities| &cities.item) {
             println!("{city:?}");
             return;
         }
-        dbg!(&hex);
-        dbg!(&units);
         if let Some(units) = units.grid.get(&hex) {
-            println!("{units:?}");
+            println!("{:?}", units.item.first());
         }
     }
 }

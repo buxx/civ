@@ -115,13 +115,7 @@ pub fn react_game_slice_updated(
             &asset_server,
             game_slice,
             &mut center,
-            |p| {
-                game_slice
-                    .cities_at(p)
-                    .into_iter()
-                    .cloned()
-                    .collect::<Vec<ClientCity>>()
-            },
+            |p| game_slice.city_at(p).cloned(),
             2.0,
             false,
         );
