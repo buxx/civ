@@ -72,12 +72,12 @@ struct GridUpdater<'a> {
     transform: &'a GlobalTransform,
     slice: &'a BaseGameSlice,
     assets: &'a AssetServer,
-    layouts: &'a mut Assets<TextureAtlasLayout>, // FIXME: try solution without mut
+    atlas: &'a mut Assets<TextureAtlasLayout>, // FIXME: try solution without mut
 }
 
 // FIXME: feature debug_tiles
 // FIXME: no need mu if we solve Assets<TextureAtlasLayout> mut
-impl<'a> GridUpdater<'a> {
+impl GridUpdater<'_> {
     fn grid(
         &mut self,
         commands: &mut Commands,
@@ -125,7 +125,7 @@ impl<'a> GridUpdater<'a> {
         layout: &HexLayout,
     ) -> GridHexResource<CtxTile<Tile>> {
         // TODO: in self
-        let mut ctx = GameContext::new(self.assets, self.layouts, layout);
+        let mut ctx = GameContext::new(self.assets, self.atlas, layout);
         let tile = self.slice.world().tile(point).clone();
         let entity = tile.entity(commands, &mut ctx, hex, TILE_Z);
 
@@ -140,7 +140,7 @@ impl<'a> GridUpdater<'a> {
         layout: &HexLayout,
     ) -> Option<GridHexResource<ClientCity>> {
         // TODO: in self
-        let mut ctx = GameContext::new(self.assets, self.layouts, layout);
+        let mut ctx = GameContext::new(self.assets, self.atlas, layout);
         let city = self.slice.city_at(point).cloned();
         let entity = city
             .clone()
@@ -158,7 +158,7 @@ impl<'a> GridUpdater<'a> {
         layout: &HexLayout,
     ) -> Option<GridHexResource<Vec<ClientUnit>>> {
         // TODO: in self
-        let mut ctx = GameContext::new(self.assets, self.layouts, layout);
+        let mut ctx = GameContext::new(self.assets, self.atlas, layout);
         let units = self
             .slice
             .units_at(point)
