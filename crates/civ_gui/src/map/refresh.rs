@@ -12,7 +12,7 @@ use crate::{
     assets::tile::{layout, TILE_SIZE},
     ingame::{GameSliceResource, HexTile},
     to_server,
-    utils::assets::{IntoBundle, CITY_Z, TILE_Z, UNIT_Z},
+    utils::assets::{GameContext, IntoBundle, IntoEntity, CITY_Z, TILE_Z, UNIT_Z},
 };
 use crate::{
     core::GameSliceUpdated,
@@ -124,10 +124,12 @@ impl<'a> GridUpdater<'a> {
         point: &WorldPoint,
         layout: &HexLayout,
     ) -> GridHexResource<CtxTile<Tile>> {
+        // TODO: in self
+        let mut ctx = GameContext::new(self.assets, self.layouts, layout);
         let tile = self.slice.world().tile(point).clone();
-        let tile_bundle = tile.bundle(self.assets, &mut self.layouts, &layout, hex, TILE_Z);
-        let tile_entity = commands.spawn(tile_bundle).id();
-        GridHexResource::new(tile_entity, tile)
+        let entity = tile.entity(commands, &mut ctx, hex, TILE_Z);
+
+        GridHexResource::new(entity, tile)
     }
 
     fn city(
@@ -137,15 +139,14 @@ impl<'a> GridUpdater<'a> {
         point: &WorldPoint,
         layout: &HexLayout,
     ) -> Option<GridHexResource<ClientCity>> {
-        let city = self.slice.city_at(&point).cloned();
-        let city_bundle = city
+        // TODO: in self
+        let mut ctx = GameContext::new(self.assets, self.layouts, layout);
+        let city = self.slice.city_at(point).cloned();
+        let entity = city
             .clone()
-            .map(|city| city.bundle(self.assets, &mut self.layouts, &layout, hex, CITY_Z));
-        city_bundle.map(|bundle| {
-            GridHexResource::new(
-                commands.spawn(bundle).id(),
-                city.expect("In this city map only if Some"),
-            )
+            .map(|city| city.entity(commands, &mut ctx, hex, CITY_Z));
+        entity.map(|entity| {
+            GridHexResource::new(entity, city.expect("In this city map only if Some"))
         })
     }
 
@@ -156,20 +157,17 @@ impl<'a> GridUpdater<'a> {
         point: &WorldPoint,
         layout: &HexLayout,
     ) -> Option<GridHexResource<Vec<ClientUnit>>> {
-        let units = self.slice.units_at(&point).map(|units| {
-            units
-                .into_iter()
-                .map(|u| u.clone())
-                .collect::<Vec<ClientUnit>>()
-        });
-        let units_bundle = units
+        // TODO: in self
+        let mut ctx = GameContext::new(self.assets, self.layouts, layout);
+        let units = self
+            .slice
+            .units_at(point)
+            .map(|units| units.into_iter().cloned().collect::<Vec<ClientUnit>>());
+        let entity = units
             .clone()
-            .map(|units| units.bundle(self.assets, &mut self.layouts, &layout, hex, UNIT_Z));
-        units_bundle.map(|bundle| {
-            GridHexResource::new(
-                commands.spawn(bundle).id(),
-                units.expect("In this units map only if Some"),
-            )
+            .map(|units| units.entity(commands, &mut ctx, hex, UNIT_Z));
+        entity.map(|entity| {
+            GridHexResource::new(entity, units.expect("In this units map only if Some"))
         })
     }
 

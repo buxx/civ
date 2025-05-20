@@ -2,6 +2,7 @@ use bevy::{
     asset::{AssetServer, Assets},
     ecs::prelude::*,
     sprite::{Sprite, TextureAtlas, TextureAtlasLayout},
+    text::{Text2d, TextColor, TextFont},
     transform::components::Transform,
     utils::default,
 };
@@ -32,17 +33,32 @@ fn terrain_type_index(terrain: &TerrainType) -> AtlasIndex {
 
 pub trait IntoBundle {
     type BundleType: Bundle;
+    #[cfg(feature = "debug_tiles")]
+    type DebugBundleType: Bundle;
 
     // FIXME: regroup dependencies in one struct ?
-    fn bundle(
-        &self,
-        assets: &AssetServer,
-        atlas_layouts: &mut Assets<TextureAtlasLayout>,
-        layout: &HexLayout,
-        hex: Hex,
-        z: f32,
-    ) -> Self::BundleType;
+    fn bundle(&self, ctx: &mut GameContext, hex: Hex, z: f32) -> Self::BundleType;
+
+    #[cfg(feature = "debug_tiles")]
+    fn debug_bundle(&self) -> Option<Self::DebugBundleType> {
+        None
+    }
 }
+
+pub trait IntoEntity: IntoBundle {
+    fn entity(&self, commands: &mut Commands, ctx: &mut GameContext, hex: Hex, z: f32) -> Entity {
+        let bundle = self.bundle(ctx, hex, z);
+        commands.spawn(bundle).id()
+    }
+}
+
+#[derive(Constructor)]
+pub struct GameContext<'a> {
+    pub assets: &'a AssetServer,
+    pub atlas_layouts: &'a mut Assets<TextureAtlasLayout>,
+    pub layout: &'a HexLayout,
+}
+
 // dyn_clone::clone_trait_object!(IntoBundle);
 
 #[derive(Bundle, Constructor)]
@@ -52,21 +68,24 @@ pub struct HexTileBundle {
     pub transform: Transform,
 }
 
+#[derive(Bundle, Constructor)]
+pub struct DebugHexTileBundle {
+    text: Text2d,
+    color: TextColor,
+    font: TextFont,
+    transform: Transform,
+}
+
 impl IntoBundle for CtxTile<Tile> {
     type BundleType = HexTileBundle;
+    #[cfg(feature = "debug_tiles")]
+    type DebugBundleType = DebugHexTileBundle;
 
-    fn bundle(
-        &self,
-        assets: &AssetServer,
-        atlas_layouts: &mut Assets<TextureAtlasLayout>,
-        layout: &HexLayout,
-        hex: Hex,
-        z: f32,
-    ) -> HexTileBundle {
+    fn bundle(&self, ctx: &mut GameContext, hex: Hex, z: f32) -> HexTileBundle {
         // FIXME: should not do this once (at startup ?)
-        let atlas_layout = atlas_layouts.add(tiles_texture_atlas_layout());
-        let texture = assets.load(TILES_ATLAS_PATH);
-        let relative_point = layout.hex_to_world_pos(hex);
+        let atlas_layout = ctx.atlas_layouts.add(tiles_texture_atlas_layout());
+        let texture = ctx.assets.load(TILES_ATLAS_PATH);
+        let relative_point = ctx.layout.hex_to_world_pos(hex);
         let atlas_index = match self {
             CtxTile::Outside => AtlasIndex(4),
             CtxTile::Visible(tile) => terrain_type_index(&tile.type_()),
@@ -87,6 +106,9 @@ impl IntoBundle for CtxTile<Tile> {
     }
 }
 
+// TODO: Derive
+impl IntoEntity for CtxTile<Tile> {}
+
 #[derive(Bundle, Constructor)]
 pub struct HexUnitBundle {
     pub marker: HexUnit,
@@ -96,19 +118,14 @@ pub struct HexUnitBundle {
 
 impl IntoBundle for Vec<ClientUnit> {
     type BundleType = HexUnitBundle;
+    #[cfg(feature = "debug_tiles")]
+    type DebugBundleType = ();
 
-    fn bundle(
-        &self,
-        assets: &AssetServer,
-        atlas_layouts: &mut Assets<TextureAtlasLayout>,
-        layout: &HexLayout,
-        hex: Hex,
-        z: f32,
-    ) -> Self::BundleType {
+    fn bundle(&self, ctx: &mut GameContext, hex: Hex, z: f32) -> Self::BundleType {
         // FIXME: should not do this once (at startup ?)
-        let atlas_layout = atlas_layouts.add(tiles_texture_atlas_layout());
-        let texture = assets.load(TILES_ATLAS_PATH);
-        let relative_point = layout.hex_to_world_pos(hex);
+        let atlas_layout = ctx.atlas_layouts.add(tiles_texture_atlas_layout());
+        let texture = ctx.assets.load(TILES_ATLAS_PATH);
+        let relative_point = ctx.layout.hex_to_world_pos(hex);
         let atlas_index = AtlasIndex(5);
 
         // FIXME: Must be computed from list (first, for example)
@@ -126,6 +143,8 @@ impl IntoBundle for Vec<ClientUnit> {
         )
     }
 }
+// TODO: Derive
+impl IntoEntity for Vec<ClientUnit> {}
 
 #[derive(Bundle, Constructor)]
 pub struct HexCityBundle {
@@ -136,19 +155,14 @@ pub struct HexCityBundle {
 
 impl IntoBundle for ClientCity {
     type BundleType = HexUnitBundle;
+    #[cfg(feature = "debug_tiles")]
+    type DebugBundleType = ();
 
-    fn bundle(
-        &self,
-        assets: &AssetServer,
-        atlas_layouts: &mut Assets<TextureAtlasLayout>,
-        layout: &HexLayout,
-        hex: Hex,
-        z: f32,
-    ) -> Self::BundleType {
+    fn bundle(&self, ctx: &mut GameContext, hex: Hex, z: f32) -> Self::BundleType {
         // FIXME: should not do this once (at startup ?)
-        let atlas_layout = atlas_layouts.add(tiles_texture_atlas_layout());
-        let texture = assets.load(TILES_ATLAS_PATH);
-        let relative_point = layout.hex_to_world_pos(hex);
+        let atlas_layout = ctx.atlas_layouts.add(tiles_texture_atlas_layout());
+        let texture = ctx.assets.load(TILES_ATLAS_PATH);
+        let relative_point = ctx.layout.hex_to_world_pos(hex);
         let atlas_index = AtlasIndex(4);
 
         // FIXME: Must be computed from list (first, for example)
@@ -166,3 +180,5 @@ impl IntoBundle for ClientCity {
         )
     }
 }
+// TODO: Derive
+impl IntoEntity for ClientCity {}
