@@ -56,11 +56,18 @@ impl GameSlice {
     }
 
     // FIXME: cities by index like tiles
-    pub fn units_at(&self, point: &WorldPoint) -> Vec<&ClientUnit> {
-        self.units
+    pub fn units_at(&self, point: &WorldPoint) -> Option<Vec<&ClientUnit>> {
+        let units: Vec<&ClientUnit> = self
+            .units
             .iter()
             .filter(|c| c.geo().point() == point)
-            .collect()
+            .collect();
+
+        if units.is_empty() {
+            return None;
+        }
+
+        Some(units)
     }
 }
 

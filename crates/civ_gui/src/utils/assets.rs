@@ -19,6 +19,10 @@ use crate::{
     map::AtlasIndex,
 };
 
+pub const TILE_Z: f32 = 0.0;
+pub const CITY_Z: f32 = 1.0;
+pub const UNIT_Z: f32 = 2.0;
+
 fn terrain_type_index(terrain: &TerrainType) -> AtlasIndex {
     match terrain {
         TerrainType::GrassLand => AtlasIndex(0),
@@ -29,6 +33,7 @@ fn terrain_type_index(terrain: &TerrainType) -> AtlasIndex {
 pub trait IntoBundle {
     type BundleType: Bundle;
 
+    // FIXME: regroup dependencies in one struct ?
     fn bundle(
         &self,
         assets: &AssetServer,
@@ -36,7 +41,7 @@ pub trait IntoBundle {
         layout: &HexLayout,
         hex: Hex,
         z: f32,
-    ) -> Option<Self::BundleType>;
+    ) -> Self::BundleType;
 }
 // dyn_clone::clone_trait_object!(IntoBundle);
 
@@ -57,7 +62,7 @@ impl IntoBundle for CtxTile<Tile> {
         layout: &HexLayout,
         hex: Hex,
         z: f32,
-    ) -> Option<HexTileBundle> {
+    ) -> HexTileBundle {
         // FIXME: should not do this once (at startup ?)
         let atlas_layout = atlas_layouts.add(tiles_texture_atlas_layout());
         let texture = assets.load(TILES_ATLAS_PATH);
@@ -67,7 +72,7 @@ impl IntoBundle for CtxTile<Tile> {
             CtxTile::Visible(tile) => terrain_type_index(&tile.type_()),
         };
 
-        Some(HexTileBundle::new(
+        HexTileBundle::new(
             HexTile,
             Sprite {
                 image: texture.clone(),
@@ -78,7 +83,7 @@ impl IntoBundle for CtxTile<Tile> {
                 ..default()
             },
             Transform::from_xyz(relative_point.x, relative_point.y, z),
-        ))
+        )
     }
 }
 
@@ -99,11 +104,7 @@ impl IntoBundle for Vec<ClientUnit> {
         layout: &HexLayout,
         hex: Hex,
         z: f32,
-    ) -> Option<Self::BundleType> {
-        if self.is_empty() {
-            return None;
-        }
-
+    ) -> Self::BundleType {
         // FIXME: should not do this once (at startup ?)
         let atlas_layout = atlas_layouts.add(tiles_texture_atlas_layout());
         let texture = assets.load(TILES_ATLAS_PATH);
@@ -111,7 +112,7 @@ impl IntoBundle for Vec<ClientUnit> {
         let atlas_index = AtlasIndex(5);
 
         // FIXME: Must be computed from list (first, for example)
-        Some(HexUnitBundle::new(
+        HexUnitBundle::new(
             HexUnit,
             Sprite {
                 image: texture.clone(),
@@ -122,7 +123,7 @@ impl IntoBundle for Vec<ClientUnit> {
                 ..default()
             },
             Transform::from_xyz(relative_point.x, relative_point.y, z),
-        ))
+        )
     }
 }
 
@@ -133,7 +134,7 @@ pub struct HexCityBundle {
     pub transform: Transform,
 }
 
-impl IntoBundle for Option<ClientCity> {
+impl IntoBundle for ClientCity {
     type BundleType = HexUnitBundle;
 
     fn bundle(
@@ -143,9 +144,7 @@ impl IntoBundle for Option<ClientCity> {
         layout: &HexLayout,
         hex: Hex,
         z: f32,
-    ) -> Option<Self::BundleType> {
-        let Some(_city) = self else { return None };
-
+    ) -> Self::BundleType {
         // FIXME: should not do this once (at startup ?)
         let atlas_layout = atlas_layouts.add(tiles_texture_atlas_layout());
         let texture = assets.load(TILES_ATLAS_PATH);
@@ -153,7 +152,7 @@ impl IntoBundle for Option<ClientCity> {
         let atlas_index = AtlasIndex(4);
 
         // FIXME: Must be computed from list (first, for example)
-        Some(HexUnitBundle::new(
+        HexUnitBundle::new(
             HexUnit,
             Sprite {
                 image: texture.clone(),
@@ -164,6 +163,6 @@ impl IntoBundle for Option<ClientCity> {
                 ..default()
             },
             Transform::from_xyz(relative_point.x, relative_point.y, z),
-        ))
+        )
     }
 }
