@@ -4,7 +4,7 @@ use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame
 use common::geo::WorldPoint;
 use common::space::window::Window as BaseWindow;
 use input::{on_click, update_last_known_cursor_position};
-use selected::SelectedResource;
+use selected::{on_select_updated, SelectedResource};
 
 use crate::state::AppState;
 
@@ -33,7 +33,8 @@ impl Plugin for InGamePlugin {
                 Update,
                 (update_last_known_cursor_position,).run_if(in_state(AppState::InGame)),
             )
-            .add_observer(on_click);
+            .add_observer(on_click)
+            .add_observer(on_select_updated);
     }
 }
 

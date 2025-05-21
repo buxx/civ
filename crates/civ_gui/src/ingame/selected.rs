@@ -1,12 +1,21 @@
 use bevy::prelude::*;
 use common::game::{city::CityId, unit::UnitId};
 use derive_more::Constructor;
+use hexx::Hex;
 
 use crate::{
     assets::tile::TILES_ATLAS_PATH,
-    map::AtlasIndex,
-    utils::assets::{GameHexContext, IntoBundle, Spawn},
+    map::{AtlasIndex, AtlasesResource},
+    utils::assets::{GameContext, GameHexContext, IntoBundle, Spawn, TILE_Z},
 };
+
+use super::GameSliceResource;
+
+#[derive(Debug, Event, Constructor)]
+pub struct SelectUpdated {
+    pub hex: Hex,
+    pub selected: Selected,
+}
 
 #[derive(Debug, Resource, Default, Deref, Clone)]
 pub struct SelectedResource(pub Selected);
@@ -67,4 +76,30 @@ pub struct SelectBundle {
     pub marker: Select,
     pub sprite: Sprite,
     pub transform: Transform,
+}
+
+pub fn on_select_updated(
+    trigger: Trigger<SelectUpdated>,
+    mut commands: Commands,
+    query: Query<Entity, With<Select>>,
+    atlases: Res<AtlasesResource>,
+    slice: Res<GameSliceResource>,
+    assets: Res<AssetServer>,
+) {
+    if let Some(slice) = &slice.0 {
+        let SelectUpdated { hex, selected } = trigger.event();
+
+        if let Ok(entity) = query.get_single() {
+            commands.entity(entity).despawn();
+        }
+
+        match selected {
+            Selected::Unit(_) => {
+                let ctx = GameContext::new(slice, &assets, &atlases);
+                let ctx = ctx.with(*hex);
+                Select::new(*selected).spawn(&mut commands, &ctx, TILE_Z + 0.2);
+            }
+            Selected::Nothing | Selected::City(_) => {}
+        }
+    }
 }
