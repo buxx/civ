@@ -1,7 +1,6 @@
 use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use common::{
     game::slice::ClientCity,
-    geo::ImaginaryWorldPoint,
     network::message::ClientToServerInGameMessage,
     space::window::{Resolution, SetWindow},
     world::{CtxTile, Tile},
@@ -12,7 +11,7 @@ use crate::{
     assets::tile::{layout, TILE_SIZE},
     ingame::{GameSliceResource, HexTile},
     to_server,
-    utils::assets::{GameContext, GameHexContext, IntoEntity, CITY_Z, TILE_Z, UNIT_Z},
+    utils::assets::{GameContext, GameHexContext, Spawn, CITY_Z, TILE_Z, UNIT_Z},
 };
 use crate::{
     core::GameSliceUpdated,
@@ -76,12 +75,7 @@ struct GridUpdater<'a> {
 }
 
 impl<'a> GridUpdater<'a> {
-    fn grid(
-        &mut self,
-        commands: &mut Commands,
-        ctx: &'a mut GameContext<'a>,
-        center: &ImaginaryWorldPoint,
-    ) -> HashMap<Hex, GridHex> {
+    fn grid(&mut self, commands: &mut Commands, ctx: &'a GameContext<'a>) -> HashMap<Hex, GridHex> {
         let window_width = self.window.width() * self.transform.scale().x;
         let window_height = self.window.height() * self.transform.scale().y;
         let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as i32;
@@ -105,8 +99,7 @@ impl<'a> GridUpdater<'a> {
                 continue;
             };
 
-            let layout = layout(center);
-            let mut ctx = GameHexContext::from_ctx(ctx, layout, hex, point);
+            let mut ctx = GameHexContext::from_ctx(ctx, hex);
 
             let tile = self.tile(commands, &mut ctx);
             let city = self.city(commands, &mut ctx);
@@ -123,8 +116,9 @@ impl<'a> GridUpdater<'a> {
         commands: &mut Commands,
         ctx: &mut GameHexContext,
     ) -> GridHexResource<CtxTile<Tile>> {
-        let tile = ctx.slice.world().tile(&ctx.point).clone();
-        let entity = tile.entity(commands, ctx, TILE_Z);
+        let point = ctx.point().expect("Tile called only on world point");
+        let tile = ctx.slice.world().tile(&point).clone();
+        let entity = tile.spawn(commands, ctx, TILE_Z);
 
         GridHexResource::new(entity, tile)
     }
@@ -134,8 +128,9 @@ impl<'a> GridUpdater<'a> {
         commands: &mut Commands,
         ctx: &mut GameHexContext,
     ) -> Option<GridHexResource<ClientCity>> {
-        let city = ctx.slice.city_at(&ctx.point).cloned();
-        let entity = city.clone().map(|city| city.entity(commands, ctx, CITY_Z));
+        let point = ctx.point().expect("City called only on world point");
+        let city = ctx.slice.city_at(&point).cloned();
+        let entity = city.clone().map(|city| city.spawn(commands, ctx, CITY_Z));
         entity.map(|entity| {
             GridHexResource::new(entity, city.expect("In this city map only if Some"))
         })
@@ -146,20 +141,21 @@ impl<'a> GridUpdater<'a> {
         commands: &mut Commands,
         ctx: &mut GameHexContext,
     ) -> Option<GridHexResource<Vec<ClientUnit>>> {
+        let point = ctx.point().expect("Units called only on world point");
         let units = ctx
             .slice
-            .units_at(&ctx.point)
+            .units_at(&point)
             .map(|units| units.into_iter().cloned().collect::<Vec<ClientUnit>>());
         let entity = units
             .clone()
-            .map(|units| units.entity(commands, ctx, UNIT_Z));
+            .map(|units| units.spawn(commands, ctx, UNIT_Z));
         entity.map(|entity| {
             GridHexResource::new(entity, units.expect("In this units map only if Some"))
         })
     }
 
     // TODO: despawn/spawn only really out/in in screen
-    fn update(&mut self, commands: &mut Commands, ctx: &'a mut GameContext<'a>) {
+    fn update(&mut self, commands: &mut Commands, ctx: &'a GameContext<'a>) {
         let world = ctx.slice.world();
         let center = world.imaginary_world_point_for_center_rel((0, 0));
         let layout = layout(&center);
@@ -179,7 +175,7 @@ impl<'a> GridUpdater<'a> {
             commands.entity(entity).despawn_recursive();
         }
 
-        let grid = GridResource::new(self.grid(commands, ctx, &center), center, layout);
+        let grid = GridResource::new(self.grid(commands, ctx), center, layout);
         commands.insert_resource(grid);
     }
 }
@@ -198,20 +194,19 @@ pub fn react_game_slice_updated(
     tiles: Query<Entity, With<HexTile>>,
     cities: Query<Entity, With<HexCity>>,
     units: Query<Entity, With<HexUnit>>,
-    game_slice: Res<GameSliceResource>,
+    slice: Res<GameSliceResource>,
     mut center: ResMut<CurrentCenter>,
     // mut camera_initialized: ResMut<CameraInitializedResource>,
 ) {
-    if let Some(slice) = &game_slice.0 {
+    if let Some(slice) = &slice.0 {
         info!("Refresh from game slice");
 
         // FIXME BS NOW: despawn must be in GridUpdater
         let window = windows.single();
         let (_, transform) = cameras.single();
 
-        let mut ctx = GameContext::new(slice, &assets, &atlases);
-        GridUpdater::new(window, transform, &tiles, &cities, &units)
-            .update(&mut commands, &mut ctx);
+        let ctx = GameContext::new(slice, &assets, &atlases);
+        GridUpdater::new(window, transform, &tiles, &cities, &units).update(&mut commands, &ctx);
 
         center.0 = Some(slice.center());
         // if !camera_initialized.0 && center.0.is_some() {

@@ -16,6 +16,7 @@ use state::StatePlugin;
 use window::window_plugin;
 
 mod assets;
+mod atlas;
 mod bridge;
 mod context;
 mod core;
@@ -54,7 +55,7 @@ fn entrypoint() -> Result<(), JsValue> {
 
     #[cfg(feature = "debug")]
     {
-        app.add_plugins(DebugPlugin)
+        app.add_plugins(DebugPlugin);
     }
 
     app.run();

@@ -30,6 +30,7 @@ impl Plugin for MapPlugin {
             .init_resource::<DraggingMap>()
             .add_observer(react_game_slice_updated)
             .add_observer(react_center_camera_on_grid)
+            // TODO: move into atlases
             .add_systems(Startup, init_atlases)
             .add_systems(
                 Update,
