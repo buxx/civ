@@ -4,10 +4,12 @@ use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame
 use common::geo::WorldPoint;
 use common::space::window::Window as BaseWindow;
 use input::{on_click, update_last_known_cursor_position};
+use selected::SelectedResource;
 
 use crate::state::AppState;
 
 pub mod input;
+pub mod selected;
 
 #[derive(Builder)]
 pub struct InGamePlugin {
@@ -20,6 +22,7 @@ impl Plugin for InGamePlugin {
             .init_resource::<CameraInitializedResource>()
             .init_resource::<GameFrameResource>()
             .init_resource::<LastKnownCursorPositionResource>()
+            .init_resource::<SelectedResource>()
             .insert_resource(
                 self.game_slice
                     .as_ref()

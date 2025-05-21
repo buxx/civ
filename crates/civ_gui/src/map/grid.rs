@@ -37,5 +37,13 @@ pub struct GridHexResource<T: Send + Sync> {
     pub item: T,
 }
 
+impl<T: Send + Sync> std::ops::Deref for GridHexResource<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.item
+    }
+}
+
 #[derive(Resource, Deref, DerefMut, Default)]
 pub struct CurrentCursorHex(pub Option<Hex>);

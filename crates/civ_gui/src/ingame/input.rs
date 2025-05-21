@@ -1,12 +1,11 @@
 use bevy::{prelude::*, window::PrimaryWindow};
-use common::{
-    game::slice::{ClientCity, ClientUnit},
-    world::{CtxTile, Tile},
+
+use crate::{
+    ingame::selected::{Selected, SelectedUnit},
+    map::{grid::GridResource, move_::DraggingMap},
 };
 
-use crate::map::{grid::GridResource, move_::DraggingMap};
-
-use super::LastKnownCursorPositionResource;
+use super::{selected::SelectedResource, LastKnownCursorPositionResource};
 
 pub fn update_last_known_cursor_position(
     mut last_position: ResMut<LastKnownCursorPositionResource>,
@@ -22,6 +21,7 @@ pub fn on_click(
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     grid: Res<GridResource>,
+    mut selected: ResMut<SelectedResource>,
     _dragging: Res<DraggingMap>,
 ) {
     // FIXME: not sure done before dragging teardown
@@ -40,10 +40,13 @@ pub fn on_click(
     {
         if let Some(Some(city)) = grid.get(&hex).map(|hex| &hex.city) {
             println!("{city:?}");
+            selected.0 = Selected::City(*city.id());
             return;
         }
         if let Some(Some(units)) = grid.get(&hex).map(|hex| &hex.units) {
-            println!("{:?}", units.item.first());
+            let unit = units.item.first().expect("Unit vector never Some if empty");
+            println!("{:?}", unit);
+            selected.0 = Selected::Unit(SelectedUnit::One(*unit.id()));
         }
     }
 }
