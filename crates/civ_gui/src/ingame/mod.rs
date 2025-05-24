@@ -3,7 +3,8 @@ use bon::Builder;
 use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame};
 use common::geo::WorldPoint;
 use common::space::window::Window as BaseWindow;
-use input::{on_click, update_last_known_cursor_position};
+use hexx::Hex;
+use input::{on_click, on_try_menu, on_try_select, update_last_known_cursor_position};
 use selected::{on_select_updated, SelectedResource};
 
 use crate::state::AppState;
@@ -34,6 +35,8 @@ impl Plugin for InGamePlugin {
                 (update_last_known_cursor_position,).run_if(in_state(AppState::InGame)),
             )
             .add_observer(on_click)
+            .add_observer(on_try_select)
+            .add_observer(on_try_menu)
             .add_observer(on_select_updated);
     }
 }
@@ -64,3 +67,9 @@ pub struct HexCity;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct Point(pub WorldPoint);
+
+#[derive(Debug, Event)]
+pub struct TrySelect(Hex);
+
+#[derive(Debug, Event)]
+pub struct TryMenu(Hex);
