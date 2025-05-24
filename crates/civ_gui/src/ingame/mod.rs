@@ -1,10 +1,14 @@
+pub mod menu;
 use bevy::prelude::*;
 use bon::Builder;
 use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame};
 use common::geo::WorldPoint;
 use common::space::window::Window as BaseWindow;
 use hexx::Hex;
-use input::{on_click, on_try_menu, on_try_select, update_last_known_cursor_position};
+use input::menu::on_try_menu;
+use input::select::on_try_select;
+use input::{on_click, update_last_known_cursor_position};
+use menu::MenuResource;
 use selected::{on_select_updated, SelectedResource};
 
 use crate::state::AppState;
@@ -24,6 +28,7 @@ impl Plugin for InGamePlugin {
             .init_resource::<GameFrameResource>()
             .init_resource::<LastKnownCursorPositionResource>()
             .init_resource::<SelectedResource>()
+            .init_resource::<MenuResource>()
             .insert_resource(
                 self.game_slice
                     .as_ref()

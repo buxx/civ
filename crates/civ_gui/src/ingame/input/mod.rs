@@ -1,14 +1,11 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::{
-    ingame::selected::{Selected, SelectedUnit},
-    map::grid::GridResource,
-};
+use crate::map::grid::GridResource;
 
-use super::{
-    selected::{SelectUpdated, SelectedResource},
-    LastKnownCursorPositionResource, TryMenu, TrySelect,
-};
+use super::{LastKnownCursorPositionResource, TryMenu, TrySelect};
+
+pub mod menu;
+pub mod select;
 
 pub fn update_last_known_cursor_position(
     mut last_position: ResMut<LastKnownCursorPositionResource>,
@@ -39,29 +36,4 @@ pub fn on_click(
             PointerButton::Middle => {}
         };
     }
-}
-
-pub fn on_try_select(
-    trigger: Trigger<TrySelect>,
-    mut commands: Commands,
-    mut selected: ResMut<SelectedResource>,
-    grid: Res<GridResource>,
-) {
-    let hex = trigger.event().0;
-    selected.0 = Selected::Nothing;
-
-    if let Some(Some(city)) = grid.get(&hex).map(|hex| &hex.city) {
-        selected.0 = Selected::City(*city.id());
-    }
-
-    if let Some(Some(units)) = grid.get(&hex).map(|hex| &hex.units) {
-        let unit = units.item.first().expect("Unit vector never Some if empty");
-        selected.0 = Selected::Unit(SelectedUnit::One(*unit.id()));
-    }
-
-    commands.trigger(SelectUpdated::new(hex, selected.0));
-}
-
-pub fn on_try_menu(_trigger: Trigger<TryMenu>) {
-    println!("menu");
 }

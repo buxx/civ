@@ -14,32 +14,24 @@ use super::GameSliceResource;
 #[derive(Debug, Event, Constructor)]
 pub struct SelectUpdated {
     pub hex: Hex,
-    pub selected: Selected,
+    pub selected: Option<Selected>,
 }
 
 #[derive(Debug, Resource, Default, Deref, Clone)]
-pub struct SelectedResource(pub Selected);
+pub struct SelectedResource(pub Option<Selected>);
 
 #[derive(Debug, Component, Constructor, Clone, Copy)]
 pub struct Select(Selected);
 
 #[derive(Debug, Clone, Copy)]
 pub enum Selected {
-    Nothing,
     City(CityId),
     Unit(SelectedUnit),
-}
-
-impl Default for Selected {
-    fn default() -> Self {
-        Self::Nothing
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum SelectedUnit {
     One(UnitId),
-    // Multiple(Vec<UnitId>),
 }
 
 impl IntoBundle for Select {
@@ -93,13 +85,15 @@ pub fn on_select_updated(
             commands.entity(entity).despawn();
         }
 
-        match selected {
-            Selected::Unit(_) => {
-                let ctx = GameContext::new(slice, &assets, &atlases);
-                let ctx = ctx.with(*hex);
-                Select::new(*selected).spawn(&mut commands, &ctx, TILE_Z + 0.2);
+        if let Some(selected) = selected {
+            match selected {
+                Selected::Unit(_) => {
+                    let ctx = GameContext::new(slice, &assets, &atlases);
+                    let ctx = ctx.with(*hex);
+                    Select::new(*selected).spawn(&mut commands, &ctx, TILE_Z + 0.2);
+                }
+                Selected::City(_) => {}
             }
-            Selected::Nothing | Selected::City(_) => {}
         }
     }
 }
