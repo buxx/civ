@@ -1,4 +1,3 @@
-pub mod menu;
 use bevy::prelude::*;
 use bon::Builder;
 use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame};
@@ -8,12 +7,14 @@ use hexx::Hex;
 use input::menu::on_try_menu;
 use input::select::on_try_select;
 use input::{on_click, update_last_known_cursor_position};
+use menu::draw::draw_menu;
 use menu::MenuResource;
 use selected::{on_select_updated, SelectedResource};
 
 use crate::state::AppState;
 
 pub mod input;
+pub mod menu;
 pub mod selected;
 
 #[derive(Builder)]
@@ -39,6 +40,7 @@ impl Plugin for InGamePlugin {
                 Update,
                 (update_last_known_cursor_position,).run_if(in_state(AppState::InGame)),
             )
+            .add_systems(Update, (draw_menu,).run_if(in_state(AppState::InGame)))
             .add_observer(on_click)
             .add_observer(on_try_select)
             .add_observer(on_try_menu)

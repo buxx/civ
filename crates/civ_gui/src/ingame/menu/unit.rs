@@ -1,12 +1,14 @@
-use common::game::unit::UnitId;
+use common::game::{slice::ClientUnit, unit::UnitId};
 
 #[derive(Debug)]
 pub struct UnitMenu {
-    unit_id: UnitId,
+    pub unit_id: UnitId,
 }
 
 impl UnitMenu {
-    pub fn new(unit_id: UnitId) -> Self {
-        Self { unit_id }
+    pub fn from_unit(unit: &ClientUnit) -> Self {
+        Self {
+            unit_id: *unit.id(),
+        }
     }
 }

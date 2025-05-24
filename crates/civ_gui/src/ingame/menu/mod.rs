@@ -1,3 +1,4 @@
+pub mod draw;
 use bevy::prelude::*;
 
 use unit::UnitMenu;
