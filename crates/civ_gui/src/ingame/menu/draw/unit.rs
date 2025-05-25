@@ -1,31 +1,35 @@
 use bevy::window::Window;
-use bevy_egui::{
-    egui::{self},
-    EguiContexts,
-};
+use bevy_egui::egui::Context;
 
-use crate::ingame::menu::unit::UnitMenu;
+use crate::{
+    ingame::menu::{
+        unit::{UnitMenu, UnitMenuEffect},
+        MENU_DISPLAY_FACTOR,
+    },
+    utils::gui::layout::fixed_window,
+};
 
 use super::DrawMenu;
 
-impl DrawMenu for UnitMenu {
-    fn draw(&mut self, mut contexts: EguiContexts, window: &Window) {
-        let window_size = &window.resolution;
-        let screen_width = window_size.width();
-        let screen_height = window_size.height();
+impl DrawMenu<UnitMenuEffect> for UnitMenu {
+    fn draw(&mut self, ctx: &Context, window: &Window) -> Vec<UnitMenuEffect> {
+        let mut effects = vec![];
 
-        // Fixed size of the egui window
-        let desired_width = 300.0;
-        let desired_height = 200.0;
+        fixed_window()
+            .ctx(ctx)
+            .window(window)
+            .factor(MENU_DISPLAY_FACTOR)
+            .ui(|ui| {
+                ui.vertical_centered(|ui| {
+                    for can in &self.can {
+                        if ui.button(can.name()).clicked() {
+                            effects.push(UnitMenuEffect::Do(can.clone()));
+                        }
+                    }
+                });
+            })
+            .call();
 
-        let center_x = (screen_width - desired_width) / 2.0;
-        let center_y = (screen_height - desired_height) / 2.0;
-
-        egui::Window::new("Centered Window")
-            .fixed_size(egui::vec2(desired_width, desired_height))
-            .fixed_pos(egui::pos2(center_x, center_y))
-            .show(contexts.ctx_mut(), |ui| {
-                ui.label("This is a centered, fixed-size window.");
-            });
+        effects
     }
 }

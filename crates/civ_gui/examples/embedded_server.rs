@@ -3,7 +3,7 @@ use bevy::prelude::*;
 #[cfg(feature = "debug")]
 use civ_gui::debug::DebugPlugin;
 use civ_gui::menu::join::JoinEvent;
-use civ_server::game::unit::Unit;
+use civ_server::game::unit::{Unit, UnitCanBuilder};
 use civ_server::state::clients::{ClientState, Clients};
 use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
 use civ_world::config::WorldConfig;
@@ -77,6 +77,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .type_(UnitType::Settlers)
         .flag(Flag::Abkhazia)
         .geo(GeoContext::builder().point(WorldPoint::new(5, 5)).build())
+        .can(UnitCanBuilder::new().build())
         .build();
 
     let cities = vec![];

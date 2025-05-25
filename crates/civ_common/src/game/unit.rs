@@ -86,3 +86,16 @@ impl TaskType {
         matches!(self, TaskType::City(CityTaskType::Production(_)))
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum UnitCan {
+    Settle,
+}
+
+impl UnitCan {
+    pub fn name(&self) -> &str {
+        match self {
+            UnitCan::Settle => "Settle",
+        }
+    }
+}

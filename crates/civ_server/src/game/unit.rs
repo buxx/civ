@@ -5,7 +5,7 @@ use common::{
     game::{
         nation::flag::Flag,
         slice::ClientUnit,
-        unit::{UnitId, UnitType},
+        unit::{UnitCan, UnitId, UnitType},
     },
     geo::Geo,
 };
@@ -24,6 +24,7 @@ pub struct Unit {
     type_: UnitType,
     task: Option<UnitTaskWrapper>,
     geo: GeoContext,
+    can: Vec<UnitCan>,
 }
 
 impl Unit {
@@ -66,6 +67,22 @@ impl IntoClientModel<ClientUnit> for Unit {
             .maybe_task(self.task.clone().map(|t| t.into()))
             .geo(self.geo)
             .flag(self.flag)
+            .can(self.can.clone())
             .build()
+    }
+}
+
+pub struct UnitCanBuilder {
+    // FIXME BS NOW: context references
+}
+
+impl UnitCanBuilder {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn build(&self) -> Vec<UnitCan> {
+        // FIXME BS NOW
+        return vec![UnitCan::Settle];
     }
 }

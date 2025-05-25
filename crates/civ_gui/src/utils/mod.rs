@@ -1,3 +1,4 @@
+pub mod gui;
 pub mod bridge;
 use std::path::PathBuf;
 

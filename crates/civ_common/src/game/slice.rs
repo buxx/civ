@@ -10,7 +10,7 @@ use super::{
     city::{CityExploitation, CityId, CityProduction},
     nation::flag::Flag,
     tasks::client::{city::production::ClientCityProductionTask, ClientTask},
-    unit::{UnitId, UnitType},
+    unit::{UnitCan, UnitId, UnitType},
     GameFrame,
 };
 
@@ -134,6 +134,7 @@ pub struct ClientUnit {
     type_: UnitType,
     geo: GeoContext,
     task: Option<ClientTask>,
+    can: Vec<UnitCan>,
 }
 
 impl ClientUnit {
@@ -159,5 +160,9 @@ impl ClientUnit {
 
     pub fn task(&self) -> &Option<ClientTask> {
         &self.task
+    }
+
+    pub fn can(&self) -> &[UnitCan] {
+        &self.can
     }
 }

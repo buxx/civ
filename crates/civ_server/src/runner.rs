@@ -40,7 +40,7 @@ use crate::{
         extractor::Extractor,
         placer::{PlacerBox, RandomPlacer},
         task::settle::Settle,
-        unit::Unit,
+        unit::{Unit, UnitCanBuilder},
     },
     state::{NoLongerExist, State, StateError},
     task::{
@@ -483,6 +483,7 @@ impl Runner {
             .type_(UnitType::Settlers)
             .geo(GeoContext::builder().point(point).build())
             .flag(*flag)
+            .can(UnitCanBuilder::new().build())
             .build();
 
         let server_resume = self.state().server_resume(rules);

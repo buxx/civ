@@ -17,5 +17,6 @@ pub fn build_unit(i: usize) -> Unit {
         )
         .type_(UnitType::Warriors)
         .flag(Flag::Abkhazia)
+        .can(vec![])
         .build()
 }
