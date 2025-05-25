@@ -9,7 +9,7 @@ use crate::{
     utils::assets::{GameContext, GameHexContext, IntoBundle, Spawn, TILE_Z},
 };
 
-use super::GameSliceResource;
+use super::{FadeAnimation, GameSliceResource};
 
 #[derive(Debug, Event, Constructor)]
 pub struct SelectUpdated {
@@ -56,6 +56,7 @@ impl IntoBundle for Select {
                 ..default()
             },
             Transform::from_xyz(point.x, point.y, z),
+            FadeAnimation::default(),
         )
     }
 }
@@ -68,6 +69,7 @@ pub struct SelectBundle {
     pub marker: Select,
     pub sprite: Sprite,
     pub transform: Transform,
+    pub fade: FadeAnimation,
 }
 
 pub fn on_select_updated(
@@ -97,3 +99,5 @@ pub fn on_select_updated(
         }
     }
 }
+
+pub fn select_animation(query: Query<Entity, With<Select>>) {}
