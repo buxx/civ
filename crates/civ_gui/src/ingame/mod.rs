@@ -1,3 +1,4 @@
+pub mod user;
 use bevy::prelude::*;
 use bon::Builder;
 use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame};
@@ -8,8 +9,9 @@ use input::menu::on_try_menu;
 use input::select::on_try_select;
 use input::{on_click, update_last_known_cursor_position};
 use menu::draw::draw_menu;
-use menu::{on_menu_effect, MenuResource};
+use menu::MenuResource;
 use selected::{on_select_updated, SelectedResource};
+use user::interact::settle::on_setup_settle;
 
 use crate::state::AppState;
 
@@ -48,7 +50,7 @@ impl Plugin for InGamePlugin {
             .add_observer(on_click)
             .add_observer(on_try_select)
             .add_observer(on_try_menu)
-            .add_observer(on_menu_effect)
+            .add_observer(on_setup_settle)
             .add_observer(on_select_updated);
     }
 }
@@ -87,7 +89,7 @@ pub struct TrySelect(Hex);
 pub struct TryMenu(Hex);
 
 #[derive(Debug, Component)]
-struct FadeAnimation {
+pub struct FadeAnimation {
     timer: Timer,
     direction: f32, // 1.0 = fade in, -1.0 = fade out
 }

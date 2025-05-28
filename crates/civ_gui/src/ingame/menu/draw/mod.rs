@@ -1,12 +1,12 @@
 pub mod unit;
 use bevy_egui::{egui::Context, EguiContextSettings, EguiContexts};
 
-use super::{Menu, MenuResource, MENU_DISPLAY_FACTOR};
+use super::{MenuResource, MENU_DISPLAY_FACTOR};
 
 use bevy::prelude::*;
 
-pub trait DrawMenu<T: Event> {
-    fn draw(&mut self, ctx: &Context, window: &Window) -> Vec<T>;
+pub trait DrawMenu {
+    fn draw(&mut self, ctx: &Context, window: &Window, commands: &mut Commands) -> bool;
 }
 
 pub fn draw_menu(
@@ -24,13 +24,7 @@ pub fn draw_menu(
         }
 
         let window = windows.single();
-        // TODO: impl something to avoid match usage here
-        for event in match menu {
-            Menu::UnitMenu(menu) => menu.draw(contexts.ctx_mut(), window),
-        } {
-            commands.trigger(event);
-            disband = true;
-        }
+        disband = menu.draw(contexts.ctx_mut(), window, &mut commands);
     }
 
     if disband {

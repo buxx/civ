@@ -1,8 +1,9 @@
-pub mod draw;
 use bevy::prelude::*;
 
-use unit::{UnitMenu, UnitMenuEffect};
+use draw::DrawMenu;
+use unit::UnitMenu;
 
+pub mod draw;
 pub mod unit;
 
 pub const MENU_DISPLAY_FACTOR: f32 = 1.5;
@@ -15,7 +16,15 @@ pub enum Menu {
     UnitMenu(UnitMenu),
 }
 
-pub fn on_menu_effect(trigger: Trigger<UnitMenuEffect>) {
-    let effect = trigger.event();
-    info!("Trigger {:?}", effect);
+impl DrawMenu for Menu {
+    fn draw(
+        &mut self,
+        ctx: &bevy_egui::egui::Context,
+        window: &Window,
+        commands: &mut Commands,
+    ) -> bool {
+        match self {
+            Menu::UnitMenu(menu) => menu.draw(ctx, window, commands),
+        }
+    }
 }

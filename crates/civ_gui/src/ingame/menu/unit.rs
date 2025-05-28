@@ -1,5 +1,3 @@
-use bevy::prelude::*;
-
 use common::game::{
     slice::ClientUnit,
     unit::{UnitCan, UnitId},
@@ -18,9 +16,4 @@ impl UnitMenu {
             can: unit.can().to_vec(),
         }
     }
-}
-
-#[derive(Debug, Event, Clone)]
-pub enum UnitMenuEffect {
-    Do(UnitCan),
 }

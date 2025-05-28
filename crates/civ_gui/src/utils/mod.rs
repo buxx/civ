@@ -1,11 +1,11 @@
-pub mod gui;
-pub mod bridge;
 use std::path::PathBuf;
 
 #[cfg(not(target_arch = "wasm32"))]
 use home::home_dir;
 
 pub mod assets;
+pub mod bridge;
+pub mod gui;
 // #[cfg(target_arch = "wasm32")]
 // pub mod cookies;
 #[cfg(feature = "debug")]
