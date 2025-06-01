@@ -5,7 +5,7 @@ use common::game::unit::UnitCan;
 
 use crate::{
     ingame::{
-        menu::unit::UnitMenu, user::interact::settle::SetupSettleCityName, DrawUiComponent,
+        interact::settle::SetupSettleCityName, menu::unit::UnitMenu, DrawUiComponent,
         EGUI_DISPLAY_FACTOR,
     },
     utils::gui::layout::fixed_window,

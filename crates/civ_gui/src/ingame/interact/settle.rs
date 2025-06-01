@@ -1,12 +1,14 @@
 use bevy::prelude::*;
-use bevy_egui::{EguiContextSettings, EguiContexts};
 use common::game::unit::UnitId;
 use derive_more::Constructor;
 
 use crate::{
+    impl_ui_component_resource,
     ingame::{DrawUiComponent, EGUI_DISPLAY_FACTOR},
     utils::gui::layout::fixed_window,
 };
+
+use super::UiComponentResource;
 
 #[derive(Debug, Event, Deref)]
 pub struct SetupSettleCityName(pub UnitId);
@@ -22,6 +24,7 @@ pub struct SettleCityName {
 
 #[derive(Debug, Resource, Default)]
 pub struct SettleCityNameResource(pub Option<SettleCityName>);
+impl_ui_component_resource!(SettleCityNameResource, SettleCityName);
 
 pub fn on_setup_settle_city_name(
     trigger: Trigger<SetupSettleCityName>,
@@ -29,29 +32,6 @@ pub fn on_setup_settle_city_name(
 ) {
     let event = trigger.event();
     modal.0 = Some(SettleCityName::new(event.0, String::new()));
-}
-
-pub fn draw_settle_city_name(
-    mut commands: Commands,
-    mut egui: Query<(&mut EguiContextSettings, &Window)>,
-    mut modal: ResMut<SettleCityNameResource>,
-    mut contexts: EguiContexts,
-    windows: Query<&Window>,
-) {
-    let mut disband = false;
-
-    if let Some(modal) = &mut modal.0 {
-        if let Ok((mut egui_settings, _)) = egui.get_single_mut() {
-            egui_settings.scale_factor = EGUI_DISPLAY_FACTOR;
-        }
-
-        let window = windows.single();
-        disband = modal.draw(contexts.ctx_mut(), window, &mut commands);
-    }
-
-    if disband {
-        modal.0 = None;
-    }
 }
 
 impl DrawUiComponent for SettleCityName {

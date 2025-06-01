@@ -8,19 +8,21 @@ use hexx::Hex;
 use input::menu::on_try_menu;
 use input::select::on_try_select;
 use input::{on_click, update_last_known_cursor_position};
+use interact::draw_component;
+use interact::settle::{
+    on_setup_settle, on_setup_settle_city_name, SettleCityName, SettleCityNameResource,
+};
 use menu::draw::draw_menu;
 use menu::MenuResource;
 use selected::{on_select_updated, SelectedResource};
-use user::interact::settle::{
-    draw_settle_city_name, on_setup_settle, on_setup_settle_city_name, SettleCityNameResource,
-};
 
+use crate::add_component;
 use crate::state::AppState;
 
 pub mod input;
+pub mod interact;
 pub mod menu;
 pub mod selected;
-pub mod user;
 
 pub const EGUI_DISPLAY_FACTOR: f32 = 1.5;
 
@@ -37,7 +39,7 @@ impl Plugin for InGamePlugin {
             .init_resource::<LastKnownCursorPositionResource>()
             .init_resource::<SelectedResource>()
             .init_resource::<MenuResource>()
-            .init_resource::<SettleCityNameResource>()
+            // .init_resource::<SettleCityNameResource>()
             .insert_resource(
                 self.game_slice
                     .as_ref()
@@ -51,18 +53,20 @@ impl Plugin for InGamePlugin {
             .add_systems(Update, (draw_menu,).run_if(in_state(AppState::InGame)))
             .add_systems(
                 Update,
-                (draw_settle_city_name,).run_if(in_state(AppState::InGame)),
-            )
-            .add_systems(
-                Update,
                 (fade_animations,).run_if(in_state(AppState::InGame)),
             )
             .add_observer(on_click)
             .add_observer(on_try_select)
             .add_observer(on_try_menu)
-            .add_observer(on_setup_settle_city_name)
             .add_observer(on_setup_settle)
             .add_observer(on_select_updated);
+
+        add_component!(
+            app,
+            SettleCityNameResource,
+            draw_component::<SettleCityNameResource, SettleCityName>,
+            on_setup_settle_city_name
+        );
     }
 }
 
