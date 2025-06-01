@@ -1,12 +1,11 @@
 use bevy::prelude::*;
 
-use draw::DrawMenu;
 use unit::UnitMenu;
+
+use super::DrawUiComponent;
 
 pub mod draw;
 pub mod unit;
-
-pub const MENU_DISPLAY_FACTOR: f32 = 1.5;
 
 #[derive(Debug, Resource, Default, Deref, DerefMut)]
 pub struct MenuResource(pub Option<Menu>);
@@ -16,7 +15,7 @@ pub enum Menu {
     UnitMenu(UnitMenu),
 }
 
-impl DrawMenu for Menu {
+impl DrawUiComponent for Menu {
     fn draw(
         &mut self,
         ctx: &bevy_egui::egui::Context,
