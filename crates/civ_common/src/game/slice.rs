@@ -74,7 +74,7 @@ impl GameSlice {
         Some(units)
     }
 
-    pub fn unit_by_id(&self, id: &UnitId) -> Option<&ClientUnit> {
+    pub fn unit(&self, id: &UnitId) -> Option<&ClientUnit> {
         self.units.iter().find(|u| u.id() == id)
     }
 }

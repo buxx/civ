@@ -17,6 +17,7 @@ use menu::MenuResource;
 use selected::{on_select_updated, SelectedResource};
 
 use crate::add_component;
+use crate::ingame::interact::unit::settle::settle_city_name_on_slice_propagated;
 // use crate::ingame::interact::unit::info::{on_setup_unit_info, UnitInfo, UnitInfoResource};
 use crate::state::AppState;
 
@@ -73,7 +74,8 @@ impl Plugin for InGamePlugin {
             app,
             SettleCityNameResource,
             draw_component::<SettleCityNameResource, SettleCityName>,
-            on_setup_settle_city_name
+            on_setup_settle_city_name,
+            settle_city_name_on_slice_propagated
         );
     }
 }

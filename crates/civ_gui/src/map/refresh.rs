@@ -9,6 +9,7 @@ use derive_more::Constructor;
 
 use crate::{
     assets::tile::{layout, TILE_SIZE},
+    core::GameSlicePropagated,
     ingame::{GameSliceResource, HexTile},
     to_server,
     utils::assets::{GameContext, GameHexContext, Spawn, CITY_Z, TILE_Z, UNIT_Z},
@@ -214,6 +215,8 @@ pub fn react_game_slice_updated(
         //     camera_initialized.0 = true;
         //     commands.trigger(CenterCameraOnGrid)
         // }
+
+        commands.trigger(GameSlicePropagated);
     }
 }
 

@@ -18,7 +18,7 @@ pub fn on_try_menu(
 
         match selected {
             Selected::Unit(SelectedUnit::One(unit_id)) => {
-                let Some(unit) = slice.unit_by_id(&unit_id) else {
+                let Some(unit) = slice.unit(&unit_id) else {
                     error!(
                         "Can't build menu for unit {}: not found in game slice.",
                         unit_id
