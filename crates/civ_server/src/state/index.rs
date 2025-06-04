@@ -149,6 +149,7 @@ impl Index {
                     },
                     StateEffect::City(_, effect) => match effect {
                         CityEffect::New(_) | CityEffect::Remove(_) => {
+                            // FIXME: probably too much impacting ? Do only necessary here ?
                             reindex_cities = true;
                         }
                         CityEffect::Replace(_) => {
@@ -157,13 +158,11 @@ impl Index {
                     },
                     StateEffect::Unit(_, effect) => match effect {
                         UnitEffect::New(_) | UnitEffect::Remove(_) => {
+                            // FIXME: probably too much impacting ? Do only necessary here ?
                             reindex_units = true;
                         }
-                        UnitEffect::Replace(unit) => {
-                            self.xy_units
-                                .entry(*unit.geo().point())
-                                .or_default()
-                                .retain(|id| id != unit.id());
+                        UnitEffect::Replace(_unit) => {
+                            //
                         }
                     },
                     StateEffect::Testing => {}
@@ -253,5 +252,36 @@ impl From<&Snapshot> for Index {
         index.reindex_tasks(&tasks);
 
         index
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::game::unit::_Factori_Builder_Unit;
+
+    #[test]
+    fn test_apply_unit_replace() {
+        // Given
+        let mut index = Index::default();
+        let unit = create!(Unit);
+        index.reindex_units(&[unit.clone()]);
+
+        // When
+        index.apply(
+            &vec![Effect::State(StateEffect::Unit(
+                *unit.id(),
+                UnitEffect::Replace(unit.clone()),
+            ))],
+            &[],
+            &[unit.clone()],
+        );
+
+        // Then
+        assert_eq!(
+            index.xy_units.get(unit.geo().point()),
+            Some(&vec![*unit.id()])
+        );
     }
 }

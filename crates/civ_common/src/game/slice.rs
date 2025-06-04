@@ -14,7 +14,7 @@ use super::{
     GameFrame,
 };
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct GameSlice {
     world: PartialWorld,
     cities: Vec<ClientCity>,
@@ -76,6 +76,19 @@ impl GameSlice {
 
     pub fn unit_by_id(&self, id: &UnitId) -> Option<&ClientUnit> {
         self.units.iter().find(|u| u.id() == id)
+    }
+}
+
+impl std::fmt::Debug for GameSlice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GameSlice")
+            .field(
+                "world",
+                &format!("{} world tiles", self.world.tiles().len()),
+            )
+            .field("cities", &format!("{} cities", self.cities.len()))
+            .field("units", &format!("{} units", self.units.len()))
+            .finish()
     }
 }
 

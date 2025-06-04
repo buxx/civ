@@ -4,6 +4,7 @@
         "bincode",
         "CBOR",
         "despawn",
+        "factori",
         "fibonacci",
         "hashbrown",
         "hexx",

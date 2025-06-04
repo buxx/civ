@@ -184,6 +184,7 @@ impl<'a> GridUpdater<'a> {
 // - load more than screen
 // - despawn only outdated tiles
 // - manage unit & cities like tiles at server side
+#[allow(clippy::complexity)]
 pub fn react_game_slice_updated(
     _trigger: Trigger<GameSliceUpdated>,
     mut commands: Commands,
@@ -199,7 +200,7 @@ pub fn react_game_slice_updated(
     // mut camera_initialized: ResMut<CameraInitializedResource>,
 ) {
     if let Some(slice) = &slice.0 {
-        info!("Refresh from game slice");
+        info!("Refresh from game slice: {slice:?}");
 
         // FIXME BS NOW: despawn must be in GridUpdater
         let window = windows.single();

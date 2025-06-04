@@ -3,7 +3,7 @@ use bevy_egui::{EguiContextSettings, EguiContexts};
 
 use super::{DrawUiComponent, EGUI_DISPLAY_FACTOR};
 
-pub mod settle;
+pub mod unit;
 
 #[macro_export]
 macro_rules! add_component {

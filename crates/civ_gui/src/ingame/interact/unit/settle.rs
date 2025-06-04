@@ -1,14 +1,18 @@
 use bevy::prelude::*;
-use common::game::unit::UnitId;
+use common::{
+    game::unit::UnitId,
+    network::message::{ClientToServerInGameMessage, ClientToServerUnitMessage},
+};
 use derive_more::Constructor;
 
 use crate::{
     impl_ui_component_resource,
     ingame::{DrawUiComponent, EGUI_DISPLAY_FACTOR},
+    to_server,
     utils::gui::layout::fixed_window,
 };
 
-use super::UiComponentResource;
+use super::super::UiComponentResource;
 
 #[derive(Debug, Event, Deref)]
 pub struct SetupSettleCityName(pub UnitId);
@@ -62,7 +66,13 @@ impl DrawUiComponent for SettleCityName {
     }
 }
 
-pub fn on_setup_settle(trigger: Trigger<SetupSettle>) {
+pub fn on_setup_settle(trigger: Trigger<SetupSettle>, mut commands: Commands) {
     let event = trigger.event();
-    println!("setup settle: {event:?}");
+    to_server!(
+        commands,
+        ClientToServerInGameMessage::Unit(
+            event.0,
+            ClientToServerUnitMessage::Settle(event.1.clone())
+        )
+    );
 }

@@ -9,7 +9,7 @@ use input::menu::on_try_menu;
 use input::select::on_try_select;
 use input::{on_click, update_last_known_cursor_position};
 use interact::draw_component;
-use interact::settle::{
+use interact::unit::settle::{
     on_setup_settle, on_setup_settle_city_name, SettleCityName, SettleCityNameResource,
 };
 use menu::draw::draw_menu;
@@ -17,6 +17,7 @@ use menu::MenuResource;
 use selected::{on_select_updated, SelectedResource};
 
 use crate::add_component;
+use crate::ingame::interact::unit::info::{on_setup_unit_info, UnitInfo, UnitInfoResource};
 use crate::state::AppState;
 
 pub mod input;
@@ -60,6 +61,13 @@ impl Plugin for InGamePlugin {
             .add_observer(on_try_menu)
             .add_observer(on_setup_settle)
             .add_observer(on_select_updated);
+
+        add_component!(
+            app,
+            UnitInfoResource,
+            draw_component::<UnitInfoResource, UnitInfo>,
+            on_setup_unit_info
+        );
 
         add_component!(
             app,

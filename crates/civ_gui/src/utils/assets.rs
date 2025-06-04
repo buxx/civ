@@ -229,7 +229,7 @@ impl IntoBundle for ClientCity {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.layout().hex_to_world_pos(ctx.hex);
-        let atlas_index = AtlasIndex(4);
+        let atlas_index = AtlasIndex(6);
 
         // FIXME: Must be computed from list (first, for example)
         HexUnitBundle::new(

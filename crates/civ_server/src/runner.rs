@@ -661,7 +661,7 @@ mod test {
             server::ServerResume,
             slice::ClientUnit,
             tasks::client::{settle::ClientSettle, ClientTask, ClientTaskType},
-            unit::{TaskType, UnitType},
+            unit::{TaskType, UnitCan, UnitType},
             GameFrame, PlayerId,
         },
         geo::{ImaginaryWorldPoint, WorldPoint},
@@ -957,6 +957,7 @@ mod test {
                 GameFrame(0),
                 GameFrame(100),
             ))
+            .can(vec![UnitCan::Settle])
             .build();
         let expected_set_unit = ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
             ClientStateMessage::SetUnit(expected_client_unit),

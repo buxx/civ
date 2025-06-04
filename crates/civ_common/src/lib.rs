@@ -1,3 +1,7 @@
+#[cfg(test)]
+#[macro_use]
+extern crate factori;
+
 pub mod game;
 pub mod geo;
 pub mod network;
