@@ -12,14 +12,12 @@ use interact::draw_component;
 use interact::unit::settle::{
     on_setup_settle, on_setup_settle_city_name, SettleCityName, SettleCityNameResource,
 };
-use menu::draw::draw_menu;
 use menu::MenuResource;
 use selected::{on_select_updated, SelectedResource};
 
 use crate::add_component;
 use crate::ingame::interact::unit::settle::settle_city_name_on_slice_propagated;
-use crate::ingame::menu::{menu_on_slice_propagated, on_setup_menu};
-use crate::menu::Menu;
+use crate::ingame::menu::{draw_menu, menu_on_slice_propagated, on_setup_menu, Menu};
 // use crate::ingame::interact::unit::info::{on_setup_unit_info, UnitInfo, UnitInfoResource};
 use crate::state::AppState;
 

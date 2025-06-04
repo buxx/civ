@@ -6,7 +6,10 @@ use unit::UnitMenu;
 
 use crate::{
     core::GameSlicePropagated,
-    ingame::{DrawUiComponent, GameSliceResource, EGUI_DISPLAY_FACTOR},
+    impl_ui_component_resource,
+    ingame::{
+        interact::UiComponentResource, DrawUiComponent, GameSliceResource, EGUI_DISPLAY_FACTOR,
+    },
 };
 
 pub mod unit;
@@ -18,6 +21,7 @@ pub enum SetupMenu {
 
 #[derive(Debug, Resource, Default, Deref, DerefMut)]
 pub struct MenuResource(pub Option<Menu>);
+impl_ui_component_resource!(MenuResource, Menu);
 
 #[derive(Debug)]
 pub enum Menu {
