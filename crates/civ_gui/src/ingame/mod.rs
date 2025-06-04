@@ -17,7 +17,7 @@ use menu::MenuResource;
 use selected::{on_select_updated, SelectedResource};
 
 use crate::add_component;
-use crate::ingame::interact::unit::info::{on_setup_unit_info, UnitInfo, UnitInfoResource};
+// use crate::ingame::interact::unit::info::{on_setup_unit_info, UnitInfo, UnitInfoResource};
 use crate::state::AppState;
 
 pub mod input;
@@ -62,12 +62,12 @@ impl Plugin for InGamePlugin {
             .add_observer(on_setup_settle)
             .add_observer(on_select_updated);
 
-        add_component!(
-            app,
-            UnitInfoResource,
-            draw_component::<UnitInfoResource, UnitInfo>,
-            on_setup_unit_info
-        );
+        // add_component!(
+        //     app,
+        //     UnitInfoResource,
+        //     draw_component::<UnitInfoResource, UnitInfo>,
+        //     on_setup_unit_info
+        // );
 
         add_component!(
             app,

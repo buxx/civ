@@ -6,24 +6,24 @@ use crate::impl_ui_component_resource;
 
 use super::super::UiComponentResource;
 
-#[derive(Debug, Event, Constructor)]
-pub struct SetupUnitInfo(pub UnitId, pub Option<ClientTask>);
+// #[derive(Debug, Event, Constructor)]
+// pub struct SetupUnitInfo(pub UnitId, pub Option<ClientTask>);
 
-// FIXME: manage in automatic way invalidation/update of these info (when unit updated)
-#[derive(Debug, Constructor)]
-pub struct UnitInfo {
-    unit_id: UnitId,
-    task: Option<ClientTask>,
-}
+// // FIXME: manage in automatic way invalidation/update of these info (when unit updated)
+// #[derive(Debug, Constructor)]
+// pub struct UnitInfo {
+//     unit_id: UnitId,
+//     task: Option<ClientTask>,
+// }
 
-#[derive(Debug, Resource, Default)]
-pub struct UnitInfoResource(pub Option<UnitInfo>);
-impl_ui_component_resource!(UnitInfoResource, UnitInfo);
+// #[derive(Debug, Resource, Default)]
+// pub struct UnitInfoResource(pub Option<UnitInfo>);
+// impl_ui_component_resource!(UnitInfoResource, UnitInfo);
 
-pub fn on_setup_unit_info(trigger: Trigger<SetupUnitInfo>, mut modal: ResMut<UnitInfoResource>) {
-    let event = trigger.event();
-    modal.0 = Some(UnitInfo::new(event.0, event.1.clone()));
-}
+// pub fn on_setup_unit_info(trigger: Trigger<SetupUnitInfo>, mut modal: ResMut<UnitInfoResource>) {
+//     let event = trigger.event();
+//     modal.0 = Some(UnitInfo::new(event.0, event.1.clone()));
+// }
 
 // FIXME BS NOW: il faut
 // Que la construction de UnitInfo soit faite a partir de la lecture de la vrai Unit (dans la slice)
