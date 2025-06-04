@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use common::{
-    game::{slice::ClientUnit, unit::UnitId},
+    game::{
+        slice::ClientUnit,
+        unit::{UnitCan, UnitId},
+    },
     network::message::{ClientToServerInGameMessage, ClientToServerUnitMessage},
 };
 use derive_more::Constructor;
@@ -56,7 +59,11 @@ pub fn settle_city_name_on_slice_propagated(
 ) {
     if let (Some(component), Some(slice)) = (&modal.0, &slice.0) {
         if let Some(unit) = slice.unit(&component.unit_id) {
-            modal.0 = Some(SettleCityName::from_unit(unit));
+            if unit.can().contains(&UnitCan::Settle) {
+                modal.0 = Some(SettleCityName::from_unit(unit));
+            } else {
+                modal.0 = None;
+            }
         } else {
             modal.0 = None;
         }

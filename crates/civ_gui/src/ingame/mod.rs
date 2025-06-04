@@ -18,6 +18,8 @@ use selected::{on_select_updated, SelectedResource};
 
 use crate::add_component;
 use crate::ingame::interact::unit::settle::settle_city_name_on_slice_propagated;
+use crate::ingame::menu::{menu_on_slice_propagated, on_setup_menu};
+use crate::menu::Menu;
 // use crate::ingame::interact::unit::info::{on_setup_unit_info, UnitInfo, UnitInfoResource};
 use crate::state::AppState;
 
@@ -40,7 +42,7 @@ impl Plugin for InGamePlugin {
             .init_resource::<GameFrameResource>()
             .init_resource::<LastKnownCursorPositionResource>()
             .init_resource::<SelectedResource>()
-            .init_resource::<MenuResource>()
+            // .init_resource::<MenuResource>()
             // .init_resource::<SettleCityNameResource>()
             .insert_resource(
                 self.game_slice
@@ -62,6 +64,14 @@ impl Plugin for InGamePlugin {
             .add_observer(on_try_menu)
             .add_observer(on_setup_settle)
             .add_observer(on_select_updated);
+
+        add_component!(
+            app,
+            MenuResource,
+            draw_component::<MenuResource, Menu>,
+            on_setup_menu,
+            menu_on_slice_propagated
+        );
 
         // add_component!(
         //     app,
