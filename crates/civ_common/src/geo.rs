@@ -1,4 +1,5 @@
 use bon::Builder;
+use derive_more::Constructor;
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
 
@@ -104,7 +105,7 @@ pub trait Geo {
     fn geo_mut(&mut self) -> &mut GeoContext;
 }
 
-#[derive(Builder, Clone, Copy, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Builder, Clone, Copy, Serialize, Deserialize, Debug, PartialEq, Constructor)]
 pub struct GeoContext {
     point: WorldPoint,
 }

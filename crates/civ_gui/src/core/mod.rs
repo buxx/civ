@@ -36,3 +36,6 @@ pub struct GameWindowUpdated;
 // TODO: move
 #[derive(Event)]
 pub struct GameSliceUpdated;
+// TODO: move
+#[derive(Event)]
+pub struct GameSlicePropagated;

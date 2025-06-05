@@ -1,6 +1,8 @@
 use std::sync::RwLockReadGuard;
 
 use bon::Builder;
+#[cfg(test)]
+use common::geo::WorldPoint;
 use common::{
     game::{
         nation::flag::Flag,
@@ -17,14 +19,15 @@ use crate::{state::State, task::unit::UnitTaskWrapper};
 
 use super::IntoClientModel;
 
+// Note: fields are pub to permit factori usage in other crates ...
 #[derive(Debug, Builder, Clone, Serialize, Deserialize)]
 pub struct Unit {
-    id: UnitId,
-    flag: Flag,
-    type_: UnitType,
-    task: Option<UnitTaskWrapper>,
-    geo: GeoContext,
-    can: Vec<UnitCan>,
+    pub id: UnitId,
+    pub flag: Flag,
+    pub type_: UnitType,
+    pub task: Option<UnitTaskWrapper>,
+    pub geo: GeoContext,
+    pub can: Vec<UnitCan>,
 }
 
 impl Unit {
@@ -72,6 +75,19 @@ impl IntoClientModel<ClientUnit> for Unit {
     }
 }
 
+#[cfg(test)]
+factori!(Unit, {
+    default {
+        id = UnitId::default(),
+        flag = Flag::Abkhazia,
+        type_ = UnitType::Settlers,
+        task = None,
+        geo = GeoContext::new(WorldPoint::new(0, 0)),
+        can = Vec::new(),
+    }
+});
+
+#[derive(Default)]
 pub struct UnitCanBuilder {
     // FIXME BS NOW: context references
 }
@@ -83,6 +99,6 @@ impl UnitCanBuilder {
 
     pub fn build(&self) -> Vec<UnitCan> {
         // FIXME BS NOW
-        return vec![UnitCan::Settle];
+        vec![UnitCan::Settle]
     }
 }

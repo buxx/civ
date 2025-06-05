@@ -3,14 +3,15 @@ use bevy_egui::{EguiContextSettings, EguiContexts};
 
 use super::{DrawUiComponent, EGUI_DISPLAY_FACTOR};
 
-pub mod settle;
+pub mod unit;
 
 #[macro_export]
 macro_rules! add_component {
-    ($app:expr, $resource:ty, $system:expr, $observer:expr) => {
+    ($app:expr, $resource:ty, $system:expr, $event_observer:expr, $slice_observer:expr) => {
         $app.init_resource::<$resource>()
             .add_systems(Update, ($system,).run_if(in_state(AppState::InGame)))
-            .add_observer($observer)
+            .add_observer($event_observer)
+            .add_observer($slice_observer)
     };
 }
 

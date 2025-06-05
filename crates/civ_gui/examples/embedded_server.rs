@@ -72,7 +72,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         DisplayStep::Close,
     );
 
-    let settler = Unit::builder()
+    let settler1 = Unit::builder()
+        .id(Uuid::new_v4().into())
+        .type_(UnitType::Settlers)
+        .flag(Flag::Abkhazia)
+        .geo(GeoContext::builder().point(WorldPoint::new(2, 2)).build())
+        .can(UnitCanBuilder::new().build())
+        .build();
+
+    let settler2 = Unit::builder()
         .id(Uuid::new_v4().into())
         .type_(UnitType::Settlers)
         .flag(Flag::Abkhazia)
@@ -81,7 +89,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build();
 
     let cities = vec![];
-    let units = vec![settler];
+    let units = vec![settler1, settler2];
 
     // Start server
     println!("Start server");

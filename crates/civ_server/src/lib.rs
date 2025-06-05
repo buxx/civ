@@ -1,3 +1,7 @@
+#[cfg(test)]
+#[macro_use]
+extern crate factori;
+
 use std::path::PathBuf;
 
 use crate::config::ServerConfig;
