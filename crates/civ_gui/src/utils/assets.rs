@@ -9,7 +9,10 @@ use bevy::{
     utils::default,
 };
 use common::{
-    game::slice::{ClientCity, ClientUnit, GameSlice},
+    game::{
+        slice::{ClientCity, ClientUnit, GameSlice},
+        tasks::client::{ClientTask, ClientTaskType},
+    },
     geo::WorldPoint,
     world::{CtxTile, TerrainType, Tile},
 };
@@ -51,12 +54,9 @@ pub trait IntoBundle {
 pub trait Spawn: IntoBundle {
     fn spawn(&self, commands: &mut Commands, ctx: &GameHexContext, z: f32) -> Entity {
         let bundle = self.bundle(ctx, z);
-
-        #[cfg(feature = "debug_tiles")]
         let mut entity = commands.spawn(bundle);
 
-        #[cfg(not(feature = "debug_tiles"))]
-        let entity = commands.spawn(bundle);
+        self.spawned(&mut entity, ctx, z);
 
         #[cfg(feature = "debug_tiles")]
         {
@@ -69,6 +69,8 @@ pub trait Spawn: IntoBundle {
 
         entity.id()
     }
+
+    fn spawned(&self, _entity: &mut EntityCommands, _ctx: &GameHexContext, _z: f32) {}
 }
 
 #[derive(Constructor)]
@@ -210,8 +212,19 @@ impl IntoBundle for Vec<ClientUnit> {
         )
     }
 }
-// TODO: Derive
-impl Spawn for Vec<ClientUnit> {}
+
+impl Spawn for Vec<ClientUnit> {
+    fn spawned(&self, entity: &mut EntityCommands, ctx: &GameHexContext, z: f32) {
+        // TODO: Consider first unit for now ...
+        if let Some(unit) = self.first() {
+            if let Some(task) = unit.task() {
+                entity.with_children(|b| {
+                    b.spawn(task.bundle(ctx, z + 0.1));
+                });
+            }
+        }
+    }
+}
 
 #[derive(Bundle, Constructor)]
 pub struct HexCityBundle {
@@ -248,3 +261,38 @@ impl IntoBundle for ClientCity {
 }
 // TODO: Derive
 impl Spawn for ClientCity {}
+
+#[derive(Bundle, Constructor)]
+pub struct ClientTaskBundle {
+    pub sprite: Sprite,
+    pub transform: Transform,
+}
+
+impl IntoBundle for ClientTask {
+    type BundleType = ClientTaskBundle;
+    #[cfg(feature = "debug_tiles")]
+    type DebugBundleType = ();
+
+    fn bundle(&self, ctx: &GameHexContext, z: f32) -> Self::BundleType {
+        // FIXME BS NOW: use atlas index dedicated to tasks
+        let texture = ctx.assets.load(TILES_ATLAS_PATH);
+
+        let atlas_index = match self.type_() {
+            ClientTaskType::Idle => todo!(),
+            // FIXME BS NOW: Type specific of this atlas
+            ClientTaskType::Settle(_) => AtlasIndex(1),
+        };
+
+        ClientTaskBundle::new(
+            Sprite {
+                image: texture.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    index: *atlas_index,
+                    layout: ctx.atlases.tiles.clone(),
+                }),
+                ..default()
+            },
+            Transform::from_xyz(0., 0., z),
+        )
+    }
+}
