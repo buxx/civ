@@ -18,6 +18,7 @@ use selected::{on_select_updated, SelectedResource};
 use crate::add_component;
 use crate::ingame::interact::unit::settle::settle_city_name_on_slice_propagated;
 use crate::ingame::menu::{draw_menu, menu_on_slice_propagated, on_setup_menu, Menu};
+use crate::ingame::selected::select_on_game_slice_propagated;
 // use crate::ingame::interact::unit::info::{on_setup_unit_info, UnitInfo, UnitInfoResource};
 use crate::state::AppState;
 
@@ -61,7 +62,8 @@ impl Plugin for InGamePlugin {
             .add_observer(on_try_select)
             .add_observer(on_try_menu)
             .add_observer(on_setup_settle)
-            .add_observer(on_select_updated);
+            .add_observer(on_select_updated)
+            .add_observer(select_on_game_slice_propagated);
 
         add_component!(
             app,

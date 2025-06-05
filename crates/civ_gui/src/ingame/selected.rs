@@ -5,7 +5,8 @@ use hexx::Hex;
 
 use crate::{
     assets::tile::TILES_ATLAS_PATH,
-    map::{AtlasIndex, AtlasesResource},
+    core::GameSlicePropagated,
+    map::{grid::GridResource, AtlasIndex, AtlasesResource},
     utils::assets::{GameContext, GameHexContext, IntoBundle, Spawn, TILE_Z},
 };
 
@@ -100,4 +101,24 @@ pub fn on_select_updated(
     }
 }
 
-pub fn select_animation(query: Query<Entity, With<Select>>) {}
+pub fn select_on_game_slice_propagated(
+    _trigger: Trigger<GameSlicePropagated>,
+    mut commands: Commands,
+    slice: Res<GameSliceResource>,
+    query: Query<(&Select, Entity)>,
+) {
+    if let Some(slice) = &slice.0 {
+        for (select, entity) in query.iter() {
+            match select.0 {
+                Selected::Unit(selected_unit) => match selected_unit {
+                    SelectedUnit::One(unit_id) => {
+                        if slice.unit(&unit_id).is_none() {
+                            commands.entity(entity).despawn();
+                        }
+                    }
+                },
+                Selected::City(_city_id) => todo!(),
+            }
+        }
+    }
+}
