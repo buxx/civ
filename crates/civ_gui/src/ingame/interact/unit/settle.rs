@@ -1,25 +1,28 @@
 use bevy::prelude::*;
 use common::{
-    game::{
-        slice::ClientUnit,
-        unit::{UnitCan, UnitId},
-    },
+    game::{slice::ClientUnit, unit::UnitId},
     network::message::{ClientToServerInGameMessage, ClientToServerUnitMessage},
 };
 use derive_more::Constructor;
 
 use crate::{
-    core::GameSlicePropagated,
     impl_ui_component_resource,
-    ingame::{DrawUiComponent, GameSliceResource, EGUI_DISPLAY_FACTOR},
+    ingame::{
+        interact::{FromUnit, WithUnitId},
+        DrawUiComponent, EGUI_DISPLAY_FACTOR,
+    },
     to_server,
     utils::gui::layout::fixed_window,
 };
 
-use super::super::UiComponentResource;
-
 #[derive(Debug, Event, Deref)]
 pub struct SetupSettleCityName(pub UnitId);
+
+impl WithUnitId for SetupSettleCityName {
+    fn unit_id(&self) -> &UnitId {
+        &self.0
+    }
+}
 
 #[derive(Debug, Event)]
 pub struct SetupSettle(pub UnitId, pub String);
@@ -30,45 +33,20 @@ pub struct SettleCityName {
     name: String,
 }
 
-impl SettleCityName {
+impl FromUnit for SettleCityName {
     fn from_unit(unit: &ClientUnit) -> Self {
         Self::new(*unit.id(), String::new())
+    }
+}
+impl WithUnitId for SettleCityName {
+    fn unit_id(&self) -> &UnitId {
+        &self.unit_id
     }
 }
 
 #[derive(Debug, Resource, Default)]
 pub struct SettleCityNameResource(pub Option<SettleCityName>);
-impl_ui_component_resource!(SettleCityNameResource, SettleCityName);
-
-pub fn on_setup_settle_city_name(
-    trigger: Trigger<SetupSettleCityName>,
-    slice: Res<GameSliceResource>,
-    mut modal: ResMut<SettleCityNameResource>,
-) {
-    if let Some(slice) = &slice.0 {
-        if let Some(unit) = slice.unit(&trigger.event().0) {
-            modal.0 = Some(SettleCityName::from_unit(unit));
-        }
-    }
-}
-
-pub fn settle_city_name_on_slice_propagated(
-    _trigger: Trigger<GameSlicePropagated>,
-    slice: Res<GameSliceResource>,
-    mut modal: ResMut<SettleCityNameResource>,
-) {
-    if let (Some(component), Some(slice)) = (&modal.0, &slice.0) {
-        if let Some(unit) = slice.unit(&component.unit_id) {
-            if unit.can().contains(&UnitCan::Settle) {
-                modal.0 = Some(SettleCityName::from_unit(unit));
-            } else {
-                modal.0 = None;
-            }
-        } else {
-            modal.0 = None;
-        }
-    }
-}
+impl_ui_component_resource!(SettleCityNameResource, SettleCityName, SetupSettleCityName);
 
 impl DrawUiComponent for SettleCityName {
     fn draw(
