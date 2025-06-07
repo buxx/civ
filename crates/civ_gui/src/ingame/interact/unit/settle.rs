@@ -38,7 +38,7 @@ impl SettleCityName {
 
 #[derive(Debug, Resource, Default)]
 pub struct SettleCityNameResource(pub Option<SettleCityName>);
-impl_ui_component_resource!(SettleCityNameResource, SettleCityName);
+impl_ui_component_resource!(SettleCityNameResource, SettleCityName, SetupSettleCityName);
 
 pub fn on_setup_settle_city_name(
     trigger: Trigger<SetupSettleCityName>,

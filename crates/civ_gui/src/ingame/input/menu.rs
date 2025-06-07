@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::ingame::{
-    menu::{unit::UnitMenu, Menu, MenuResource, SetupMenu},
+    menu::unit::SetupUnitMenu,
     selected::{Selected, SelectedResource, SelectedUnit},
     GameSliceResource, TryMenu,
 };
@@ -18,7 +18,7 @@ pub fn on_try_menu(
 
         match selected {
             Selected::Unit(SelectedUnit::One(unit_id)) => {
-                commands.trigger(SetupMenu::Unit(unit_id));
+                commands.trigger(SetupUnitMenu::Unit(unit_id));
             }
             Selected::City(_city_id) => {}
         }

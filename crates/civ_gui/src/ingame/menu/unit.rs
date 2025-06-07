@@ -7,9 +7,30 @@ use common::game::{
 };
 
 use crate::{
-    ingame::{interact::unit::settle::SetupSettleCityName, DrawUiComponent, EGUI_DISPLAY_FACTOR},
+    impl_ui_component_resource,
+    ingame::{
+        interact::{unit::settle::SetupSettleCityName, FromUnit, WithUnitId},
+        DrawUiComponent, EGUI_DISPLAY_FACTOR,
+    },
     utils::gui::layout::fixed_window,
 };
+
+#[derive(Debug, Event)]
+pub enum SetupUnitMenu {
+    Unit(UnitId),
+}
+
+impl WithUnitId for SetupUnitMenu {
+    fn unit_id(&self) -> &UnitId {
+        match self {
+            SetupUnitMenu::Unit(unit_id) => unit_id,
+        }
+    }
+}
+
+#[derive(Debug, Resource, Default, Deref, DerefMut)]
+pub struct UnitMenuResource(pub Option<UnitMenu>);
+impl_ui_component_resource!(UnitMenuResource, UnitMenu, SetupUnitMenu);
 
 #[derive(Debug)]
 pub struct UnitMenu {
@@ -17,8 +38,8 @@ pub struct UnitMenu {
     pub can: Vec<UnitCan>,
 }
 
-impl UnitMenu {
-    pub fn from_unit(unit: &ClientUnit) -> Self {
+impl FromUnit for UnitMenu {
+    fn from_unit(unit: &ClientUnit) -> Self {
         Self {
             unit_id: *unit.id(),
             can: unit.can().to_vec(),
@@ -51,5 +72,12 @@ impl DrawUiComponent for UnitMenu {
             .call();
 
         close
+    }
+}
+
+// TODO: Derive on attribute
+impl WithUnitId for UnitMenu {
+    fn unit_id(&self) -> &UnitId {
+        &self.unit_id
     }
 }

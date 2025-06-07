@@ -8,18 +8,12 @@ use hexx::Hex;
 use input::menu::on_try_menu;
 use input::select::on_try_select;
 use input::{on_click, update_last_known_cursor_position};
-use interact::draw_component;
-use interact::unit::settle::{
-    on_setup_settle, on_setup_settle_city_name, SettleCityName, SettleCityNameResource,
-};
-use menu::MenuResource;
+use interact::unit::settle::on_setup_settle;
 use selected::{on_select_updated, SelectedResource};
 
 use crate::add_component;
-use crate::ingame::interact::unit::settle::settle_city_name_on_slice_propagated;
-use crate::ingame::menu::{draw_menu, menu_on_slice_propagated, on_setup_menu, Menu};
+use crate::ingame::menu::unit::UnitMenuResource;
 use crate::ingame::selected::select_on_game_slice_propagated;
-// use crate::ingame::interact::unit::info::{on_setup_unit_info, UnitInfo, UnitInfoResource};
 use crate::state::AppState;
 
 pub mod input;
@@ -53,7 +47,7 @@ impl Plugin for InGamePlugin {
                 Update,
                 (update_last_known_cursor_position,).run_if(in_state(AppState::InGame)),
             )
-            .add_systems(Update, (draw_menu,).run_if(in_state(AppState::InGame)))
+            // .add_systems(Update, (draw_menu,).run_if(in_state(AppState::InGame)))
             .add_systems(
                 Update,
                 (fade_animations,).run_if(in_state(AppState::InGame)),
@@ -65,13 +59,7 @@ impl Plugin for InGamePlugin {
             .add_observer(on_select_updated)
             .add_observer(select_on_game_slice_propagated);
 
-        add_component!(
-            app,
-            MenuResource,
-            draw_component::<MenuResource, Menu>,
-            on_setup_menu,
-            menu_on_slice_propagated
-        );
+        add_component!(app, UnitMenuResource);
 
         // add_component!(
         //     app,
@@ -80,13 +68,13 @@ impl Plugin for InGamePlugin {
         //     on_setup_unit_info
         // );
 
-        add_component!(
-            app,
-            SettleCityNameResource,
-            draw_component::<SettleCityNameResource, SettleCityName>,
-            on_setup_settle_city_name,
-            settle_city_name_on_slice_propagated
-        );
+        // add_component!(
+        //     app,
+        //     SettleCityNameResource,
+        //     draw_component::<SettleCityNameResource, SettleCityName>,
+        //     on_setup_settle_city_name,
+        //     settle_city_name_on_slice_propagated
+        // );
     }
 }
 
