@@ -1,17 +1,9 @@
-use bevy::{
-    asset::AssetServer,
-    color::Color,
-    ecs::prelude::*,
-    hierarchy::{BuildChildren, ChildBuild},
-    sprite::{Sprite, TextureAtlas},
-    text::{Text2d, TextColor, TextFont},
-    transform::components::Transform,
-    utils::default,
-};
+use bevy::{ecs::prelude::*, prelude::*};
 use common::{
     game::{
         slice::{ClientCity, ClientUnit, GameSlice},
-        tasks::client::{ClientTask, ClientTaskType},
+        tasks::client::{ClientTask, ClientTaskProgress, ClientTaskType},
+        GameFrame,
     },
     geo::WorldPoint,
     world::{CtxTile, TerrainType, Tile},
@@ -78,6 +70,7 @@ pub struct GameContext<'a> {
     pub slice: &'a GameSlice,
     pub assets: &'a AssetServer,
     pub atlases: &'a AtlasesResource,
+    pub frame: &'a GameFrame,
 }
 
 impl GameContext<'_> {
@@ -220,6 +213,7 @@ impl Spawn for Vec<ClientUnit> {
             if let Some(task) = unit.task() {
                 entity.with_children(|b| {
                     b.spawn(task.bundle(ctx, z + 0.1));
+                    b.spawn(task.progress(ctx.frame).bundle(ctx, z + 0.1));
                 });
             }
         }
@@ -293,6 +287,38 @@ impl IntoBundle for ClientTask {
                 ..default()
             },
             Transform::from_xyz(0., 0., z),
+        )
+    }
+}
+
+#[derive(Bundle, Constructor)]
+pub struct ClientTaskProgressBundle {
+    pub text: Text2d,
+    pub color: TextColor,
+    pub font: TextFont,
+    pub transform: Transform,
+    pub progress: Progress,
+}
+
+// TODO: Move it in more generic mod
+#[derive(Debug, Component, Deref, DerefMut)]
+pub struct Progress(pub ClientTaskProgress);
+
+impl IntoBundle for ClientTaskProgress {
+    type BundleType = ClientTaskProgressBundle;
+    #[cfg(feature = "debug_tiles")]
+    type DebugBundleType = ();
+
+    fn bundle(&self, _ctx: &GameHexContext, z: f32) -> Self::BundleType {
+        ClientTaskProgressBundle::new(
+            Text2d(format!("{:.2}%", self.current * 100.)),
+            TextColor(Color::WHITE),
+            TextFont {
+                font_size: 15.0,
+                ..default()
+            },
+            Transform::from_xyz(25.0, -25.0, z + 0.1),
+            Progress(self.clone()),
         )
     }
 }

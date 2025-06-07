@@ -6,7 +6,8 @@ use hexx::Hex;
 use crate::{
     assets::tile::TILES_ATLAS_PATH,
     core::GameSlicePropagated,
-    map::{grid::GridResource, AtlasIndex, AtlasesResource},
+    ingame::GameFrameResource,
+    map::{AtlasIndex, AtlasesResource},
     utils::assets::{GameContext, GameHexContext, IntoBundle, Spawn, TILE_Z},
 };
 
@@ -80,8 +81,9 @@ pub fn on_select_updated(
     atlases: Res<AtlasesResource>,
     slice: Res<GameSliceResource>,
     assets: Res<AssetServer>,
+    frame: Res<GameFrameResource>,
 ) {
-    if let Some(slice) = &slice.0 {
+    if let (Some(slice), Some(frame)) = (&slice.0, frame.0) {
         let SelectUpdated { hex, selected } = trigger.event();
 
         if let Ok(entity) = query.get_single() {
@@ -91,7 +93,7 @@ pub fn on_select_updated(
         if let Some(selected) = selected {
             match selected {
                 Selected::Unit(_) => {
-                    let ctx = GameContext::new(slice, &assets, &atlases);
+                    let ctx = GameContext::new(slice, &assets, &atlases, &frame);
                     let ctx = ctx.with(*hex);
                     Select::new(*selected).spawn(&mut commands, &ctx, TILE_Z + 0.2);
                 }

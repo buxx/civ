@@ -1,6 +1,7 @@
 pub mod city;
 pub mod settle;
 
+use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
 use settle::ClientSettle;
 
@@ -18,10 +19,10 @@ impl ClientTask {
         Self { type_, start, end }
     }
 
-    pub fn progress(&self, frame: &GameFrame) -> f32 {
+    pub fn progress(&self, frame: &GameFrame) -> ClientTaskProgress {
         let total = self.end.0 - self.start.0;
         let current = frame.0 - self.start.0;
-        current as f32 / total as f32
+        ClientTaskProgress::new(current as f32 / total as f32, self.start, self.end)
     }
 
     pub fn type_(&self) -> &ClientTaskType {
@@ -32,9 +33,34 @@ impl ClientTask {
         match &self.type_ {
             ClientTaskType::Idle => "Idle".to_string(),
             ClientTaskType::Settle(task) => {
-                format!("{} ({}%)", task, (self.progress(frame) * 100.0) as u8)
+                format!(
+                    "{} ({}%)",
+                    task,
+                    (self.progress(frame).current * 100.0) as u8
+                )
             }
         }
+    }
+}
+
+#[derive(Debug, Constructor, Clone)]
+pub struct ClientTaskProgress {
+    pub current: f32,
+    pub start: GameFrame,
+    pub end: GameFrame,
+}
+
+impl std::ops::Deref for ClientTaskProgress {
+    type Target = f32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.current
+    }
+}
+
+impl std::ops::DerefMut for ClientTaskProgress {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.current
     }
 }
 

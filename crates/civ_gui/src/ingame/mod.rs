@@ -16,6 +16,7 @@ use crate::ingame::interact::unit::settle::SettleCityNameResource;
 use crate::ingame::menu::unit::UnitMenuResource;
 use crate::ingame::selected::select_on_game_slice_propagated;
 use crate::state::AppState;
+use crate::utils::assets::Progress;
 
 pub mod input;
 pub mod interact;
@@ -36,8 +37,6 @@ impl Plugin for InGamePlugin {
             .init_resource::<GameFrameResource>()
             .init_resource::<LastKnownCursorPositionResource>()
             .init_resource::<SelectedResource>()
-            // .init_resource::<MenuResource>()
-            // .init_resource::<SettleCityNameResource>()
             .insert_resource(
                 self.game_slice
                     .as_ref()
@@ -48,10 +47,13 @@ impl Plugin for InGamePlugin {
                 Update,
                 (update_last_known_cursor_position,).run_if(in_state(AppState::InGame)),
             )
-            // .add_systems(Update, (draw_menu,).run_if(in_state(AppState::InGame)))
             .add_systems(
                 Update,
                 (fade_animations,).run_if(in_state(AppState::InGame)),
+            )
+            .add_systems(
+                Update,
+                (update_progresses,).run_if(in_state(AppState::InGame)),
             )
             .add_observer(on_click)
             .add_observer(on_try_select)
@@ -68,14 +70,6 @@ impl Plugin for InGamePlugin {
         //     UnitInfoResource,
         //     draw_component::<UnitInfoResource, UnitInfo>,
         //     on_setup_unit_info
-        // );
-
-        // add_component!(
-        //     app,
-        //     SettleCityNameResource,
-        //     draw_component::<SettleCityNameResource, SettleCityName>,
-        //     on_setup_settle_city_name,
-        //     settle_city_name_on_slice_propagated
         // );
     }
 }
@@ -147,4 +141,18 @@ fn fade_animations(time: Res<Time>, mut query: Query<(&mut Sprite, &mut FadeAnim
 
 pub trait DrawUiComponent {
     fn draw(&mut self, ctx: &Context, window: &Window, commands: &mut Commands) -> bool;
+}
+
+fn update_progresses(
+    mut query: Query<(&mut Progress, &mut Text2d)>,
+    frame: Res<GameFrameResource>,
+) {
+    if let Some(frame) = frame.0 {
+        for (mut progress, mut text) in &mut query {
+            let total = progress.end.0 - progress.start.0;
+            let current = (frame.0 - progress.start.0) as f32 / total as f32;
+            progress.current = current;
+            text.0 = format!("{:.2}%", current * 100.);
+        }
+    }
 }

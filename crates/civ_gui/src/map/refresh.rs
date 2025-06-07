@@ -10,7 +10,7 @@ use derive_more::Constructor;
 use crate::{
     assets::tile::{layout, TILE_SIZE},
     core::GameSlicePropagated,
-    ingame::{GameSliceResource, HexTile},
+    ingame::{GameFrameResource, GameSliceResource, HexTile},
     to_server,
     utils::assets::{GameContext, GameHexContext, Spawn, CITY_Z, TILE_Z, UNIT_Z},
 };
@@ -198,16 +198,17 @@ pub fn react_game_slice_updated(
     units: Query<Entity, With<HexUnit>>,
     slice: Res<GameSliceResource>,
     mut center: ResMut<CurrentCenter>,
+    frame: Res<GameFrameResource>,
     // mut camera_initialized: ResMut<CameraInitializedResource>,
 ) {
-    if let Some(slice) = &slice.0 {
+    if let (Some(slice), Some(frame)) = (&slice.0, frame.0) {
         info!("Refresh from game slice: {slice:?}");
 
         // FIXME BS NOW: despawn must be in GridUpdater
         let window = windows.single();
         let (_, transform) = cameras.single();
 
-        let ctx = GameContext::new(slice, &assets, &atlases);
+        let ctx = GameContext::new(slice, &assets, &atlases, &frame);
         GridUpdater::new(window, transform, &tiles, &cities, &units).update(&mut commands, &ctx);
 
         center.0 = Some(slice.center());
