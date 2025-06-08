@@ -7,7 +7,7 @@ use common::network::message::{
 
 use crate::{
     bridge::MessageReceivedFromServerEvent,
-    ingame::{GameFrameResource, GameSliceResource, GameWindowResource},
+    ingame::{GameFrameResource, GameFrameUpdated, GameSliceResource, GameWindowResource},
     menu::state::MenuStateResource,
     state::AppState,
 };
@@ -44,6 +44,7 @@ pub fn react_server_message(
                 ServerToClientInGameMessage::State(message) => match message {
                     ClientStateMessage::SetGameFrame(frame_) => {
                         frame.0 = Some(*frame_);
+                        commands.trigger(GameFrameUpdated(*frame_));
                     }
                     // FIXME BS NOW: when first received, we must set camera translation
                     ClientStateMessage::SetGameSlice(game_slice_) => {

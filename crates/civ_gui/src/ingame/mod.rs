@@ -51,15 +51,12 @@ impl Plugin for InGamePlugin {
                 Update,
                 (fade_animations,).run_if(in_state(AppState::InGame)),
             )
-            .add_systems(
-                Update,
-                (update_progresses,).run_if(in_state(AppState::InGame)),
-            )
             .add_observer(on_click)
             .add_observer(on_try_select)
             .add_observer(on_try_menu)
             .add_observer(on_setup_settle)
             .add_observer(on_select_updated)
+            .add_observer(update_progresses)
             .add_observer(select_on_game_slice_propagated);
 
         add_component!(app, UnitMenuResource);
@@ -82,6 +79,9 @@ pub struct LastKnownCursorPositionResource(pub Vec2);
 
 #[derive(Resource, Default)]
 pub struct GameFrameResource(pub Option<BaseGameFrame>);
+
+#[derive(Event)]
+pub struct GameFrameUpdated(pub BaseGameFrame);
 
 #[derive(Resource, Default, Deref, DerefMut, Clone)]
 pub struct GameSliceResource(pub Option<BaseGameSlice>);
@@ -144,15 +144,14 @@ pub trait DrawUiComponent {
 }
 
 fn update_progresses(
+    trigger: Trigger<GameFrameUpdated>,
     mut query: Query<(&mut Progress, &mut Text2d)>,
-    frame: Res<GameFrameResource>,
 ) {
-    if let Some(frame) = frame.0 {
-        for (mut progress, mut text) in &mut query {
-            let total = progress.end.0 - progress.start.0;
-            let current = (frame.0 - progress.start.0) as f32 / total as f32;
-            progress.current = current;
-            text.0 = format!("{:.2}%", current * 100.);
-        }
+    let frame = trigger.event().0;
+    for (mut progress, mut text) in &mut query {
+        let total = progress.end.0 - progress.start.0;
+        let current = (frame.0 - progress.start.0) as f32 / total as f32;
+        progress.current = current;
+        text.0 = format!("{:.2}%", current * 100.);
     }
 }
