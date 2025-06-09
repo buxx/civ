@@ -5,6 +5,7 @@ use bon::Builder;
 #[cfg(not(target_arch = "wasm32"))]
 use civ_world::WorldGeneratorError;
 use common::{
+    game::PlayerId,
     network::{
         message::{ClientToServerMessage, ServerToClientMessage},
         ServerAddress,
@@ -15,9 +16,12 @@ use common::{
 
 use crate::{
     core::preferences::PreferencesResource,
-    menu::state::{MenuState, MenuStateResource},
+    menu::{
+        join::JoinEvent,
+        state::{MenuState, MenuStateResource},
+    },
     state::AppState,
-    user::preferences::Preferences,
+    user::{preferences::Preferences, SetPlayerIdEvent},
 };
 
 mod connect;
@@ -155,7 +159,7 @@ fn listen_from_server(
         match message {
             BridgeMessage::Internal(message) => match message {
                 InternalBridgeMessage::ConnectionEstablished(address) => {
-                    connection_established(&mut state, &preferences, address);
+                    connection_established(&mut state, &preferences, address, &mut commands);
                 }
             },
             BridgeMessage::Server(message) => {
@@ -169,6 +173,7 @@ fn connection_established(
     state: &mut MenuState,
     preferences: &Preferences,
     address: ServerAddress,
+    commands: &mut Commands,
 ) {
     state.join.player_id = preferences
         .player_id(&address)
@@ -178,4 +183,10 @@ fn connection_established(
     state.join.keep_connected = *preferences.keep_connected(&address).unwrap_or(&false);
     state.join.connected = true;
     state.connecting = false;
+
+    if let Some(player_id) = preferences.player_id(&address) {
+        if state.join.keep_connected {
+            commands.trigger(JoinEvent(*player_id));
+        }
+    }
 }

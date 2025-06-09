@@ -29,6 +29,7 @@ pub struct JoinState {
     pub resume: Option<ServerResume>,
     pub flag: Option<Flag>,
     pub keep_connected: bool,
+    pub auto_connect_sent: bool,
 }
 
 impl JoinState {
@@ -42,6 +43,7 @@ impl JoinState {
             flag: Default::default(),
             // FIXME BS NOW: when switch on Join screen, must be updated with Preferences
             keep_connected: Default::default(),
+            auto_connect_sent: Default::default(),
         }
     }
 }
