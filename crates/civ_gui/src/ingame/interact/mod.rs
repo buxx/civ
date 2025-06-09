@@ -2,7 +2,10 @@ use bevy::prelude::*;
 use bevy_egui::{EguiContextSettings, EguiContexts};
 use common::game::{slice::ClientUnit, unit::UnitId};
 
-use crate::{core::GameSlicePropagated, ingame::GameSliceResource};
+use crate::{
+    core::GameSlicePropagated,
+    ingame::{GameFrameResource, GameSliceResource},
+};
 
 use super::{DrawUiComponent, EGUI_DISPLAY_FACTOR};
 
@@ -76,17 +79,18 @@ pub fn draw_component<R: UiComponentResource>(
     mut egui: Query<(&mut EguiContextSettings, &Window)>,
     mut resource: ResMut<R>,
     mut contexts: EguiContexts,
+    frame: Res<GameFrameResource>,
     windows: Query<&Window>,
 ) {
     let mut disband = false;
 
-    if let Some(component) = resource.component_mut() {
+    if let (Some(component), Some(frame)) = (resource.component_mut(), frame.0) {
         if let Ok((mut egui_settings, _)) = egui.get_single_mut() {
             egui_settings.scale_factor = EGUI_DISPLAY_FACTOR;
         }
 
         let window = windows.single();
-        disband = component.draw(contexts.ctx_mut(), window, &mut commands);
+        disband = component.draw(contexts.ctx_mut(), window, &mut commands, frame);
     }
 
     if disband {

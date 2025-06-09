@@ -4,12 +4,16 @@ use bevy_egui::egui::Context;
 use common::game::{
     slice::ClientUnit,
     unit::{UnitCan, UnitId},
+    GameFrame,
 };
 
 use crate::{
     impl_ui_component_resource,
     ingame::{
-        interact::{unit::settle::SetupSettleCityName, FromUnit, WithUnitId},
+        interact::{
+            unit::{info::SetupUnitInfo, settle::SetupSettleCityName},
+            FromUnit, WithUnitId,
+        },
         DrawUiComponent, EGUI_DISPLAY_FACTOR,
     },
     utils::gui::layout::fixed_window,
@@ -48,7 +52,13 @@ impl FromUnit for UnitMenu {
 }
 
 impl DrawUiComponent for UnitMenu {
-    fn draw(&mut self, ctx: &Context, window: &Window, commands: &mut Commands) -> bool {
+    fn draw(
+        &mut self,
+        ctx: &Context,
+        window: &Window,
+        commands: &mut Commands,
+        _frame: GameFrame,
+    ) -> bool {
         let mut close = false;
 
         fixed_window()
@@ -57,6 +67,11 @@ impl DrawUiComponent for UnitMenu {
             .factor(EGUI_DISPLAY_FACTOR)
             .ui(|ui| {
                 ui.vertical_centered(|ui| {
+                    if ui.button("Infos").clicked() {
+                        commands.trigger(SetupUnitInfo(self.unit_id));
+                        close = true;
+                    }
+
                     for can in &self.can {
                         if ui.button(can.name()).clicked() {
                             let event = match can {

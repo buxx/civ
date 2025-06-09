@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use common::{
-    game::{slice::ClientUnit, unit::UnitId},
+    game::{slice::ClientUnit, unit::UnitId, GameFrame},
     network::message::{ClientToServerInGameMessage, ClientToServerUnitMessage},
 };
 use derive_more::Constructor;
@@ -54,6 +54,7 @@ impl DrawUiComponent for SettleCityName {
         ctx: &bevy_egui::egui::Context,
         window: &Window,
         commands: &mut Commands,
+        _frame: GameFrame,
     ) -> bool {
         let mut close = false;
 

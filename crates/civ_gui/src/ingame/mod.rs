@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::egui::Context;
+use bevy_egui::egui;
 use bon::Builder;
 use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame};
 use common::geo::WorldPoint;
@@ -12,6 +12,7 @@ use interact::unit::settle::on_setup_settle;
 use selected::{on_select_updated, SelectedResource};
 
 use crate::add_component;
+use crate::ingame::interact::unit::info::UnitInfoResource;
 use crate::ingame::interact::unit::settle::SettleCityNameResource;
 use crate::ingame::menu::unit::UnitMenuResource;
 use crate::ingame::selected::select_on_game_slice_propagated;
@@ -61,13 +62,7 @@ impl Plugin for InGamePlugin {
 
         add_component!(app, UnitMenuResource);
         add_component!(app, SettleCityNameResource);
-
-        // add_component!(
-        //     app,
-        //     UnitInfoResource,
-        //     draw_component::<UnitInfoResource, UnitInfo>,
-        //     on_setup_unit_info
-        // );
+        add_component!(app, UnitInfoResource);
     }
 }
 
@@ -140,7 +135,13 @@ fn fade_animations(time: Res<Time>, mut query: Query<(&mut Sprite, &mut FadeAnim
 }
 
 pub trait DrawUiComponent {
-    fn draw(&mut self, ctx: &Context, window: &Window, commands: &mut Commands) -> bool;
+    fn draw(
+        &mut self,
+        egui: &egui::Context,
+        window: &Window,
+        commands: &mut Commands,
+        frame: BaseGameFrame,
+    ) -> bool;
 }
 
 fn update_progresses(
@@ -152,6 +153,6 @@ fn update_progresses(
         let total = progress.end.0 - progress.start.0;
         let current = (frame.0 - progress.start.0) as f32 / total as f32;
         progress.current = current;
-        text.0 = format!("{:.2}%", current * 100.);
+        text.0 = format!("{:.0}%", current * 100.);
     }
 }

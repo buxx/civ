@@ -35,16 +35,16 @@ pub trait IntoBundle {
     type DebugBundleType: Bundle;
 
     // FIXME: regroup dependencies in one struct ?
-    fn bundle(&self, ctx: &GameHexContext, z: f32) -> Self::BundleType;
+    fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType;
 
     #[cfg(feature = "debug_tiles")]
-    fn debug_bundle(&self, _ctx: &GameHexContext, _z: f32) -> Option<Self::DebugBundleType> {
+    fn debug_bundle(&self, _ctx: &DrawHexContext, _z: f32) -> Option<Self::DebugBundleType> {
         None
     }
 }
 
 pub trait Spawn: IntoBundle {
-    fn spawn(&self, commands: &mut Commands, ctx: &GameHexContext, z: f32) -> Entity {
+    fn spawn(&self, commands: &mut Commands, ctx: &DrawHexContext, z: f32) -> Entity {
         let bundle = self.bundle(ctx, z);
         let mut entity = commands.spawn(bundle);
 
@@ -62,39 +62,39 @@ pub trait Spawn: IntoBundle {
         entity.id()
     }
 
-    fn spawned(&self, _entity: &mut EntityCommands, _ctx: &GameHexContext, _z: f32) {}
+    fn spawned(&self, _entity: &mut EntityCommands, _ctx: &DrawHexContext, _z: f32) {}
 }
 
 #[derive(Constructor)]
-pub struct GameContext<'a> {
+pub struct DrawContext<'a> {
     pub slice: &'a GameSlice,
     pub assets: &'a AssetServer,
     pub atlases: &'a AtlasesResource,
     pub frame: &'a GameFrame,
 }
 
-impl GameContext<'_> {
-    pub fn with(&self, hex: Hex) -> GameHexContext {
-        GameHexContext::from_ctx(self, hex)
+impl DrawContext<'_> {
+    pub fn with(&self, hex: Hex) -> DrawHexContext {
+        DrawHexContext::from_ctx(self, hex)
     }
 }
 
 #[derive(Constructor)]
-pub struct GameHexContext<'a> {
-    pub ctx: &'a GameContext<'a>,
+pub struct DrawHexContext<'a> {
+    pub ctx: &'a DrawContext<'a>,
     pub hex: Hex,
 }
 
-impl<'a> std::ops::Deref for GameHexContext<'a> {
-    type Target = GameContext<'a>;
+impl<'a> std::ops::Deref for DrawHexContext<'a> {
+    type Target = DrawContext<'a>;
 
     fn deref(&self) -> &Self::Target {
         self.ctx
     }
 }
 
-impl<'a> GameHexContext<'a> {
-    pub fn from_ctx(ctx: &'a GameContext<'a>, hex: Hex) -> Self {
+impl<'a> DrawHexContext<'a> {
+    pub fn from_ctx(ctx: &'a DrawContext<'a>, hex: Hex) -> Self {
         Self { ctx, hex }
     }
 
@@ -131,7 +131,7 @@ impl IntoBundle for CtxTile<Tile> {
     #[cfg(feature = "debug_tiles")]
     type DebugBundleType = DebugHexTileBundle;
 
-    fn bundle(&self, ctx: &GameHexContext, z: f32) -> HexTileBundle {
+    fn bundle(&self, ctx: &DrawHexContext, z: f32) -> HexTileBundle {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.layout().hex_to_world_pos(ctx.hex);
@@ -155,7 +155,7 @@ impl IntoBundle for CtxTile<Tile> {
     }
 
     #[cfg(feature = "debug_tiles")]
-    fn debug_bundle(&self, ctx: &GameHexContext, z: f32) -> Option<Self::DebugBundleType> {
+    fn debug_bundle(&self, ctx: &DrawHexContext, z: f32) -> Option<Self::DebugBundleType> {
         let point = ctx.layout().hex_to_world_pos(ctx.hex);
         let debug_info = format!("{}.{} ({}.{})", ctx.hex.x, ctx.hex.y, point.x, point.y);
         Some(DebugHexTileBundle::new(
@@ -185,7 +185,7 @@ impl IntoBundle for Vec<ClientUnit> {
     #[cfg(feature = "debug_tiles")]
     type DebugBundleType = ();
 
-    fn bundle(&self, ctx: &GameHexContext, z: f32) -> Self::BundleType {
+    fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.layout().hex_to_world_pos(ctx.hex);
         let atlas_index = AtlasIndex(5);
@@ -207,7 +207,7 @@ impl IntoBundle for Vec<ClientUnit> {
 }
 
 impl Spawn for Vec<ClientUnit> {
-    fn spawned(&self, entity: &mut EntityCommands, ctx: &GameHexContext, z: f32) {
+    fn spawned(&self, entity: &mut EntityCommands, ctx: &DrawHexContext, z: f32) {
         // TODO: Consider first unit for now ...
         if let Some(unit) = self.first() {
             if let Some(task) = unit.task() {
@@ -232,7 +232,7 @@ impl IntoBundle for ClientCity {
     #[cfg(feature = "debug_tiles")]
     type DebugBundleType = ();
 
-    fn bundle(&self, ctx: &GameHexContext, z: f32) -> Self::BundleType {
+    fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.layout().hex_to_world_pos(ctx.hex);
@@ -267,7 +267,7 @@ impl IntoBundle for ClientTask {
     #[cfg(feature = "debug_tiles")]
     type DebugBundleType = ();
 
-    fn bundle(&self, ctx: &GameHexContext, z: f32) -> Self::BundleType {
+    fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         // TODO: use atlas index dedicated to tasks
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
 
@@ -309,7 +309,7 @@ impl IntoBundle for ClientTaskProgress {
     #[cfg(feature = "debug_tiles")]
     type DebugBundleType = ();
 
-    fn bundle(&self, _ctx: &GameHexContext, z: f32) -> Self::BundleType {
+    fn bundle(&self, _ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         ClientTaskProgressBundle::new(
             Text2d(format!("{:.2}%", self.current * 100.)),
             TextColor(Color::WHITE),

@@ -12,7 +12,7 @@ use crate::{
     core::GameSlicePropagated,
     ingame::{GameFrameResource, GameSliceResource, HexTile},
     to_server,
-    utils::assets::{GameContext, GameHexContext, Spawn, CITY_Z, TILE_Z, UNIT_Z},
+    utils::assets::{DrawContext, DrawHexContext, Spawn, CITY_Z, TILE_Z, UNIT_Z},
 };
 use crate::{
     core::GameSliceUpdated,
@@ -76,7 +76,7 @@ struct GridUpdater<'a> {
 }
 
 impl<'a> GridUpdater<'a> {
-    fn grid(&mut self, commands: &mut Commands, ctx: &'a GameContext<'a>) -> HashMap<Hex, GridHex> {
+    fn grid(&mut self, commands: &mut Commands, ctx: &'a DrawContext<'a>) -> HashMap<Hex, GridHex> {
         let window_width = self.window.width() * self.transform.scale().x;
         let window_height = self.window.height() * self.transform.scale().y;
         let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as i32;
@@ -100,7 +100,7 @@ impl<'a> GridUpdater<'a> {
                 continue;
             };
 
-            let mut ctx = GameHexContext::from_ctx(ctx, hex);
+            let mut ctx = DrawHexContext::from_ctx(ctx, hex);
 
             let tile = self.tile(commands, &mut ctx);
             let city = self.city(commands, &mut ctx);
@@ -115,7 +115,7 @@ impl<'a> GridUpdater<'a> {
     fn tile(
         &self,
         commands: &mut Commands,
-        ctx: &mut GameHexContext,
+        ctx: &mut DrawHexContext,
     ) -> GridHexResource<CtxTile<Tile>> {
         let point = ctx.point().expect("Tile called only on world point");
         let tile = ctx.slice.world().tile(&point).clone();
@@ -127,7 +127,7 @@ impl<'a> GridUpdater<'a> {
     fn city(
         &self,
         commands: &mut Commands,
-        ctx: &mut GameHexContext,
+        ctx: &mut DrawHexContext,
     ) -> Option<GridHexResource<ClientCity>> {
         let point = ctx.point().expect("City called only on world point");
         let city = ctx.slice.city_at(&point).cloned();
@@ -140,7 +140,7 @@ impl<'a> GridUpdater<'a> {
     fn units(
         &self,
         commands: &mut Commands,
-        ctx: &mut GameHexContext,
+        ctx: &mut DrawHexContext,
     ) -> Option<GridHexResource<Vec<ClientUnit>>> {
         let point = ctx.point().expect("Units called only on world point");
         let units = ctx
@@ -156,7 +156,7 @@ impl<'a> GridUpdater<'a> {
     }
 
     // TODO: despawn/spawn only really out/in in screen
-    fn update(&mut self, commands: &mut Commands, ctx: &'a GameContext<'a>) {
+    fn update(&mut self, commands: &mut Commands, ctx: &'a DrawContext<'a>) {
         let world = ctx.slice.world();
         let center = world.imaginary_world_point_for_center_rel((0, 0));
         let layout = layout(&center);
@@ -208,7 +208,7 @@ pub fn react_game_slice_updated(
         let window = windows.single();
         let (_, transform) = cameras.single();
 
-        let ctx = GameContext::new(slice, &assets, &atlases, &frame);
+        let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
         GridUpdater::new(window, transform, &tiles, &cities, &units).update(&mut commands, &ctx);
 
         center.0 = Some(slice.center());

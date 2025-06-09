@@ -8,7 +8,7 @@ use crate::{
     core::GameSlicePropagated,
     ingame::GameFrameResource,
     map::{AtlasIndex, AtlasesResource},
-    utils::assets::{GameContext, GameHexContext, IntoBundle, Spawn, TILE_Z},
+    utils::assets::{DrawContext, DrawHexContext, IntoBundle, Spawn, TILE_Z},
 };
 
 use super::{FadeAnimation, GameSliceResource};
@@ -41,7 +41,7 @@ impl IntoBundle for Select {
     #[cfg(feature = "debug_tiles")]
     type DebugBundleType = ();
 
-    fn bundle(&self, ctx: &GameHexContext, z: f32) -> Self::BundleType {
+    fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.layout().hex_to_world_pos(ctx.hex);
@@ -93,7 +93,7 @@ pub fn on_select_updated(
         if let Some(selected) = selected {
             match selected {
                 Selected::Unit(_) => {
-                    let ctx = GameContext::new(slice, &assets, &atlases, &frame);
+                    let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
                     let ctx = ctx.with(*hex);
                     Select::new(*selected).spawn(&mut commands, &ctx, TILE_Z + 0.2);
                 }
