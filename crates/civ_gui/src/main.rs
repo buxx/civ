@@ -5,7 +5,6 @@ use bridge::BridgePlugin;
 use context::{Context, ContextResource};
 #[cfg(feature = "debug")]
 use debug::DebugPlugin;
-use embedded::EmbeddedPlugin;
 use ingame::InGamePlugin;
 use map::MapPlugin;
 use user::UserPlugin;
@@ -22,11 +21,9 @@ mod context;
 mod core;
 #[cfg(feature = "debug")]
 mod debug;
-mod embedded;
 mod ingame;
 mod map;
 mod menu;
-mod network;
 mod state;
 mod user;
 mod utils;
@@ -42,9 +39,7 @@ fn entrypoint() -> Result<(), JsValue> {
             .set(window_plugin())
             .set(ImagePlugin::default_nearest()),
         StatePlugin::builder().build(),
-        EmbeddedPlugin,
         BridgePlugin::builder().build(),
-        // NetworkPlugin::default(),
         UserPlugin,
         MenuPlugin::new(context.clone()),
         CorePlugin,

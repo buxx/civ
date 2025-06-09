@@ -21,6 +21,9 @@ impl<'a> Access<'a> {
             ClientToServerInGameMessage::SetWindow(_) => true,
             ClientToServerInGameMessage::Unit(uuid, message) => match message {
                 ClientToServerUnitMessage::Settle(_) => self.unit_is_owned_by_client(uuid, flag),
+                ClientToServerUnitMessage::CancelCurrentTask => {
+                    self.unit_is_owned_by_client(uuid, flag)
+                }
             },
             ClientToServerInGameMessage::City(uuid, message) => match message {
                 ClientToServerCityMessage::SetProduction(_)

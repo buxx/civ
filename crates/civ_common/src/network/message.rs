@@ -85,6 +85,7 @@ impl From<ClientToServerInGameMessage> for ClientToServerMessage {
 #[derive(Serialize, Deserialize, Clone)]
 pub enum ClientToServerUnitMessage {
     Settle(String), // CityName
+    CancelCurrentTask,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

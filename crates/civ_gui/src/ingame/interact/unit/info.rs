@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use common::game::{slice::ClientUnit, tasks::client::ClientTask, unit::UnitId, GameFrame};
+use common::{
+    game::{slice::ClientUnit, tasks::client::ClientTask, unit::UnitId, GameFrame},
+    network::message::{ClientToServerInGameMessage, ClientToServerUnitMessage},
+};
 use derive_more::Constructor;
 
 use crate::{
@@ -8,6 +11,7 @@ use crate::{
         interact::{FromUnit, WithUnitId},
         DrawUiComponent, EGUI_DISPLAY_FACTOR,
     },
+    send_unit_msg,
     utils::gui::layout::fixed_window,
 };
 
@@ -60,6 +64,14 @@ impl DrawUiComponent for UnitInfo {
                                 .map(|t| t.to_string(&frame))
                                 .unwrap_or("None".to_string()),
                         );
+
+                        if task.is_some() && ui.button("Cancel").clicked() {
+                            send_unit_msg!(
+                                commands,
+                                self.unit_id,
+                                ClientToServerUnitMessage::CancelCurrentTask
+                            );
+                        }
                     });
 
                     close = ui.button("Close").clicked();

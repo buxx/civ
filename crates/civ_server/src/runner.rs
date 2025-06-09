@@ -512,6 +512,7 @@ impl Runner {
         ])
     }
 
+    // TODO: add tests here
     fn refresh_unit_on(
         &self,
         unit_id: &UnitId,
@@ -521,22 +522,33 @@ impl Runner {
         let unit = state.find_unit(unit_id).unwrap(); // TODO: unwrap -> same error management than crate_task
         let old_task = unit.task();
 
-        let task = match message {
-            ClientToServerUnitMessage::Settle(city_name) => Settle::new(
+        let new_task = match message {
+            ClientToServerUnitMessage::Settle(city_name) => Some(Settle::new(
                 TaskId::default(),
                 self.context.context.clone(),
                 self.state(),
                 unit.clone(),
                 city_name.clone(),
-            )?,
+            )?),
+            ClientToServerUnitMessage::CancelCurrentTask => None,
         };
         let mut unit = unit.clone();
-        unit.set_task(Some(task.clone().into()));
+        unit.task = None;
 
-        let mut effects = vec![effect::replace_unit(unit), effect::add_task(Box::new(task))];
+        if let Some(new_task) = &new_task {
+            unit.set_task(Some(new_task.clone().into()));
+        }
+
+        let mut effects = vec![effect::replace_unit(unit)];
+
+        if let Some(new_task) = new_task {
+            effects.push(effect::add_task(Box::new(new_task)));
+        }
+
         if let Some(old_task) = old_task {
             effects.push(effect::remove_task(old_task.clone().into()));
         }
+
         Ok(effects)
     }
 
