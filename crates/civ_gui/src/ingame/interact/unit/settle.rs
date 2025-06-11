@@ -61,6 +61,7 @@ impl DrawUiComponent for SettleCityName {
         fixed_window()
             .ctx(ctx)
             .window(window)
+            .title("City name")
             .factor(EGUI_DISPLAY_FACTOR)
             .ui(|ui| {
                 ui.horizontal_wrapped(|ui| {

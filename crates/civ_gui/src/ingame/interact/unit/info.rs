@@ -54,10 +54,11 @@ impl DrawUiComponent for UnitInfo {
         fixed_window()
             .ctx(ctx)
             .window(window)
+            .title("Unit info")
             .factor(EGUI_DISPLAY_FACTOR)
             .ui(|ui| {
                 ui.vertical_centered(|ui| {
-                    ui.horizontal_centered(|ui| {
+                    ui.horizontal_wrapped(|ui| {
                         ui.label("Current task:");
                         ui.label(
                             task.as_ref()

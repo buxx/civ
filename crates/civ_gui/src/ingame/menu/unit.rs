@@ -64,6 +64,7 @@ impl DrawUiComponent for UnitMenu {
         fixed_window()
             .ctx(ctx)
             .window(window)
+            .title("Unit menu")
             .factor(EGUI_DISPLAY_FACTOR)
             .ui(|ui| {
                 ui.vertical_centered(|ui| {
