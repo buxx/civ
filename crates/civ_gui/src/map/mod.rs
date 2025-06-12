@@ -28,6 +28,7 @@ impl Plugin for MapPlugin {
             .init_resource::<CurrentCursorHex>()
             .init_resource::<CurrentCenter>()
             .init_resource::<DraggingMap>()
+            .init_resource::<WaitingForGameSlice>()
             .add_observer(react_game_slice_updated)
             .add_observer(react_center_camera_on_grid)
             // TODO: move into atlases
@@ -70,3 +71,6 @@ fn init_atlases(mut commands: Commands, mut atlas: ResMut<Assets<TextureAtlasLay
     let tiles = atlas.add(tiles_texture_atlas_layout());
     commands.insert_resource(AtlasesResource::new(tiles));
 }
+
+#[derive(Debug, Resource, Deref, DerefMut, Default)]
+pub struct WaitingForGameSlice(pub bool);

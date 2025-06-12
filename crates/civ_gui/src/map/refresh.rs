@@ -11,6 +11,7 @@ use crate::{
     assets::tile::{layout, TILE_SIZE},
     core::GameSlicePropagated,
     ingame::{GameFrameResource, GameSliceResource, HexTile},
+    map::WaitingForGameSlice,
     to_server,
     utils::assets::{DrawContext, DrawHexContext, Spawn, CITY_Z, TILE_Z, UNIT_Z},
 };
@@ -36,7 +37,12 @@ pub fn refresh_grid(
     cameras: Query<(&Camera, &GlobalTransform)>,
     grid: Res<GridResource>,
     current: Res<CurrentCenter>,
+    mut waiting: ResMut<WaitingForGameSlice>,
 ) {
+    if waiting.0 {
+        return;
+    }
+
     let window = windows.single();
     let center = Vec2::new(window.width() / 2.0, window.height() / 2.0);
     let (camera, cam_transform) = cameras.single();
@@ -62,6 +68,7 @@ pub fn refresh_grid(
             &hex_tile_meta.imaginary,
             &Resolution::new(tiles_size, tiles_size),
         );
+        waiting.0 = true;
         to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
     }
 }
@@ -199,8 +206,11 @@ pub fn react_game_slice_updated(
     slice: Res<GameSliceResource>,
     mut center: ResMut<CurrentCenter>,
     frame: Res<GameFrameResource>,
+    mut waiting: ResMut<WaitingForGameSlice>,
     // mut camera_initialized: ResMut<CameraInitializedResource>,
 ) {
+    waiting.0 = false;
+
     if let (Some(slice), Some(frame)) = (&slice.0, frame.0) {
         info!("Refresh from game slice: {slice:?}");
 
