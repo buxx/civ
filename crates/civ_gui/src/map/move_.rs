@@ -9,7 +9,7 @@ use crate::ingame::LastKnownCursorPositionResource;
 use super::{grid::GridResource, CenterCameraOnGrid};
 
 #[derive(Resource, Deref, DerefMut, Default)]
-pub struct CurrentCenter(pub Option<ImaginaryWorldPoint>);
+pub struct CurrentGridCenterResource(pub Option<ImaginaryWorldPoint>);
 
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct DraggingMap(pub bool);

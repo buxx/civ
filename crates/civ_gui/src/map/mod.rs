@@ -4,7 +4,7 @@ use derive_more::Constructor;
 use grid::{CurrentCursorHex, GridResource};
 use move_::{
     handle_map_offset_by_keys, map_dragging, map_dragging_teardown, react_center_camera_on_grid,
-    CurrentCenter, DraggingMap,
+    CurrentGridCenterResource, DraggingMap,
 };
 use refresh::{react_game_slice_updated, refresh_grid};
 use std::ops::Deref;
@@ -26,7 +26,7 @@ impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GridResource>()
             .init_resource::<CurrentCursorHex>()
-            .init_resource::<CurrentCenter>()
+            .init_resource::<CurrentGridCenterResource>()
             .init_resource::<DraggingMap>()
             .init_resource::<WaitingForGameSlice>()
             .add_observer(react_game_slice_updated)

@@ -24,7 +24,7 @@ use hexx::{shapes, *};
 
 use super::{
     grid::{GridHex, GridHexResource, GridResource},
-    move_::CurrentCenter,
+    move_::CurrentGridCenterResource,
     AtlasesResource,
 };
 
@@ -36,7 +36,7 @@ pub fn refresh_grid(
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     grid: Res<GridResource>,
-    current: Res<CurrentCenter>,
+    current: Res<CurrentGridCenterResource>,
     mut waiting: ResMut<WaitingForGameSlice>,
 ) {
     if waiting.0 {
@@ -204,7 +204,7 @@ pub fn react_game_slice_updated(
     cities: Query<Entity, With<HexCity>>,
     units: Query<Entity, With<HexUnit>>,
     slice: Res<GameSliceResource>,
-    mut center: ResMut<CurrentCenter>,
+    mut center: ResMut<CurrentGridCenterResource>,
     frame: Res<GameFrameResource>,
     mut waiting: ResMut<WaitingForGameSlice>,
     // mut camera_initialized: ResMut<CameraInitializedResource>,
