@@ -8,7 +8,7 @@ use common::{
 use derive_more::Constructor;
 
 use crate::{
-    assets::tile::{layout, TILE_SIZE},
+    assets::tile::{absolute_layout, relative_layout, TILE_SIZE},
     core::GameSlicePropagated,
     ingame::{GameFrameResource, GameSliceResource, HexTile},
     map::WaitingForGameSlice,
@@ -28,9 +28,6 @@ use super::{
     AtlasesResource,
 };
 
-// #[cfg(feature = "debug_tiles")]
-// use crate::utils::debug::DebugDisplay;
-
 pub fn refresh_grid(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
@@ -47,29 +44,39 @@ pub fn refresh_grid(
     let center = Vec2::new(window.width() / 2.0, window.height() / 2.0);
     let (camera, cam_transform) = cameras.single();
     if let Ok(world_point) = camera.viewport_to_world_2d(cam_transform, center) {
-        let hex_pos = grid.layout.world_pos_to_hex(world_point);
+        let hex_pos = grid.relative_layout.world_pos_to_hex(world_point);
         let Some(hex_tile_meta) = grid.get(&hex_pos) else {
             return;
         };
-        if Some(hex_tile_meta.imaginary) == current.0 {
+
+        let Some(current) = current.0 else {
             return;
+        };
+
+        let diff_x = (hex_tile_meta.imaginary.x - current.x).abs();
+        let diff_y = (hex_tile_meta.imaginary.y - current.y).abs();
+        let window_contains_tiles_x =
+            window.width() / (TILE_SIZE.x as f32 / cam_transform.scale().x);
+        let window_contains_tiles_y =
+            window.height() / (TILE_SIZE.y as f32 / cam_transform.scale().y);
+
+        if (diff_x as f32) > (window_contains_tiles_x / 3.)
+            || (diff_y as f32) > (window_contains_tiles_y / 3.)
+        {
+            let window_width = window.width() * cam_transform.scale().x;
+            let window_height = window.height() * cam_transform.scale().y;
+            let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as u64;
+            let tiles_in_height = (window_height / (TILE_SIZE.y as f32)) as u64;
+            let tiles_size = tiles_in_height.max(tiles_in_width);
+            let tiles_size = tiles_size * 2;
+
+            let window = SetWindow::from_around(
+                &hex_tile_meta.imaginary,
+                &Resolution::new(tiles_size, tiles_size),
+            );
+            waiting.0 = true;
+            to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
         }
-
-        let window_width = window.width() * cam_transform.scale().x;
-        let window_height = window.height() * cam_transform.scale().y;
-        let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as u64;
-        let tiles_in_height = (window_height / (TILE_SIZE.y as f32)) as u64;
-        let tiles_size = tiles_in_height.max(tiles_in_width);
-        let tiles_size = tiles_size * 2;
-
-        // FIXME: called multiple time on same tile
-        // FIXME: resolution according to window + zoom + hex size
-        let window = SetWindow::from_around(
-            &hex_tile_meta.imaginary,
-            &Resolution::new(tiles_size, tiles_size),
-        );
-        waiting.0 = true;
-        to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
     }
 }
 
@@ -107,11 +114,11 @@ impl<'a> GridUpdater<'a> {
                 continue;
             };
 
-            let mut ctx = DrawHexContext::from_ctx(ctx, hex);
+            let ctx = DrawHexContext::from_ctx(ctx, hex);
 
-            let tile = self.tile(commands, &mut ctx);
-            let city = self.city(commands, &mut ctx);
-            let units = self.units(commands, &mut ctx);
+            let tile = self.tile(commands, &ctx);
+            let city = self.city(commands, &ctx);
+            let units = self.units(commands, &ctx);
 
             grid.insert(hex, GridHex::new(imaginary, point, tile, city, units));
         }
@@ -122,7 +129,7 @@ impl<'a> GridUpdater<'a> {
     fn tile(
         &self,
         commands: &mut Commands,
-        ctx: &mut DrawHexContext,
+        ctx: &DrawHexContext,
     ) -> GridHexResource<CtxTile<Tile>> {
         let point = ctx.point().expect("Tile called only on world point");
         let tile = ctx.slice.world().tile(&point).clone();
@@ -134,7 +141,7 @@ impl<'a> GridUpdater<'a> {
     fn city(
         &self,
         commands: &mut Commands,
-        ctx: &mut DrawHexContext,
+        ctx: &DrawHexContext,
     ) -> Option<GridHexResource<ClientCity>> {
         let point = ctx.point().expect("City called only on world point");
         let city = ctx.slice.city_at(&point).cloned();
@@ -147,7 +154,7 @@ impl<'a> GridUpdater<'a> {
     fn units(
         &self,
         commands: &mut Commands,
-        ctx: &mut DrawHexContext,
+        ctx: &DrawHexContext,
     ) -> Option<GridHexResource<Vec<ClientUnit>>> {
         let point = ctx.point().expect("Units called only on world point");
         let units = ctx
@@ -166,7 +173,8 @@ impl<'a> GridUpdater<'a> {
     fn update(&mut self, commands: &mut Commands, ctx: &'a DrawContext<'a>) {
         let world = ctx.slice.world();
         let center = world.imaginary_world_point_for_center_rel((0, 0));
-        let layout = layout(&center);
+        let absolute_layout = absolute_layout();
+        let relative_layout = relative_layout(&center);
 
         // Tiles
         for entity in self.tiles.iter() {
@@ -183,7 +191,12 @@ impl<'a> GridUpdater<'a> {
             commands.entity(entity).despawn_recursive();
         }
 
-        let grid = GridResource::new(self.grid(commands, ctx), center, layout);
+        let grid = GridResource::new(
+            self.grid(commands, ctx),
+            center,
+            relative_layout,
+            absolute_layout,
+        );
         commands.insert_resource(grid);
     }
 }

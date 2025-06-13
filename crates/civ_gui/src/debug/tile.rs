@@ -55,7 +55,7 @@ pub fn color_tile_on_hover(
         .cursor_position()
         .and_then(|p| camera.viewport_to_world_2d(cam_transform, p).ok())
     {
-        let hex_pos = grid.layout.world_pos_to_hex(world_point);
+        let hex_pos = grid.relative_layout.world_pos_to_hex(world_point);
         if Some(hex_pos) == current_hex.0 {
             return;
         }

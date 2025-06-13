@@ -11,7 +11,8 @@ use hexx::{Hex, HexLayout};
 pub struct GridResource {
     pub grid: HashMap<Hex, GridHex>,
     pub center: ImaginaryWorldPoint,
-    pub layout: HexLayout,
+    pub relative_layout: HexLayout,
+    pub absolute_layout: HexLayout,
 }
 
 impl std::ops::Deref for GridResource {

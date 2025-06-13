@@ -28,7 +28,7 @@ pub fn on_click(
     if let Some(hex) = window
         .cursor_position()
         .and_then(|p| camera.viewport_to_world_2d(cam_transform, p).ok())
-        .map(|p| grid.layout.world_pos_to_hex(p))
+        .map(|p| grid.relative_layout.world_pos_to_hex(p))
     {
         match click.event().button {
             PointerButton::Primary => commands.trigger(TrySelect(hex)),
