@@ -11,7 +11,7 @@ use crate::{
     assets::tile::{absolute_layout, relative_layout, TILE_SIZE},
     core::GameSlicePropagated,
     ingame::{GameFrameResource, GameSliceResource, HexTile},
-    map::WaitingForGameSlice,
+    map::{grid::Grid, WaitingForGameSlice},
     to_server,
     utils::assets::{DrawContext, DrawHexContext, Spawn, CITY_Z, TILE_Z, UNIT_Z},
 };
@@ -39,13 +39,16 @@ pub fn refresh_grid(
     if waiting.0 {
         return;
     }
+    let Some(grid) = &grid.0 else { return };
 
     let window = windows.single();
-    let center = Vec2::new(window.width() / 2.0, window.height() / 2.0);
+    let screen_center_point = Vec2::new(window.width() / 2.0, window.height() / 2.0);
     let (camera, cam_transform) = cameras.single();
-    if let Ok(world_point) = camera.viewport_to_world_2d(cam_transform, center) {
-        let hex_pos = grid.relative_layout.world_pos_to_hex(world_point);
-        let Some(hex_tile_meta) = grid.get(&hex_pos) else {
+    if let Ok(screen_center_world2d) =
+        camera.viewport_to_world_2d(cam_transform, screen_center_point)
+    {
+        let screen_center_hex = grid.absolute_layout.world_pos_to_hex(screen_center_world2d);
+        let Some(screen_center_hex_meta) = grid.get(&screen_center_hex) else {
             return;
         };
 
@@ -53,13 +56,14 @@ pub fn refresh_grid(
             return;
         };
 
-        let diff_x = (hex_tile_meta.imaginary.x - current.x).abs();
-        let diff_y = (hex_tile_meta.imaginary.y - current.y).abs();
+        let diff_x = (screen_center_hex_meta.imaginary.x - current.x).abs();
+        let diff_y = (screen_center_hex_meta.imaginary.y - current.y).abs();
         let window_contains_tiles_x =
             window.width() / (TILE_SIZE.x as f32 / cam_transform.scale().x);
         let window_contains_tiles_y =
             window.height() / (TILE_SIZE.y as f32 / cam_transform.scale().y);
 
+        // FIXME: don't work when zoom out ?
         if (diff_x as f32) > (window_contains_tiles_x / 3.)
             || (diff_y as f32) > (window_contains_tiles_y / 3.)
         {
@@ -71,10 +75,14 @@ pub fn refresh_grid(
             let tiles_size = tiles_size * 2;
 
             let window = SetWindow::from_around(
-                &hex_tile_meta.imaginary,
+                &screen_center_hex_meta.imaginary,
                 &Resolution::new(tiles_size, tiles_size),
             );
             waiting.0 = true;
+            error!(
+                "DEBUG::refresh::new window: (current center: {:?}) window: {:?}",
+                current, window
+            );
             to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
         }
     }
@@ -191,12 +199,12 @@ impl<'a> GridUpdater<'a> {
             commands.entity(entity).despawn_recursive();
         }
 
-        let grid = GridResource::new(
+        let grid = GridResource::new(Some(Grid::new(
             self.grid(commands, ctx),
             center,
             relative_layout,
             absolute_layout,
-        );
+        )));
         commands.insert_resource(grid);
     }
 }

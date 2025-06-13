@@ -13,7 +13,7 @@ use hexx::{Hex, HexLayout};
 // use dyn_clone::DynClone;
 
 use crate::{
-    assets::tile::{relative_layout, TILES_ATLAS_PATH},
+    assets::tile::{absolute_layout, relative_layout, TILES_ATLAS_PATH},
     ingame::{HexCity, HexTile, HexUnit},
     map::{AtlasIndex, AtlasesResource},
 };
@@ -98,8 +98,12 @@ impl<'a> DrawHexContext<'a> {
         Self { ctx, hex }
     }
 
-    pub fn layout(&self) -> HexLayout {
+    pub fn relative_layout(&self) -> HexLayout {
         relative_layout(&self.slice.center())
+    }
+
+    pub fn absolute_layout(&self) -> HexLayout {
+        absolute_layout()
     }
 
     pub fn point(&self) -> Option<WorldPoint> {
@@ -134,7 +138,7 @@ impl IntoBundle for CtxTile<Tile> {
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> HexTileBundle {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
-        let point = ctx.layout().hex_to_world_pos(ctx.hex);
+        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
         let atlas_index = match self {
             CtxTile::Outside => AtlasIndex(4),
             CtxTile::Visible(tile) => terrain_type_index(&tile.type_()),
@@ -156,8 +160,18 @@ impl IntoBundle for CtxTile<Tile> {
 
     #[cfg(feature = "debug_tiles")]
     fn debug_bundle(&self, ctx: &DrawHexContext, z: f32) -> Option<Self::DebugBundleType> {
-        let point = ctx.layout().hex_to_world_pos(ctx.hex);
-        let debug_info = format!("{}.{} ({}.{})", ctx.hex.x, ctx.hex.y, point.x, point.y);
+        use crate::assets::tile::TILE_SIZE;
+
+        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
+        let debug_info = format!(
+            "{}.{}/{}.{}", // ({}.{})",
+            ctx.hex.x,
+            ctx.hex.y,
+            point.x as i32 / TILE_SIZE.x as i32,
+            point.y as i32 / TILE_SIZE.y as i32,
+            // point.x as i32,
+            // point.y as i32
+        );
         Some(DebugHexTileBundle::new(
             Text2d(debug_info),
             TextColor(Color::BLACK),
@@ -187,7 +201,7 @@ impl IntoBundle for Vec<ClientUnit> {
 
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
-        let point = ctx.layout().hex_to_world_pos(ctx.hex);
+        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
         let atlas_index = AtlasIndex(5);
 
         // FIXME: Must be computed from list (first, for example)
@@ -235,7 +249,7 @@ impl IntoBundle for ClientCity {
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
-        let point = ctx.layout().hex_to_world_pos(ctx.hex);
+        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
         let atlas_index = AtlasIndex(6);
 
         // FIXME: Must be computed from list (first, for example)

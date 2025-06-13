@@ -5,6 +5,7 @@ use common::{
     },
     space::window::{SetWindow, Window},
 };
+use log::info;
 
 use crate::{
     effect::{ClientEffect, Effect, StateEffect},
@@ -34,6 +35,7 @@ impl<'a> SetWindowRequestDealer<'a> {
         )
         .game_slice(self.client, &window);
 
+        info!("DEBUG::deal {window}",);
         for message in [
             ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
                 ClientStateMessage::SetWindow(window.clone()),
