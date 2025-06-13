@@ -60,6 +60,7 @@ pub fn refresh_grid(
         let window_contains_tiles_y =
             window.height() / (TILE_SIZE.y as f32 / cam_transform.scale().y);
 
+        // FIXME: don't work when zoom out ?
         if (diff_x as f32) > (window_contains_tiles_x / 3.)
             || (diff_y as f32) > (window_contains_tiles_y / 3.)
         {
