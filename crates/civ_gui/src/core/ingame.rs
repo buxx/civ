@@ -52,6 +52,7 @@ pub fn react_server_message(
                         commands.trigger(GameSliceUpdated);
                     }
                     ClientStateMessage::SetWindow(window_) => {
+                        info!("DEBUG: SET Window (from server): {window_}");
                         window.0 = Some(window_.clone());
                         commands.trigger(GameWindowUpdated);
                     }

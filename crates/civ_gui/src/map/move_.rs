@@ -90,6 +90,7 @@ pub fn react_center_camera_on_grid(
     mut camera: Query<&mut Transform, With<Camera2d>>,
     grid: Res<GridResource>,
 ) {
+    let Some(grid) = &grid.0 else { return };
     let origin = grid.relative_layout.origin;
     let translation = camera.single().translation;
     let new_translation = Vec3::new(origin.x, origin.y, translation.z);

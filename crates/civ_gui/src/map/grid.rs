@@ -8,14 +8,17 @@ use derive_more::Constructor;
 use hexx::{Hex, HexLayout};
 
 #[derive(Debug, Resource, Constructor, Default)]
-pub struct GridResource {
+pub struct GridResource(pub Option<Grid>);
+
+#[derive(Debug, Constructor)]
+pub struct Grid {
     pub grid: HashMap<Hex, GridHex>,
     pub center: ImaginaryWorldPoint,
     pub relative_layout: HexLayout,
     pub absolute_layout: HexLayout,
 }
 
-impl std::ops::Deref for GridResource {
+impl std::ops::Deref for Grid {
     type Target = HashMap<Hex, GridHex>;
 
     fn deref(&self) -> &Self::Target {

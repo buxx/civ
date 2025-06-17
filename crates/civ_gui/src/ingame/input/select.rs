@@ -13,6 +13,7 @@ pub fn on_try_select(
     mut selected: ResMut<SelectedResource>,
     grid: Res<GridResource>,
 ) {
+    let Some(grid) = &grid.0 else { return };
     let hex = trigger.event().0;
     selected.0 = None;
 

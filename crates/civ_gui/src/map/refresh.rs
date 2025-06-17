@@ -11,7 +11,7 @@ use crate::{
     assets::tile::{absolute_layout, relative_layout, TILE_SIZE},
     core::GameSlicePropagated,
     ingame::{GameFrameResource, GameSliceResource, HexTile},
-    map::WaitingForGameSlice,
+    map::{grid::Grid, WaitingForGameSlice},
     to_server,
     utils::assets::{DrawContext, DrawHexContext, Spawn, CITY_Z, TILE_Z, UNIT_Z},
 };
@@ -39,6 +39,7 @@ pub fn refresh_grid(
     if waiting.0 {
         return;
     }
+    let Some(grid) = &grid.0 else { return };
 
     let window = windows.single();
     let center = Vec2::new(window.width() / 2.0, window.height() / 2.0);
@@ -192,12 +193,12 @@ impl<'a> GridUpdater<'a> {
             commands.entity(entity).despawn_recursive();
         }
 
-        let grid = GridResource::new(
+        let grid = GridResource::new(Some(Grid::new(
             self.grid(commands, ctx),
             center,
             relative_layout,
             absolute_layout,
-        );
+        )));
         commands.insert_resource(grid);
     }
 }

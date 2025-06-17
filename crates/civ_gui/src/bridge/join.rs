@@ -19,8 +19,8 @@ pub fn join(trigger: Trigger<JoinEvent>, mut commands: Commands, client_id: Res<
     commands.trigger(SendMessageToServerEvent(ClientToServerMessage::Network(
         ClientToServerNetworkMessage::Hello(
             Client::new(client_id, player_id),
-            // FIXME BS NOW
-            Resolution::new(1, 1),
+            // FIXME BS NOW: now now now
+            Resolution::new(10, 10),
         ),
     )));
 }

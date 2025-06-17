@@ -157,7 +157,10 @@ impl IntoBundle for CtxTile<Tile> {
     #[cfg(feature = "debug_tiles")]
     fn debug_bundle(&self, ctx: &DrawHexContext, z: f32) -> Option<Self::DebugBundleType> {
         let point = ctx.layout().hex_to_world_pos(ctx.hex);
-        let debug_info = format!("{}.{} ({}.{})", ctx.hex.x, ctx.hex.y, point.x, point.y);
+        let debug_info = format!(
+            "{}.{} ({}.{})",
+            ctx.hex.x, ctx.hex.y, point.x as i32, point.y as i32
+        );
         Some(DebugHexTileBundle::new(
             Text2d(debug_info),
             TextColor(Color::BLACK),

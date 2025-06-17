@@ -377,6 +377,7 @@ impl Runner {
                         .get(client.player_id())
                         .map(|state| state.window().clone())
                     {
+                        info!("DEBUG::client {window}",);
                         shines.push((
                             ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
                                 ClientStateMessage::SetWindow(window.clone()),

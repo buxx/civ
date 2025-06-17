@@ -23,6 +23,7 @@ pub fn on_click(
     cameras: Query<(&Camera, &GlobalTransform)>,
     grid: Res<GridResource>,
 ) {
+    let Some(grid) = &grid.0 else { return };
     let window = windows.single();
     let (camera, cam_transform) = cameras.single();
     if let Some(hex) = window

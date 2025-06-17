@@ -25,6 +25,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug executable 'gui'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=gui",
+                    "--package=civ_gui"
+                ],
+                "filter": {
+                    "name": "gui",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug executable 'tui'",
             "cargo": {
                 "args": [
