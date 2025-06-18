@@ -44,7 +44,7 @@ impl IntoBundle for Select {
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
-        let point = ctx.layout().hex_to_world_pos(ctx.hex);
+        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
         let atlas_index = AtlasIndex(7);
 
         SelectBundle::new(

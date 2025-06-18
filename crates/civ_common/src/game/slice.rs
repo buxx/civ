@@ -84,7 +84,14 @@ impl std::fmt::Debug for GameSlice {
         f.debug_struct("GameSlice")
             .field(
                 "world",
-                &format!("{} world tiles", self.world.tiles().len()),
+                &format!(
+                    "{} world tiles, start at {}.{}, width {}, height {}",
+                    self.world.tiles().len(),
+                    self.world.original().x,
+                    self.world.original().y,
+                    self.world.width(),
+                    self.world.height()
+                ),
             )
             .field("cities", &format!("{} cities", self.cities.len()))
             .field("units", &format!("{} units", self.units.len()))

@@ -6,6 +6,7 @@ use common::network::message::{
 };
 
 use crate::{
+    assets::tile::TILE_SIZE,
     bridge::MessageReceivedFromServerEvent,
     ingame::{GameFrameResource, GameFrameUpdated, GameSliceResource, GameWindowResource},
     menu::state::MenuStateResource,
@@ -86,5 +87,24 @@ pub fn react_server_message(
                 ServerToClientInGameMessage::Notification(_level, _) => {}
             }
         }
+    }
+}
+
+pub fn on_game_window_updated(
+    _trigger: Trigger<GameWindowUpdated>,
+    window: Res<GameWindowResource>,
+    mut camera: Query<&mut Transform, With<Camera2d>>,
+) {
+    if let Some(window) = &window.0 {
+        let center = window.center();
+        let new_translation_x = center.x as f32 * TILE_SIZE.x as f32;
+        let new_translation_y = center.x as f32 * TILE_SIZE.y as f32;
+        camera.single_mut().translation = Vec3::new(new_translation_x, new_translation_y, 0.);
+
+        let center = window.center();
+        info!(
+            "on_game_window_updated, translation {}.{} -> {}.{}",
+            center.x, center.y, new_translation_x, new_translation_y,
+        );
     }
 }
