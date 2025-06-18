@@ -104,7 +104,7 @@ impl<'a> GridUpdater<'a> {
         let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as i32;
         let tiles_in_height = (window_height / (TILE_SIZE.y as f32)) as i32;
         let tiles_size = tiles_in_height.max(tiles_in_width);
-        let tiles_size = tiles_size * 2;
+        let tiles_size = tiles_size * 3;
 
         let world = ctx.slice.world();
         let shape = shapes::parallelogram(
@@ -121,6 +121,14 @@ impl<'a> GridUpdater<'a> {
             else {
                 continue;
             };
+
+            if hex.x == -6 && hex.y == -1 {
+                info!("coucou");
+            }
+
+            if hex.x == 0 && hex.y == 0 {
+                info!("coucou");
+            }
 
             let ctx = DrawHexContext::from_ctx(ctx, hex);
 

@@ -160,21 +160,14 @@ impl IntoBundle for CtxTile<Tile> {
 
     #[cfg(feature = "debug_tiles")]
     fn debug_bundle(&self, ctx: &DrawHexContext, z: f32) -> Option<Self::DebugBundleType> {
-        use crate::assets::tile::TILE_SIZE;
-
-        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
+        let point = ctx.point().unwrap();
         let debug_info = format!(
             "{}.{}/{}.{}", // ({}.{})",
-            ctx.hex.x,
-            ctx.hex.y,
-            point.x as i32 / TILE_SIZE.x as i32,
-            point.y as i32 / TILE_SIZE.y as i32,
-            // point.x as i32,
-            // point.y as i32
+            ctx.hex.x, ctx.hex.y, point.x as i32, point.y as i32
         );
         Some(DebugHexTileBundle::new(
             Text2d(debug_info),
-            TextColor(Color::BLACK),
+            TextColor(Color::srgb(1.0, 0.4, 0.4)),
             TextFont {
                 font_size: 12.0,
                 ..default()

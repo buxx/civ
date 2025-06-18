@@ -6,7 +6,7 @@ use common::network::message::{
 };
 
 use crate::{
-    assets::tile::TILE_SIZE,
+    assets::tile::{absolute_layout, relative_layout, TILE_SIZE},
     bridge::MessageReceivedFromServerEvent,
     ingame::{GameFrameResource, GameFrameUpdated, GameSliceResource, GameWindowResource},
     menu::state::MenuStateResource,
@@ -97,14 +97,20 @@ pub fn on_game_window_updated(
 ) {
     if let Some(window) = &window.0 {
         let center = window.center();
-        let new_translation_x = center.x as f32 * TILE_SIZE.x as f32;
-        let new_translation_y = center.x as f32 * TILE_SIZE.y as f32;
-        camera.single_mut().translation = Vec3::new(new_translation_x, new_translation_y, 0.);
+        let center2 = Vec2::new(
+            center.x as f32 * TILE_SIZE.x as f32,
+            center.x as f32 * TILE_SIZE.y as f32,
+        );
+        let target_hex = absolute_layout().world_pos_to_hex(center2);
+        let point = absolute_layout().hex_to_world_pos(target_hex);
+        // let new_translation_x = center.x as f32 * TILE_SIZE.x as f32;
+        // let new_translation_y = center.x as f32 * TILE_SIZE.y as f32;
+        camera.single_mut().translation = Vec3::new(point.x, point.y, 0.);
 
         let center = window.center();
         info!(
             "on_game_window_updated, translation {}.{} -> {}.{}",
-            center.x, center.y, new_translation_x, new_translation_y,
+            center.x, center.y, point.x, point.y,
         );
     }
 }
