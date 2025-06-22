@@ -1,6 +1,7 @@
 use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use common::{
     game::slice::ClientCity,
+    geo::ImaginaryWorldPoint,
     network::message::ClientToServerInGameMessage,
     space::window::{Resolution, SetWindow},
     world::{CtxTile, Tile},
@@ -33,7 +34,7 @@ pub fn refresh_grid(
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     grid: Res<GridResource>,
-    current: Res<CurrentGridCenterResource>,
+    // current: Res<CurrentGridCenterResource>,
     mut waiting: ResMut<WaitingForGameSlice>,
 ) {
     if waiting.0 {
@@ -48,25 +49,16 @@ pub fn refresh_grid(
         camera.viewport_to_world_2d(cam_transform, screen_center_point)
     {
         let screen_center_hex = grid.absolute_layout.world_pos_to_hex(screen_center_world2d);
-        let Some(screen_center_hex_meta) = grid.get(&screen_center_hex) else {
-            return;
-        };
+        let grid_center_hex = hex(grid.center.x as i32, grid.center.y as i32);
+        let distance = grid_center_hex.distance_to(screen_center_hex);
 
-        let Some(current) = current.0 else {
-            return;
-        };
-
-        let diff_x = (screen_center_hex_meta.imaginary.x - current.x).abs();
-        let diff_y = (screen_center_hex_meta.imaginary.y - current.y).abs();
         let window_contains_tiles_x =
             window.width() / (TILE_SIZE.x as f32 / cam_transform.scale().x);
         let window_contains_tiles_y =
             window.height() / (TILE_SIZE.y as f32 / cam_transform.scale().y);
+        let min_diff = window_contains_tiles_x.min(window_contains_tiles_y);
 
-        // FIXME: don't work when zoom out ?
-        if (diff_x as f32) > (window_contains_tiles_x / 3.)
-            || (diff_y as f32) > (window_contains_tiles_y / 3.)
-        {
+        if distance as f32 > min_diff {
             let window_width = window.width() * cam_transform.scale().x;
             let window_height = window.height() * cam_transform.scale().y;
             let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as u64;
@@ -74,14 +66,14 @@ pub fn refresh_grid(
             let tiles_size = tiles_in_height.max(tiles_in_width);
             let tiles_size = tiles_size * 2;
 
-            let window = SetWindow::from_around(
-                &screen_center_hex_meta.imaginary,
-                &Resolution::new(tiles_size, tiles_size),
-            );
+            let new_center =
+                ImaginaryWorldPoint::new(screen_center_hex.x as i64, screen_center_hex.y as i64);
+            let window =
+                SetWindow::from_around(&new_center, &Resolution::new(tiles_size, tiles_size));
             waiting.0 = true;
             error!(
                 "DEBUG::refresh::new window: (current center: {:?}) window: {:?}",
-                current, window
+                new_center, window
             );
             to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
         }
