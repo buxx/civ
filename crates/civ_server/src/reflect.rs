@@ -177,8 +177,6 @@ impl Runner {
         )
         .game_slice(client, &window);
 
-        info!("DEBUG::update_client_window_reflects {window}",);
-
         Ok(vec![
             (
                 ServerToClientMessage::InGame(ServerToClientInGameMessage::State(

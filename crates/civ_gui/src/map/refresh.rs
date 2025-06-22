@@ -73,10 +73,6 @@ pub fn refresh_grid(
             let window =
                 SetWindow::from_around(&new_center, &Resolution::new(tiles_size, tiles_size));
             waiting.0 = true;
-            error!(
-                "DEBUG::refresh::new window: (current center: {:?}) window: {:?}",
-                new_center, window
-            );
 
             to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
         }
