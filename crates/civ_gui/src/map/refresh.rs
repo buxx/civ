@@ -53,10 +53,12 @@ pub fn refresh_grid(
         let distance = grid_center_hex.distance_to(screen_center_hex);
 
         let window_contains_tiles_x =
-            window.width() / (TILE_SIZE.x as f32 / cam_transform.scale().x);
+            window.width() / 2.0 / (TILE_SIZE.x as f32 / cam_transform.scale().x);
         let window_contains_tiles_y =
-            window.height() / (TILE_SIZE.y as f32 / cam_transform.scale().y);
-        let min_diff = window_contains_tiles_x.min(window_contains_tiles_y);
+            window.height() / 2.0 / (TILE_SIZE.y as f32 / cam_transform.scale().y);
+        let min_diff = window_contains_tiles_x
+            .min(window_contains_tiles_y)
+            .min(5.0);
 
         if distance as f32 > min_diff {
             let window_width = window.width() * cam_transform.scale().x;
@@ -75,6 +77,8 @@ pub fn refresh_grid(
                 "DEBUG::refresh::new window: (current center: {:?}) window: {:?}",
                 new_center, window
             );
+
+            // FIXME BS NOW: Ne pas modifier cam_transform tout le temp, seulement quand la modif vient du serveur ou c'est une teleport
             to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
         }
     }
