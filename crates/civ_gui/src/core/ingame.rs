@@ -90,7 +90,6 @@ pub fn react_server_message(
     }
 }
 
-// FIXME BS NOW: Ne pas modifier cam_transform tout le temp, seulement quand la modif vient du serveur ou c'est une teleport
 pub fn on_game_window_updated(
     trigger: Trigger<GameWindowUpdated>,
     window: Res<GameWindowResource>,
