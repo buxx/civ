@@ -11,6 +11,9 @@ use civ_world::writer::FilesWriter;
 use common::game::nation::flag::Flag;
 use common::game::unit::UnitType;
 use common::geo::{GeoContext, ImaginaryWorldPoint, WorldPoint};
+use common::network::message::{
+    ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage,
+};
 use common::network::Client;
 use common::space::window::{DisplayStep, Resolution, Window};
 use common::utils::Progress;
@@ -20,7 +23,9 @@ use std::thread;
 use uuid::Uuid;
 use world::generator::PatternGenerator;
 
-use civ_gui::bridge::{BridgePlugin, ClientToServerSenderResource, ServerToClientReceiverResource};
+use civ_gui::bridge::{
+    BridgeMessage, BridgePlugin, ClientToServerSenderResource, ServerToClientReceiverResource,
+};
 use civ_gui::context::Context;
 use civ_gui::core::CorePlugin;
 use civ_gui::ingame::InGamePlugin;
@@ -39,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tmp_path = std::env::temp_dir();
     let game_path = tmp_path.join(Uuid::new_v4().to_string());
     let world_path = game_path.join("world");
-    let world_config = WorldConfig::new(world_path.clone(), 10, 10, 10);
+    let world_config = WorldConfig::new(world_path.clone(), 1000, 1000, 100);
     let client = Client::default();
     let server_config = ServerArgs::builder()
         .world(world_path.clone())
@@ -52,6 +57,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (client_to_server_sender, client_to_server_receiver) = unbounded();
     let (server_to_client_sender, server_to_client_receiver) = unbounded();
     let (progress_sender, progress_receiver) = unbounded();
+
+    // server_to_client_sender
+    //     .send_blocking(BridgeMessage::Server(ServerToClientMessage::InGame(
+    //         ServerToClientInGameMessage::State(ClientStateMessage::SetWindow(Window::new(
+    //             ImaginaryWorldPoint::new(20, 20),
+    //             ImaginaryWorldPoint::new(30, 30),
+    //             DisplayStep::Close,
+    //         ))),
+    //     )))
+    //     .unwrap();
 
     // Generate world
     println!("Generate world");
@@ -67,8 +82,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let resolution = Resolution::new(5, 5);
     let window = Window::new(
-        ImaginaryWorldPoint::new(-3, -3),
-        ImaginaryWorldPoint::new(7, 7),
+        ImaginaryWorldPoint::new(5, 5),
+        ImaginaryWorldPoint::new(10, 10),
         DisplayStep::Close,
     );
 
@@ -130,6 +145,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             break;
         }
     }
+
     println!("Server ready, start GUI");
     let to_server_sender = ClientToServerSenderResource(client_to_server_sender);
     let from_server_receiver = ServerToClientReceiverResource(server_to_client_receiver);

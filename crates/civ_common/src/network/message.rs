@@ -22,13 +22,13 @@ pub enum NotificationLevel {
     Info,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientToServerMessage {
     Network(ClientToServerNetworkMessage),
     Game(ClientToServerGameMessage),
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientToServerNetworkMessage {
     Hello(Client, Resolution),
     Goodbye,
@@ -40,13 +40,13 @@ impl From<ClientToServerNetworkMessage> for ClientToServerMessage {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientToServerGameMessage {
     Establishment(ClientToServerEstablishmentMessage),
     InGame(ClientToServerInGameMessage),
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientToServerEstablishmentMessage {
     TakePlace(Flag),
 }
@@ -63,7 +63,7 @@ impl From<ClientToServerEstablishmentMessage> for ClientToServerMessage {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientToServerInGameMessage {
     SetWindow(SetWindow),
     Unit(UnitId, ClientToServerUnitMessage),
@@ -82,13 +82,13 @@ impl From<ClientToServerInGameMessage> for ClientToServerMessage {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientToServerUnitMessage {
     Settle(String), // CityName
     CancelCurrentTask,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientToServerCityMessage {
     SetProduction(CityProduction),
     SetExploitation(CityExploitation),

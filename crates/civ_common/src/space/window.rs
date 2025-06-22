@@ -75,6 +75,15 @@ impl Window {
         &self.end
     }
 
+    pub fn center(&self) -> ImaginaryWorldPoint {
+        let width = self.end.x - self.start.x;
+        let height = self.end.y - self.start.y;
+        ImaginaryWorldPoint {
+            x: self.start.x + (width / 2),
+            y: self.start.y + (height / 2),
+        }
+    }
+
     pub fn shape(&self) -> u64 {
         let width = self.end.x - self.start.x;
         let height = self.end.y - self.start.y;

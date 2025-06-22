@@ -48,6 +48,7 @@ pub fn color_tile_on_hover(
     if dragging.0 {
         return;
     }
+    let Some(grid) = &grid.0 else { return };
 
     let window = windows.single();
     let (camera, cam_transform) = cameras.single();

@@ -43,8 +43,8 @@ fn entrypoint() -> Result<(), JsValue> {
         UserPlugin,
         MenuPlugin::new(context.clone()),
         CorePlugin,
-        MapPlugin,
         InGamePlugin::builder().build(),
+        MapPlugin,
     ))
     .insert_resource(ContextResource::new(context));
 
