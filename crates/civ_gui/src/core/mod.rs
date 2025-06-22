@@ -32,7 +32,7 @@ impl Plugin for CorePlugin {
 
 // TODO: move
 #[derive(Event)]
-pub struct GameWindowUpdated;
+pub struct GameWindowUpdated(pub bool); // Need move camera
 
 // TODO: move
 #[derive(Event)]

@@ -116,7 +116,7 @@ pub enum ServerToClientInGameMessage {
 pub enum ClientStateMessage {
     SetGameFrame(GameFrame),
     // FIXME BS NOW: send when placed or when client say hello, with last known window
-    SetWindow(Window),
+    SetWindow(Window, bool), // Window, Move to
     SetGameSlice(GameSlice),
     SetCity(ClientCity),
     RemoveCity(CityId),

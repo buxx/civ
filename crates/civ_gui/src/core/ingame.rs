@@ -53,10 +53,9 @@ pub fn react_server_message(
                         game_slice.0 = Some(game_slice_.clone());
                         commands.trigger(GameSliceUpdated);
                     }
-                    ClientStateMessage::SetWindow(window_) => {
-                        info!("DEBUG: SET Window (from server): {window_}");
+                    ClientStateMessage::SetWindow(window_, move_to) => {
                         window.0 = Some(window_.clone());
-                        commands.trigger(GameWindowUpdated);
+                        commands.trigger(GameWindowUpdated(*move_to));
                     }
                     ClientStateMessage::SetCity(city) => {
                         if let Some(ref mut slice) = &mut (game_slice.0) {
@@ -91,14 +90,18 @@ pub fn react_server_message(
     }
 }
 
+// FIXME BS NOW: Ne pas modifier cam_transform tout le temp, seulement quand la modif vient du serveur ou c'est une teleport
 pub fn on_game_window_updated(
-    _trigger: Trigger<GameWindowUpdated>,
+    trigger: Trigger<GameWindowUpdated>,
     window: Res<GameWindowResource>,
     mut camera: Query<&mut Transform, With<Camera2d>>,
 ) {
-    if let Some(window) = &window.0 {
-        let center = window.center();
-        let position = absolute_layout().hex_to_world_pos(hex(center.x as i32, center.y as i32));
-        camera.single_mut().translation = Vec3::new(position.x, position.y, 0.);
+    if trigger.event().0 {
+        if let Some(window) = &window.0 {
+            let center = window.center();
+            let position =
+                absolute_layout().hex_to_world_pos(hex(center.x as i32, center.y as i32));
+            camera.single_mut().translation = Vec3::new(position.x, position.y, 0.);
+        }
     }
 }

@@ -78,7 +78,6 @@ pub fn refresh_grid(
                 new_center, window
             );
 
-            // FIXME BS NOW: Ne pas modifier cam_transform tout le temp, seulement quand la modif vient du serveur ou c'est une teleport
             to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
         }
     }

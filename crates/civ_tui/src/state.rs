@@ -79,7 +79,8 @@ impl State {
             ClientStateMessage::SetGameFrame(frame) => {
                 self.frame = Some(frame);
             }
-            ClientStateMessage::SetWindow(window) => {
+            // TODO: manage move to (2nd field)
+            ClientStateMessage::SetWindow(window, _) => {
                 self.set_window(Some(window));
             }
             ClientStateMessage::SetGameSlice(slice) => {

@@ -182,7 +182,7 @@ impl Runner {
         Ok(vec![
             (
                 ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                    ClientStateMessage::SetWindow(window.clone()),
+                    ClientStateMessage::SetWindow(window.clone(), false),
                 )),
                 vec![*client.client_id()],
             ),
