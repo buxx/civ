@@ -20,15 +20,11 @@ use crate::{
 };
 
 #[derive(Debug, Event)]
-pub enum SetupUnitMenu {
-    Unit(UnitId),
-}
+pub struct SetupUnitMenu(pub UnitId);
 
 impl WithUnitId for SetupUnitMenu {
     fn unit_id(&self) -> &UnitId {
-        match self {
-            SetupUnitMenu::Unit(unit_id) => unit_id,
-        }
+        &self.0
     }
 }
 

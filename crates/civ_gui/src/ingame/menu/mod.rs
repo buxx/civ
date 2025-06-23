@@ -1,3 +1,4 @@
+pub mod city;
 use bevy::prelude::*;
 
 use bevy_egui::{EguiContextSettings, EguiContexts};
