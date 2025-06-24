@@ -865,11 +865,14 @@ mod test {
 
         let expected_set_window = ServerToClientMessage::InGame(
             // FIXME: indicate from this test the window size (server use 15 as default)
-            ServerToClientInGameMessage::State(ClientStateMessage::SetWindow(Window::new(
-                ImaginaryWorldPoint::new(-1, -1),
-                ImaginaryWorldPoint::new(1, 1),
-                DisplayStep::Close,
-            ))),
+            ServerToClientInGameMessage::State(ClientStateMessage::SetWindow(
+                Window::new(
+                    ImaginaryWorldPoint::new(-1, -1),
+                    ImaginaryWorldPoint::new(1, 1),
+                    DisplayStep::Close,
+                ),
+                false,
+            )),
         );
         let expected_game_slice_world = PartialWorld::new(
             ImaginaryWorldPoint::new(-1, -1),
