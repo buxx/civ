@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 use bevy_egui::{EguiContextSettings, EguiContexts};
-use common::game::{slice::ClientUnit, unit::UnitId};
+use common::game::{
+    city::CityId,
+    slice::{ClientCity, ClientUnit},
+    unit::UnitId,
+};
 
 use crate::{
     core::GameSlicePropagated,
@@ -12,7 +16,7 @@ use super::{DrawUiComponent, EGUI_DISPLAY_FACTOR};
 pub mod unit;
 
 #[macro_export]
-macro_rules! add_component {
+macro_rules! add_city_component {
     ($app:expr, $resource:ty) => {
         $app.init_resource::<$resource>()
             .add_systems(
@@ -21,14 +25,39 @@ macro_rules! add_component {
                     .run_if(in_state(AppState::InGame)),
             )
             .add_observer(
-                $crate::ingame::interact::on_event::<
+                $crate::ingame::interact::city_resource_on_event::<
                     <$resource as $crate::ingame::interact::UiComponentResource>::OnEvent,
                     $resource,
                     <$resource as $crate::ingame::interact::UiComponentResource>::Resource,
                 >,
             )
             .add_observer(
-                $crate::ingame::interact::on_slice_propagated::<
+                $crate::ingame::interact::rebuild_city_resource_on_slice_propagated::<
+                    $resource,
+                    <$resource as $crate::ingame::interact::UiComponentResource>::Resource,
+                >,
+            )
+    };
+}
+
+#[macro_export]
+macro_rules! add_unit_component {
+    ($app:expr, $resource:ty) => {
+        $app.init_resource::<$resource>()
+            .add_systems(
+                Update,
+                ($crate::ingame::interact::draw_component::<$resource>,)
+                    .run_if(in_state(AppState::InGame)),
+            )
+            .add_observer(
+                $crate::ingame::interact::unit_resource_on_event::<
+                    <$resource as $crate::ingame::interact::UiComponentResource>::OnEvent,
+                    $resource,
+                    <$resource as $crate::ingame::interact::UiComponentResource>::Resource,
+                >,
+            )
+            .add_observer(
+                $crate::ingame::interact::rebuild_unit_resource_on_slice_propagated::<
                     $resource,
                     <$resource as $crate::ingame::interact::UiComponentResource>::Resource,
                 >,
@@ -102,6 +131,10 @@ pub trait WithUnitId {
     fn unit_id(&self) -> &UnitId;
 }
 
+pub trait WithCityId {
+    fn city_id(&self) -> &CityId;
+}
+
 // TODO: move in more generic mod
 pub trait Set<T> {
     fn set(&mut self, value: T);
@@ -112,26 +145,43 @@ pub trait Get<T> {
     fn get(&self) -> &T;
 }
 
-pub trait FromUnit {
-    fn from_unit(unit: &ClientUnit) -> Self;
+pub fn city_resource_on_event<
+    E: Event + WithCityId,
+    R: Resource + Set<Option<T>>,
+    T: From<ClientCity>,
+>(
+    trigger: Trigger<E>,
+    slice: Res<GameSliceResource>,
+    mut resource: ResMut<R>,
+) {
+    if let Some(slice) = &slice.0 {
+        if let Some(city) = slice.city(trigger.event().city_id()) {
+            resource.set(Some(T::from(city.clone())));
+        }
+    }
 }
 
-// TODO: move into "unit" related mod
-pub fn on_event<E: Event + WithUnitId, R: Resource + Set<Option<T>>, T: FromUnit>(
+pub fn unit_resource_on_event<
+    E: Event + WithUnitId,
+    R: Resource + Set<Option<T>>,
+    T: From<ClientUnit>,
+>(
     trigger: Trigger<E>,
     slice: Res<GameSliceResource>,
     mut resource: ResMut<R>,
 ) {
     if let Some(slice) = &slice.0 {
         if let Some(unit) = slice.unit(trigger.event().unit_id()) {
-            resource.set(Some(T::from_unit(unit)));
+            resource.set(Some(T::from(unit.clone())));
         }
     }
 }
 
-pub fn on_slice_propagated<
+/// Implement a trigger on `GameSlicePropagated` event to rebuild
+/// automatically the given resource.
+pub fn rebuild_unit_resource_on_slice_propagated<
     R: Resource + Get<Option<T>> + Set<Option<T>>,
-    T: FromUnit + WithUnitId,
+    T: From<ClientUnit> + WithUnitId,
 >(
     _trigger: Trigger<GameSlicePropagated>,
     slice: Res<GameSliceResource>,
@@ -139,7 +189,26 @@ pub fn on_slice_propagated<
 ) {
     if let (Some(slice), Some(resource_)) = (&slice.0, &resource.get()) {
         if let Some(unit) = slice.unit(resource_.unit_id()) {
-            resource.set(Some(T::from_unit(unit)));
+            resource.set(Some(T::from(unit.clone())));
+        } else {
+            resource.set(None);
+        }
+    }
+}
+
+/// Implement a trigger on `GameSlicePropagated` event to rebuild
+/// automatically the given resource.
+pub fn rebuild_city_resource_on_slice_propagated<
+    R: Resource + Get<Option<T>> + Set<Option<T>>,
+    T: From<ClientCity> + WithCityId,
+>(
+    _trigger: Trigger<GameSlicePropagated>,
+    slice: Res<GameSliceResource>,
+    mut resource: ResMut<R>,
+) {
+    if let (Some(slice), Some(resource_)) = (&slice.0, &resource.get()) {
+        if let Some(city) = slice.city(resource_.city_id()) {
+            resource.set(Some(T::from(city.clone())));
         } else {
             resource.set(None);
         }

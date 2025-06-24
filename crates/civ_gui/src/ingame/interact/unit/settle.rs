@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_egui::egui::{Color32, RichText};
 use common::{
     game::{slice::ClientUnit, unit::UnitId, GameFrame},
     network::message::{ClientToServerInGameMessage, ClientToServerUnitMessage},
@@ -7,10 +8,7 @@ use derive_more::Constructor;
 
 use crate::{
     impl_ui_component_resource,
-    ingame::{
-        interact::{FromUnit, WithUnitId},
-        DrawUiComponent, EGUI_DISPLAY_FACTOR,
-    },
+    ingame::{interact::WithUnitId, DrawUiComponent, EGUI_DISPLAY_FACTOR},
     to_server,
     utils::gui::layout::fixed_window,
 };
@@ -31,11 +29,12 @@ pub struct SetupSettle(pub UnitId, pub String);
 pub struct SettleCityName {
     unit_id: UnitId,
     name: String,
+    error: Option<String>,
 }
 
-impl FromUnit for SettleCityName {
-    fn from_unit(unit: &ClientUnit) -> Self {
-        Self::new(*unit.id(), String::new())
+impl From<ClientUnit> for SettleCityName {
+    fn from(unit: ClientUnit) -> Self {
+        Self::new(*unit.id(), String::new(), None)
     }
 }
 impl WithUnitId for SettleCityName {
@@ -64,12 +63,25 @@ impl DrawUiComponent for SettleCityName {
             .title("City name")
             .factor(EGUI_DISPLAY_FACTOR)
             .ui(|ui| {
-                ui.horizontal_wrapped(|ui| {
-                    ui.text_edit_singleline(&mut self.name);
-                    if ui.button("Ok").clicked() {
-                        close = true;
-                        commands.trigger(SetupSettle(self.unit_id, self.name.clone()));
+                ui.vertical(|ui| {
+                    if let Some(error) = &self.error {
+                        ui.label(RichText::new(error).color(Color32::RED));
                     }
+
+                    ui.horizontal_wrapped(|ui| {
+                        if ui.text_edit_singleline(&mut self.name).changed() {
+                            self.error = None;
+                        }
+
+                        if ui.button("Ok").clicked() {
+                            if self.name.is_empty() {
+                                self.error = Some(String::from("Please fill a name"));
+                            } else {
+                                close = true;
+                                commands.trigger(SetupSettle(self.unit_id, self.name.clone()));
+                            }
+                        }
+                    });
                 });
             })
             .call();

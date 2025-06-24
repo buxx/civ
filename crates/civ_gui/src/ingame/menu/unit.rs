@@ -12,7 +12,7 @@ use crate::{
     ingame::{
         interact::{
             unit::{info::SetupUnitInfo, settle::SetupSettleCityName},
-            FromUnit, WithUnitId,
+            WithUnitId,
         },
         DrawUiComponent, EGUI_DISPLAY_FACTOR,
     },
@@ -38,8 +38,8 @@ pub struct UnitMenu {
     pub can: Vec<UnitCan>,
 }
 
-impl FromUnit for UnitMenu {
-    fn from_unit(unit: &ClientUnit) -> Self {
+impl From<ClientUnit> for UnitMenu {
+    fn from(unit: ClientUnit) -> Self {
         Self {
             unit_id: *unit.id(),
             can: unit.can().to_vec(),

@@ -7,10 +7,7 @@ use derive_more::Constructor;
 
 use crate::{
     impl_ui_component_resource,
-    ingame::{
-        interact::{FromUnit, WithUnitId},
-        DrawUiComponent, EGUI_DISPLAY_FACTOR,
-    },
+    ingame::{interact::WithUnitId, DrawUiComponent, EGUI_DISPLAY_FACTOR},
     send_unit_msg,
     utils::gui::layout::fixed_window,
 };
@@ -84,8 +81,8 @@ impl DrawUiComponent for UnitInfo {
     }
 }
 
-impl FromUnit for UnitInfo {
-    fn from_unit(unit: &ClientUnit) -> Self {
+impl From<ClientUnit> for UnitInfo {
+    fn from(unit: ClientUnit) -> Self {
         Self::new(*unit.id(), unit.task().clone())
     }
 }

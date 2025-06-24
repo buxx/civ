@@ -11,13 +11,14 @@ use input::{on_click, update_last_known_cursor_position};
 use interact::unit::settle::on_setup_settle;
 use selected::{on_select_updated, SelectedResource};
 
-use crate::add_component;
 use crate::ingame::interact::unit::info::UnitInfoResource;
 use crate::ingame::interact::unit::settle::SettleCityNameResource;
+use crate::ingame::menu::city::CityMenuResource;
 use crate::ingame::menu::unit::UnitMenuResource;
 use crate::ingame::selected::select_on_game_slice_propagated;
 use crate::state::AppState;
 use crate::utils::assets::Progress;
+use crate::{add_city_component, add_unit_component};
 
 pub mod input;
 pub mod interact;
@@ -60,9 +61,10 @@ impl Plugin for InGamePlugin {
             .add_observer(update_progresses)
             .add_observer(select_on_game_slice_propagated);
 
-        add_component!(app, UnitMenuResource);
-        add_component!(app, SettleCityNameResource);
-        add_component!(app, UnitInfoResource);
+        add_city_component!(app, CityMenuResource);
+        add_unit_component!(app, UnitMenuResource);
+        add_unit_component!(app, SettleCityNameResource);
+        add_unit_component!(app, UnitInfoResource);
     }
 }
 

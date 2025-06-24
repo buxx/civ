@@ -23,6 +23,7 @@ pub fn on_try_menu(
             if let Some(city) = &grid_hex.city {
                 commands.trigger(SelectUpdated::new(hex, Some(Selected::City(*city.id()))));
                 commands.trigger(SetupCityMenu(*city.id()));
+                return;
             }
 
             // Try menu on units is prior to currently selection
@@ -33,6 +34,7 @@ pub fn on_try_menu(
                         Some(Selected::Unit(SelectedUnit::One(*unit.id()))),
                     ));
                     commands.trigger(SetupUnitMenu(*unit.id()));
+                    return;
                 }
             }
         }
