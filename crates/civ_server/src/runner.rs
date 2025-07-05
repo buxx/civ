@@ -379,7 +379,7 @@ impl Runner {
                     {
                         shines.push((
                             ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                                ClientStateMessage::SetWindow(window.clone(), true),
+                                ClientStateMessage::SetWindow(window.clone()),
                             )),
                             vec![*client.client_id()],
                         ));

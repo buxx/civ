@@ -38,7 +38,7 @@ impl<'a> SetWindowRequestDealer<'a> {
         info!("DEBUG::deal {window}",);
         for message in [
             ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                ClientStateMessage::SetWindow(window.clone(), false),
+                ClientStateMessage::SetWindow(window.clone()),
             )),
             ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
                 ClientStateMessage::SetGameSlice(new_game_slice),
