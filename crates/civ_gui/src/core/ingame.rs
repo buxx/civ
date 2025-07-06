@@ -7,7 +7,7 @@ use common::network::message::{
 use hexx::hex;
 
 use crate::{
-    assets::tile::{absolute_layout, TILE_SIZE},
+    assets::tile::absolute_layout,
     bridge::MessageReceivedFromServerEvent,
     ingame::{GameFrameResource, GameFrameUpdated, GameSliceResource, GameWindowResource},
     menu::state::MenuStateResource,
@@ -27,11 +27,11 @@ pub fn react_server_message(
     mut window: ResMut<GameWindowResource>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    match trigger.event().0 {
+    match &trigger.event().0 {
         ServerToClientMessage::Establishment(message) => match message {
             ServerToClientEstablishmentMessage::ServerResume(resume, flag) => {
                 state.join.resume = Some(resume.clone());
-                state.join.flag = flag;
+                state.join.flag = *flag;
 
                 if flag.is_some() {
                     next_state.set(AppState::InGame);
@@ -41,52 +41,49 @@ pub fn react_server_message(
                 todo!()
             }
         },
-        ServerToClientMessage::InGame(message) => {
-            match message {
-                ServerToClientInGameMessage::State(message) => match message {
-                    ClientStateMessage::SetGameFrame(frame_) => {
-                        frame.0 = Some(frame_);
-                        commands.trigger(GameFrameUpdated(frame_));
+        ServerToClientMessage::InGame(message) => match message {
+            ServerToClientInGameMessage::State(message) => match message {
+                ClientStateMessage::SetGameFrame(frame_) => {
+                    frame.0 = Some(*frame_);
+                    commands.trigger(GameFrameUpdated(*frame_));
+                }
+                ClientStateMessage::SetGameSlice(game_slice_) => {
+                    game_slice.0 = Some(game_slice_.clone());
+                    commands.trigger(GameSliceUpdated);
+                }
+                ClientStateMessage::SetWindow(window_) => {
+                    window.0 = Some(window_.clone());
+                    commands.trigger(GameWindowUpdated);
+                }
+                ClientStateMessage::SetCity(city) => {
+                    if let Some(ref mut slice) = &mut (game_slice.0) {
+                        slice.cities_mut().retain(|c| c.id() != city.id());
+                        slice.cities_mut().push(city.clone());
                     }
-                    // FIXME BS NOW: when first received, we must set camera translation
-                    ClientStateMessage::SetGameSlice(game_slice_) => {
-                        game_slice.0 = Some(game_slice_.clone());
-                        commands.trigger(GameSliceUpdated);
+                    commands.trigger(GameSliceUpdated);
+                }
+                ClientStateMessage::RemoveCity(city_id) => {
+                    if let Some(ref mut slice) = &mut (game_slice.0) {
+                        slice.cities_mut().retain(|c| c.id() != city_id);
                     }
-                    ClientStateMessage::SetWindow(window_) => {
-                        window.0 = Some(window_.clone());
-                        commands.trigger(GameWindowUpdated);
+                    commands.trigger(GameSliceUpdated);
+                }
+                ClientStateMessage::SetUnit(unit) => {
+                    if let Some(ref mut slice) = &mut (game_slice.0) {
+                        slice.units_mut().retain(|u| u.id() != unit.id());
+                        slice.units_mut().push(unit.clone());
                     }
-                    ClientStateMessage::SetCity(city) => {
-                        if let Some(ref mut slice) = &mut (game_slice.0) {
-                            slice.cities_mut().retain(|c| c.id() != city.id());
-                            slice.cities_mut().push(city.clone());
-                        }
-                        commands.trigger(GameSliceUpdated);
+                    commands.trigger(GameSliceUpdated);
+                }
+                ClientStateMessage::RemoveUnit(unit_id) => {
+                    if let Some(ref mut slice) = &mut (game_slice.0) {
+                        slice.units_mut().retain(|u| u.id() != unit_id);
                     }
-                    ClientStateMessage::RemoveCity(city_id) => {
-                        if let Some(ref mut slice) = &mut (game_slice.0) {
-                            slice.cities_mut().retain(|c| c.id() != city_id);
-                        }
-                        commands.trigger(GameSliceUpdated);
-                    }
-                    ClientStateMessage::SetUnit(unit) => {
-                        if let Some(ref mut slice) = &mut (game_slice.0) {
-                            slice.units_mut().retain(|u| u.id() != unit.id());
-                            slice.units_mut().push(unit.clone());
-                        }
-                        commands.trigger(GameSliceUpdated);
-                    }
-                    ClientStateMessage::RemoveUnit(unit_id) => {
-                        if let Some(ref mut slice) = &mut (game_slice.0) {
-                            slice.units_mut().retain(|u| u.id() != unit_id);
-                        }
-                        commands.trigger(GameSliceUpdated);
-                    }
-                },
-                ServerToClientInGameMessage::Notification(_level, _) => {}
-            }
-        }
+                    commands.trigger(GameSliceUpdated);
+                }
+            },
+            ServerToClientInGameMessage::Notification(_level, _) => {}
+        },
     }
 }
 
