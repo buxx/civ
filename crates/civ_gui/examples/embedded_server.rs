@@ -58,16 +58,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (server_to_client_sender, server_to_client_receiver) = unbounded();
     let (progress_sender, progress_receiver) = unbounded();
 
-    // server_to_client_sender
-    //     .send_blocking(BridgeMessage::Server(ServerToClientMessage::InGame(
-    //         ServerToClientInGameMessage::State(ClientStateMessage::SetWindow(Window::new(
-    //             ImaginaryWorldPoint::new(20, 20),
-    //             ImaginaryWorldPoint::new(30, 30),
-    //             DisplayStep::Close,
-    //         ))),
-    //     )))
-    //     .unwrap();
-
     // Generate world
     println!("Generate world");
     let generator = PatternGenerator::new([TerrainType::Plain, TerrainType::GrassLand].to_vec());

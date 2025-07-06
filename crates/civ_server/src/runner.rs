@@ -430,7 +430,6 @@ impl Runner {
 
                         match message {
                             ClientToServerInGameMessage::SetWindow(window) => {
-                                //
                                 Ok(vec![Effect::Action(Action::UpdateClientWindow(
                                     *client, window,
                                 ))])
@@ -502,13 +501,24 @@ impl Runner {
                 *client,
                 ClientEffect::PlayerTookPlace(*flag, window),
             )),
-            Effect::Action(Action::UpdateClientWindow(*client, client_window)),
-            Effect::Shines(vec![(
-                ServerToClientMessage::Establishment(
-                    ServerToClientEstablishmentMessage::ServerResume(server_resume, Some(*flag)),
+            Effect::Action(Action::UpdateClientWindow(*client, client_window.clone())),
+            Effect::Shines(vec![
+                (
+                    ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                        ClientStateMessage::SetWindow(client_window.into()),
+                    )),
+                    vec![*client.client_id()],
                 ),
-                vec![*client.client_id()],
-            )]),
+                (
+                    ServerToClientMessage::Establishment(
+                        ServerToClientEstablishmentMessage::ServerResume(
+                            server_resume,
+                            Some(*flag),
+                        ),
+                    ),
+                    vec![*client.client_id()],
+                ),
+            ]),
         ])
     }
 
@@ -865,14 +875,11 @@ mod test {
 
         let expected_set_window = ServerToClientMessage::InGame(
             // FIXME: indicate from this test the window size (server use 15 as default)
-            ServerToClientInGameMessage::State(ClientStateMessage::SetWindow(
-                Window::new(
-                    ImaginaryWorldPoint::new(-1, -1),
-                    ImaginaryWorldPoint::new(1, 1),
-                    DisplayStep::Close,
-                ),
-                false,
-            )),
+            ServerToClientInGameMessage::State(ClientStateMessage::SetWindow(Window::new(
+                ImaginaryWorldPoint::new(-1, -1),
+                ImaginaryWorldPoint::new(1, 1),
+                DisplayStep::Close,
+            ))),
         );
         let expected_game_slice_world = PartialWorld::new(
             ImaginaryWorldPoint::new(-1, -1),

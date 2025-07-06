@@ -177,20 +177,12 @@ impl Runner {
         )
         .game_slice(client, &window);
 
-        Ok(vec![
-            (
-                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                    ClientStateMessage::SetWindow(window.clone()),
-                )),
-                vec![*client.client_id()],
-            ),
-            (
-                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                    ClientStateMessage::SetGameSlice(game_slice),
-                )),
-                vec![*client.client_id()],
-            ),
-        ])
+        Ok(vec![(
+            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                ClientStateMessage::SetGameSlice(game_slice),
+            )),
+            vec![*client.client_id()],
+        )])
     }
 }
 

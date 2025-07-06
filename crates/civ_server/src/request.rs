@@ -35,15 +35,10 @@ impl<'a> SetWindowRequestDealer<'a> {
         )
         .game_slice(self.client, &window);
 
-        info!("DEBUG::deal {window}",);
-        for message in [
-            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                ClientStateMessage::SetWindow(window.clone()),
-            )),
-            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+        {
+            let message = ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
                 ClientStateMessage::SetGameSlice(new_game_slice),
-            )),
-        ] {
+            ));
             self.context
                 .to_client_sender
                 .send_blocking((*self.client.client_id(), message))

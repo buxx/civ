@@ -211,7 +211,6 @@ fn entrypoint() -> Result<(), JsValue> {
                         .send(ServerToClientMessage::InGame(
                             ServerToClientInGameMessage::State(ClientStateMessage::SetWindow(
                                 window.clone(),
-                                true,
                             )),
                         ))
                         .await

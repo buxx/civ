@@ -65,6 +65,7 @@ impl From<ClientToServerEstablishmentMessage> for ClientToServerMessage {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientToServerInGameMessage {
+    /// Client moved its window
     SetWindow(SetWindow),
     Unit(UnitId, ClientToServerUnitMessage),
     City(CityId, ClientToServerCityMessage),
