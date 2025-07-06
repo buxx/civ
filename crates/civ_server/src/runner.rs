@@ -922,13 +922,9 @@ mod test {
                 ))
             ))
         ));
-
         let message2 = testing.to_clients_receiver.try_recv();
-        assert_eq!(message2, Ok((client_id, expected_set_window)));
-
-        let message3 = testing.to_clients_receiver.try_recv();
         assert!(matches!(
-            message3,
+            message2,
             Ok((
                 _,
                 ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
@@ -941,7 +937,7 @@ mod test {
             ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
                 ClientStateMessage::SetGameSlice(received_game_slice),
             )),
-        )) = message3
+        )) = message2
         {
             assert_eq!(received_game_slice.world(), &expected_game_slice_world);
             assert_eq!(received_game_slice.cities(), &vec![]);
@@ -950,6 +946,9 @@ mod test {
         } else {
             unreachable!()
         };
+
+        let message3 = testing.to_clients_receiver.try_recv();
+        assert_eq!(message3, Ok((client_id, expected_set_window)));
 
         assert_eq!(received_unit.type_(), &UnitType::Settlers);
         assert_eq!(received_unit.geo().point(), &WorldPoint::new(0, 0));
