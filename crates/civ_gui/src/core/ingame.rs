@@ -27,11 +27,11 @@ pub fn react_server_message(
     mut window: ResMut<GameWindowResource>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    match &trigger.event().0 {
+    match trigger.event().0 {
         ServerToClientMessage::Establishment(message) => match message {
             ServerToClientEstablishmentMessage::ServerResume(resume, flag) => {
                 state.join.resume = Some(resume.clone());
-                state.join.flag = *flag;
+                state.join.flag = flag;
 
                 if flag.is_some() {
                     next_state.set(AppState::InGame);
@@ -45,8 +45,8 @@ pub fn react_server_message(
             match message {
                 ServerToClientInGameMessage::State(message) => match message {
                     ClientStateMessage::SetGameFrame(frame_) => {
-                        frame.0 = Some(*frame_);
-                        commands.trigger(GameFrameUpdated(*frame_));
+                        frame.0 = Some(frame_);
+                        commands.trigger(GameFrameUpdated(frame_));
                     }
                     // FIXME BS NOW: when first received, we must set camera translation
                     ClientStateMessage::SetGameSlice(game_slice_) => {
@@ -91,7 +91,7 @@ pub fn react_server_message(
 }
 
 pub fn on_game_window_updated(
-    trigger: Trigger<GameWindowUpdated>,
+    _trigger: Trigger<GameWindowUpdated>,
     window: Res<GameWindowResource>,
     mut camera: Query<&mut Transform, With<Camera2d>>,
 ) {

@@ -80,7 +80,7 @@ impl State {
                 self.frame = Some(frame);
             }
             // TODO: manage move to (2nd field)
-            ClientStateMessage::SetWindow(window, _) => {
+            ClientStateMessage::SetWindow(window) => {
                 self.set_window(Some(window));
             }
             ClientStateMessage::SetGameSlice(slice) => {
