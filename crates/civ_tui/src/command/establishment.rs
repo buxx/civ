@@ -5,6 +5,7 @@ use common::{
     network::message::{
         ClientToServerEstablishmentMessage, ClientToServerGameMessage, ClientToServerMessage,
     },
+    space::window::Resolution,
 };
 
 use super::{CommandContext, CommandError, InvalidInputError};
@@ -18,7 +19,8 @@ pub fn place(context: CommandContext, input: &str) -> Result<(), CommandError> {
         .to_server_sender
         .send(ClientToServerMessage::Game(
             ClientToServerGameMessage::Establishment(
-                ClientToServerEstablishmentMessage::TakePlace(flag),
+                // TODO: this is not a correct resolution
+                ClientToServerEstablishmentMessage::TakePlace(flag, Resolution::new(1, 1)),
             ),
         ))
         .unwrap();

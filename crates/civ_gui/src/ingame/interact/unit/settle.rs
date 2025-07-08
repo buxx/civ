@@ -92,6 +92,8 @@ impl DrawUiComponent for SettleCityName {
 
 pub fn on_setup_settle(trigger: Trigger<SetupSettle>, mut commands: Commands) {
     let event = trigger.event();
+    debug!("Send settle request to server ({}, {})", event.0, &event.1);
+
     to_server!(
         commands,
         ClientToServerInGameMessage::Unit(

@@ -27,6 +27,8 @@ pub fn react_server_message(
     mut window: ResMut<GameWindowResource>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
+    debug!("Received event from server: {:?}", &trigger.event().0);
+
     match &trigger.event().0 {
         ServerToClientMessage::Establishment(message) => match message {
             ServerToClientEstablishmentMessage::ServerResume(resume, flag) => {
@@ -52,7 +54,7 @@ pub fn react_server_message(
                     commands.trigger(GameSliceUpdated);
                 }
                 ClientStateMessage::SetWindow(window_) => {
-                    window.0 = Some(window_.clone());
+                    window.0 = Some(*window_);
                     commands.trigger(GameWindowUpdated);
                 }
                 ClientStateMessage::SetCity(city) => {

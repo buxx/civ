@@ -127,6 +127,7 @@ impl Index {
             match effect {
                 Effect::State(effect) => match effect {
                     StateEffect::IncrementGameFrame => {}
+                    StateEffect::Clients(_) => {}
                     StateEffect::Client(_, _) => {}
                     StateEffect::Tasks(effect) => match effect {
                         TasksEffect::Remove(tasks) => {
@@ -166,7 +167,6 @@ impl Index {
                         }
                     },
                     StateEffect::Testing => {}
-                    StateEffect::Clients(_) => {}
                 },
                 Effect::Shines(_) => {}
                 Effect::Action(_) => {}

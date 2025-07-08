@@ -5,7 +5,6 @@ use common::{
     },
     space::window::{SetWindow, Window},
 };
-use log::info;
 
 use crate::{
     effect::{ClientEffect, Effect, StateEffect},

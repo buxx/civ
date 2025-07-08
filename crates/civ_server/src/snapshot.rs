@@ -7,7 +7,7 @@ use thiserror::Error;
 use crate::{
     game::{city::City, unit::Unit},
     state::{
-        clients::{ClientState, Clients},
+        clients::{Clients, PlayerState},
         index::Index,
         State,
     },
@@ -20,7 +20,7 @@ pub struct Snapshot {
     tasks: Vec<Box<dyn Task>>,
     cities: Vec<City>,
     units: Vec<Unit>,
-    client_states: HashMap<PlayerId, ClientState>,
+    client_states: HashMap<PlayerId, PlayerState>,
 }
 
 #[derive(Debug, Error, Clone)]
@@ -57,7 +57,7 @@ impl Snapshot {
         &self.units
     }
 
-    pub fn client_states(&self) -> &HashMap<PlayerId, ClientState> {
+    pub fn client_states(&self) -> &HashMap<PlayerId, PlayerState> {
         &self.client_states
     }
 }
@@ -102,7 +102,7 @@ impl From<Snapshot> for State {
             .collect();
         Self::new(
             value.frame_i,
-            Clients::new(HashMap::new(), value.client_states),
+            Clients::new(value.client_states),
             index,
             tasks,
             value.cities,

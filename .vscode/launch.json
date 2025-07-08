@@ -19,7 +19,11 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": [
+                "world",
+                "--snapshot=snapshot",
+                "--snapshot-interval=10"
+            ],
             "cwd": "${workspaceFolder}"
         },
         {

@@ -6,7 +6,7 @@ use common::{
     },
     space::window::{SetWindow, Window},
 };
-use log::{error, info};
+use log::error;
 use thiserror::Error;
 
 use crate::{
@@ -77,10 +77,12 @@ impl Runner {
         }
     }
 
+    // FIXME BS NOW: keep in memory (in client state ?) which client are still connected
+    // to send only to connected
     fn increment_game_frame_reflects(
         &self,
     ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
-        let client_ids = self.state().clients().client_ids();
+        let client_ids = self.state().clients().player_client_ids();
         let frame = *self.state().frame();
         Ok(vec![(
             ServerToClientMessage::InGame(ServerToClientInGameMessage::State(

@@ -48,7 +48,7 @@ pub enum ClientToServerGameMessage {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientToServerEstablishmentMessage {
-    TakePlace(Flag),
+    TakePlace(Flag, Resolution),
 }
 
 impl From<ClientToServerEstablishmentMessage> for ClientToServerGameMessage {

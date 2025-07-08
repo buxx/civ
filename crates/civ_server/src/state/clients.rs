@@ -4,21 +4,31 @@ use common::{
     game::{nation::flag::Flag, PlayerId},
     geo::GeoContext,
     network::{Client, ClientId},
-    space::window::{Resolution, Window},
+    space::window::Window,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::effect::ClientEffect;
+use crate::effect::{ClientEffect, ClientsEffect};
 
-// FIXME: contain client and player related. rename ? split ?
 #[derive(Default)]
 pub struct Clients {
-    count: usize,
-    // FIXME BS NOW: il faut que la window soit cote PlayerId pour être restitue a la connexion
-    // FIXME BS NOW: move WindowResolution elsewhere (not stored) ? remove Window
-    clients: HashMap<ClientId, (Resolution, Window)>,
-    states: HashMap<PlayerId, ClientState>,
+    index: Index,
+    states: HashMap<PlayerId, PlayerState>,
+}
+
+// FIXME BS NOW: is that in snapshot ?
+#[derive(Default)]
+struct Index {
+    client_player: HashMap<ClientId, PlayerId>,
+    player_client: HashMap<PlayerId, ClientId>,
+}
+
+impl Index {
+    fn insert(&mut self, client_id: ClientId, player_id: PlayerId) {
+        self.client_player.insert(client_id, player_id);
+        self.player_client.insert(player_id, client_id);
+    }
 }
 
 #[derive(Debug, Error)]
@@ -30,57 +40,45 @@ pub enum ClientsError {
 }
 
 impl Clients {
-    pub fn new(
-        clients: HashMap<ClientId, (Resolution, Window)>,
-        states: HashMap<PlayerId, ClientState>,
-    ) -> Self {
+    pub fn new(states: HashMap<PlayerId, PlayerState>) -> Self {
         Self {
-            count: 0,
-            clients,
+            index: Index::default(),
             states,
         }
     }
 
-    pub fn with_count(mut self, value: usize) -> Self {
-        self.count = value;
-        self
+    pub fn clients_count(&self) -> usize {
+        self.index.client_player.len()
     }
 
-    pub fn with_clients(mut self, value: HashMap<ClientId, (Resolution, Window)>) -> Self {
-        self.clients = value;
-        self
+    pub fn players_count(&self) -> usize {
+        self.states.len()
     }
 
-    pub fn with_states(mut self, value: HashMap<PlayerId, ClientState>) -> Self {
-        self.states = value;
-        self
+    pub fn apply(&mut self, effect: &ClientsEffect) -> Result<(), ClientsError> {
+        match effect {
+            ClientsEffect::Insert(client_id, player_id) => {
+                self.index.insert(*client_id, *player_id);
+            }
+        };
+
+        Ok(())
     }
 
-    pub fn count(&self) -> usize {
-        self.count
-    }
-
-    pub fn set_count(&mut self, value: usize) {
-        self.count = value;
-    }
-
-    pub fn apply(&mut self, client: &Client, effect: &ClientEffect) -> Result<(), ClientsError> {
+    pub fn apply_client(
+        &mut self,
+        client: &Client,
+        effect: &ClientEffect,
+    ) -> Result<(), ClientsError> {
         match effect {
             ClientEffect::PlayerTookPlace(flag, window) => {
-                self.states
-                    .insert(*client.player_id(), ClientState::new(*flag, window.clone()));
+                let state = PlayerState::new(*flag, *window);
+                self.states.insert(*client.player_id(), state);
+                self.index.insert(*client.client_id(), *client.player_id());
             }
             ClientEffect::SetWindow(window) => {
                 if let Some(state) = self.states.get_mut(client.player_id()) {
-                    state.set_window(window.clone());
-                };
-            }
-            ClientEffect::SetResolution(resolution) => {
-                if let Some((resolution_, _)) = self.clients.get_mut(client.client_id()) {
-                    *resolution_ = resolution.clone();
-                } else {
-                    self.clients
-                        .insert(*client.client_id(), (resolution.clone(), Window::default()));
+                    state.set_window(*window);
                 };
             }
         };
@@ -89,23 +87,19 @@ impl Clients {
     }
 
     pub fn concerned(&self, geo: &GeoContext) -> Vec<ClientId> {
-        self.clients
+        self.states
             .iter()
-            .filter_map(|(client, (_, window))| {
-                if window.contains(geo) {
-                    Some(*client)
-                } else {
-                    None
-                }
-            })
+            .filter(|(_, state)| state.window.contains(geo))
+            .filter_map(|(player_id, _)| self.index.player_client.get(player_id).cloned())
             .collect()
     }
 
-    pub fn client_ids(&self) -> Vec<ClientId> {
-        self.clients.keys().copied().collect()
+    pub fn player_client_ids(&self) -> Vec<ClientId> {
+        // TODO: Can be reference ?
+        self.index.player_client.values().copied().collect()
     }
 
-    pub fn player_state(&self, player_id: &PlayerId) -> Option<&ClientState> {
+    pub fn player_state(&self, player_id: &PlayerId) -> Option<&PlayerState> {
         self.states.get(player_id)
     }
 
@@ -113,26 +107,18 @@ impl Clients {
         self.states.values().map(|s| *s.flag()).collect()
     }
 
-    pub fn states(&self) -> &HashMap<PlayerId, ClientState> {
+    pub fn states(&self) -> &HashMap<PlayerId, PlayerState> {
         &self.states
-    }
-
-    pub fn client_windows(&self) -> &HashMap<ClientId, (Resolution, Window)> {
-        &self.clients
-    }
-
-    pub fn refresh_count(&mut self) {
-        self.count = self.clients.len();
     }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct ClientState {
+pub struct PlayerState {
     flag: Flag,
     window: Window,
 }
 
-impl ClientState {
+impl PlayerState {
     pub fn new(flag: Flag, window: Window) -> Self {
         Self { flag, window }
     }

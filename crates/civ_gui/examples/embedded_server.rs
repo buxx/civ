@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use civ_gui::debug::DebugPlugin;
 use civ_gui::menu::join::JoinEvent;
 use civ_server::game::unit::{Unit, UnitCanBuilder};
-use civ_server::state::clients::{ClientState, Clients};
+use civ_server::state::clients::{Clients, PlayerState};
 use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
 use civ_world::config::WorldConfig;
 use civ_world::writer::FilesWriter;
@@ -70,7 +70,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         .writer(&writer)
         .call()?;
 
-    let resolution = Resolution::new(5, 5);
     let window = Window::new(
         ImaginaryWorldPoint::new(5, 5),
         ImaginaryWorldPoint::new(10, 10),
@@ -99,21 +98,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Start server
     println!("Start server");
     thread::spawn(move || {
-        let clients = Clients::default()
-            .with_count(1)
-            .with_clients(
-                [(*client.client_id(), (resolution, window.clone()))]
-                    .into_iter()
-                    .collect(),
-            )
-            .with_states(
-                [(
-                    *client.player_id(),
-                    ClientState::new(Flag::Abkhazia, window),
-                )]
-                .into_iter()
-                .collect(),
-            );
+        let clients = Clients::new(
+            [(
+                *client.player_id(),
+                PlayerState::new(Flag::Abkhazia, window),
+            )]
+            .into_iter()
+            .collect(),
+        );
         let state = civ_server::state::State::default()
             .with_clients(clients)
             .with_cities(cities)

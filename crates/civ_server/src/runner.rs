@@ -18,7 +18,7 @@ use common::{
         },
         Client, ClientId,
     },
-    space::window::{SetWindow, Window},
+    space::window::{Resolution, SetWindow, Window},
     task::{CreateTaskError, GamePlayReason},
     world::reader::WorldReader,
 };
@@ -228,6 +228,7 @@ impl Runner {
     fn clients(&mut self) -> Vec<Effect> {
         let mut effects = vec![];
 
+        // TODO: parallel
         while let Ok((client, message)) = self.context.from_clients_receiver.try_recv() {
             match self.client(&client, message) {
                 Ok(effects_) => effects.extend(effects_),
@@ -289,18 +290,20 @@ impl Runner {
     fn stats_log(&mut self) {
         let state = self.state();
         let tasks_length = state.tasks().len();
-        let clients_count = state.clients().count();
+        let clients_count = state.clients().clients_count();
+        let players_count = state.clients().players_count();
         let cities_count = state.cities().len();
         let units_count = state.units().len();
         drop(state);
 
         if Instant::now().duration_since(self.last_stat).as_millis() >= 1000 {
             info!(
-                "⏰{} 🌍{} 🎯{} 👥{} 🚹{} 🏠{}",
+                "⏰{} 🌍{} 🎯{} 👥{} 🚩{} 🚹{} 🏠{}",
                 self.ticks_since_last_stats,
                 self.state().frame().0,
                 tasks_length,
                 clients_count,
+                players_count,
                 units_count,
                 cities_count
             );
@@ -375,14 +378,22 @@ impl Runner {
                         .clients()
                         .states()
                         .get(client.player_id())
-                        .map(|state| state.window().clone())
+                        .map(|state| Window::from_around(&state.window().center(), resolution))
                     {
-                        shines.push((
-                            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                                ClientStateMessage::SetWindow(window.clone()),
-                            )),
-                            vec![*client.client_id()],
-                        ));
+                        shines.extend(vec![
+                            (
+                                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                                    ClientStateMessage::SetWindow(window),
+                                )),
+                                vec![*client.client_id()],
+                            ),
+                            (
+                                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                                    ClientStateMessage::SetGameFrame(*self.state().frame()),
+                                )),
+                                vec![*client.client_id()],
+                            ),
+                        ]);
                         // FIXME BS NOW: c'est le bazar entre take place et hello !
                         let game_slice = Extractor::new(
                             self.context.state(),
@@ -402,11 +413,10 @@ impl Runner {
                     }
 
                     Ok(vec![
-                        Effect::State(StateEffect::Client(
-                            *client,
-                            ClientEffect::SetResolution(resolution.clone()),
-                        )),
-                        Effect::State(StateEffect::Clients(ClientsEffect::Count)),
+                        Effect::State(StateEffect::Clients(ClientsEffect::Insert(
+                            *client.client_id(),
+                            *client.player_id(),
+                        ))),
                         Effect::Shines(shines),
                     ])
                 }
@@ -415,9 +425,8 @@ impl Runner {
             ClientToServerMessage::Game(message) => {
                 match message {
                     ClientToServerGameMessage::Establishment(message) => match message {
-                        ClientToServerEstablishmentMessage::TakePlace(flag) => {
-                            //
-                            self.player_take_place(client, &flag)
+                        ClientToServerEstablishmentMessage::TakePlace(flag, resolution) => {
+                            self.player_take_place(client, &flag, resolution)
                         }
                     },
                     ClientToServerGameMessage::InGame(message) => {
@@ -449,7 +458,12 @@ impl Runner {
         }
     }
 
-    fn player_take_place(&self, client: &Client, flag: &Flag) -> Result<Vec<Effect>, RunnerError> {
+    fn player_take_place(
+        &self,
+        client: &Client,
+        flag: &Flag,
+        resolution: Resolution,
+    ) -> Result<Vec<Effect>, RunnerError> {
         let rules = self.context.context.rules();
         let world = self.world();
         let state = self.state();
@@ -486,13 +500,7 @@ impl Runner {
             .build();
 
         let server_resume = self.state().server_resume(rules);
-        let resolution = self
-            .state()
-            .clients()
-            .client_windows()
-            .get(client.client_id())
-            .map(|(r, _)| r.clone())
-            .unwrap_or_default();
+        // FIXME BS NOW: on a vraiment besoin de ce SetWindow là ?
         let client_window = SetWindow::from_around(&point.into(), &resolution);
         let window = Window::from(client_window.clone());
         Ok(vec![
@@ -528,6 +536,8 @@ impl Runner {
         unit_id: &UnitId,
         message: ClientToServerUnitMessage,
     ) -> Result<Vec<Effect>, RunnerError> {
+        debug!("Refresh unit on: {:?}", &message);
+
         let state = self.state();
         let unit = state.find_unit(unit_id).unwrap(); // TODO: unwrap -> same error management than crate_task
         let old_task = unit.task();
@@ -834,7 +844,7 @@ mod test {
                 ),
             );
 
-            *state.clients_mut() = Clients::new(clients, HashMap::new());
+            *state.clients_mut() = Clients::new(HashMap::new());
 
             let config = ServerConfig::new(None, GameFrame(0), "".to_string(), "".to_string());
             let context = Context::new(Box::new(self.rule_set.clone()), config);
@@ -870,7 +880,7 @@ mod test {
         let client = Client::new(client_id, player_id);
 
         let place = ClientToServerMessage::Game(ClientToServerGameMessage::Establishment(
-            ClientToServerEstablishmentMessage::TakePlace(Flag::Abkhazia),
+            ClientToServerEstablishmentMessage::TakePlace(Flag::Abkhazia, Resolution::new(3, 3)),
         ));
 
         let expected_set_window = ServerToClientMessage::InGame(

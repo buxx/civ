@@ -44,7 +44,7 @@ impl Default for Resolution {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct Window {
     start: ImaginaryWorldPoint,
     end: ImaginaryWorldPoint,
@@ -65,6 +65,20 @@ impl Window {
     pub fn new(start: ImaginaryWorldPoint, end: ImaginaryWorldPoint, step: DisplayStep) -> Self {
         // TODO: check start is inferior to end
         Self { start, end, step }
+    }
+
+    pub fn from_around(point: &ImaginaryWorldPoint, resolution: &Resolution) -> Self {
+        let rectangle = resolution.rectangle();
+        let start_x = point.x - rectangle.left as i64;
+        let start_y = point.y - rectangle.top as i64;
+        let end_x = point.x + rectangle.right as i64;
+        let end_y = point.y + rectangle.bottom as i64;
+        Self::new(
+            ImaginaryWorldPoint::new(start_x, start_y),
+            ImaginaryWorldPoint::new(end_x, end_y),
+            // FIXME BS NOW
+            DisplayStep::Close,
+        )
     }
 
     pub fn start(&self) -> &ImaginaryWorldPoint {

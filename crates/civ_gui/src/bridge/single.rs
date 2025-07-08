@@ -3,6 +3,7 @@ use std::thread;
 
 use async_std::channel::{unbounded, Receiver};
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use civ_server::config::ServerConfig;
 // TODO: not in wasm32
 use civ_server::{bridge::direct::DirectBridgeBuilder, start as start_server, Args as ServerArgs};
@@ -21,6 +22,7 @@ use uuid::Uuid;
 use crate::bridge::EmbeddedServerReady;
 use crate::menu::state::MenuStateResource;
 use crate::to_server;
+use crate::utils::gui::window::IntoResolution;
 use crate::{
     menu::single::{SingleState, StartSingleEvent},
     utils::app_dir,
@@ -227,10 +229,16 @@ pub fn join_embedded_server(
     _trigger: Trigger<EmbeddedServerReady>,
     mut commands: Commands,
     state: Res<MenuStateResource>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<&GlobalTransform>,
 ) {
     let conf = SingleConfiguration::from_state(&state.0.single);
+    let window = windows.single();
+    let cam_transform = cameras.single();
+    let resolution = (window, cam_transform).resolution();
+
     to_server!(
         commands,
-        ClientToServerEstablishmentMessage::TakePlace(conf.flag())
+        ClientToServerEstablishmentMessage::TakePlace(conf.flag(), resolution)
     );
 }

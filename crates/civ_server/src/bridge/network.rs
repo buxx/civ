@@ -5,7 +5,7 @@ use common::network::message::{
     ClientToServerMessage, ClientToServerNetworkMessage, ServerToClientMessage,
 };
 use common::network::{Client, ClientId};
-use log::info;
+use log::{debug, info};
 use message_io::network::{NetEvent, Transport};
 use message_io::node::{self};
 use std::io;
@@ -117,20 +117,19 @@ impl Bridge for NetworkBridge {
                     match &message {
                         ClientToServerMessage::Network(message_) => match &message_ {
                             ClientToServerNetworkMessage::Hello(client, _) => {
-                                info!("DEBUG: client hello");
+                                debug!(
+                                    "Client hello ({}, {})",
+                                    client.client_id(),
+                                    client.player_id()
+                                );
                                 self.clients.insert(*client, endpoint);
                                 self.from_clients_sender
                                     .send_blocking((*client, message.clone()))
                                     .unwrap();
                             }
                             ClientToServerNetworkMessage::Goodbye => {
-                                info!("DEBUG: client goodbye");
+                                debug!("Client goodbye");
                                 self.clients.remove(&endpoint);
-                                self.state
-                                    .write()
-                                    .expect("Assume state is always accessible")
-                                    .clients_mut()
-                                    .set_count(self.clients.length());
                             }
                         },
                         ClientToServerMessage::Game(_message) => {
@@ -143,13 +142,8 @@ impl Bridge for NetworkBridge {
                     }
                 }
                 NetEvent::Disconnected(endpoint) => {
-                    info!("DEBUG: client disconnected");
+                    debug!("Client disconnected");
                     self.clients.remove(&endpoint);
-                    self.state
-                        .write()
-                        .expect("Assume state is always accessible")
-                        .clients_mut()
-                        .set_count(self.clients.length());
                 }
             },
             node::NodeEvent::Signal(signal) => {

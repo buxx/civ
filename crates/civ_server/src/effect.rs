@@ -1,9 +1,10 @@
 use common::game::city::CityId;
 use common::game::nation::flag::Flag;
 use common::game::unit::UnitId;
+use common::game::PlayerId;
 use common::network::message::ServerToClientMessage;
 use common::network::{Client, ClientId};
-use common::space::window::{Resolution, SetWindow, Window};
+use common::space::window::{SetWindow, Window};
 
 use crate::game::{city::City, unit::Unit};
 
@@ -34,7 +35,8 @@ pub enum StateEffect {
 
 #[derive(Debug, Clone)]
 pub enum ClientsEffect {
-    Count,
+    // FIXME BS NOW: when disconnected, remove
+    Insert(ClientId, PlayerId),
 }
 
 #[derive(Debug, Clone)]
@@ -58,7 +60,6 @@ pub enum TasksEffect {
 #[derive(Debug, Clone)]
 pub enum ClientEffect {
     PlayerTookPlace(Flag, Window),
-    SetResolution(Resolution),
     SetWindow(Window),
 }
 
