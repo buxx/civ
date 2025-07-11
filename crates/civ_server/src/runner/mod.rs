@@ -9,7 +9,8 @@ use common::{
     },
     network::{
         message::{
-            ClientToServerCityMessage, ClientToServerMessage, ClientToServerUnitMessage, NotificationLevel, ServerToClientInGameMessage, ServerToClientMessage,
+            ClientToServerCityMessage, ClientToServerMessage, ClientToServerUnitMessage,
+            NotificationLevel, ServerToClientInGameMessage, ServerToClientMessage,
         },
         Client, ClientId,
     },
@@ -26,9 +27,7 @@ use thiserror::Error;
 
 use crate::{
     context::Context,
-    effect::{
-        self, Effect, StateEffect, TaskEffect,
-    },
+    effect::{self, Effect, StateEffect, TaskEffect},
     game::{
         placer::{PlacerBox, RandomPlacer},
         task::settle::Settle,
@@ -507,7 +506,10 @@ mod test {
             GameFrame, PlayerId,
         },
         geo::{ImaginaryWorldPoint, WorldPoint},
-        network::message::ClientStateMessage,
+        network::message::{
+            ClientStateMessage, ClientToServerEstablishmentMessage, ClientToServerGameMessage,
+            ClientToServerInGameMessage, ServerToClientEstablishmentMessage,
+        },
         rules::{RuleSet, RuleSetType},
         space::window::{DisplayStep, Resolution, Window},
         world::{partial::PartialWorld, CtxTile, TerrainType, Tile},
