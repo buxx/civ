@@ -5,7 +5,6 @@ use bon::Builder;
 #[cfg(not(target_arch = "wasm32"))]
 use civ_world::WorldGeneratorError;
 use common::{
-    game::PlayerId,
     network::{
         message::{ClientToServerMessage, ServerToClientMessage},
         ServerAddress,
@@ -21,7 +20,7 @@ use crate::{
         state::{MenuState, MenuStateResource},
     },
     state::AppState,
-    user::{preferences::Preferences, SetPlayerIdEvent},
+    user::preferences::Preferences,
 };
 
 mod connect;

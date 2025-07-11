@@ -4,22 +4,15 @@ use bon::{builder, Builder};
 use common::{
     game::{
         city::{CityId, CityProduct, CityProduction},
-        nation::flag::Flag,
         unit::{UnitId, UnitType},
         GameFrame, GAME_FRAMES_PER_SECOND,
     },
-    geo::GeoContext,
     network::{
         message::{
-            ClientStateMessage, ClientToServerCityMessage, ClientToServerEstablishmentMessage,
-            ClientToServerGameMessage, ClientToServerInGameMessage, ClientToServerMessage,
-            ClientToServerNetworkMessage, ClientToServerUnitMessage, NotificationLevel,
-            ServerToClientEstablishmentMessage, ServerToClientInGameMessage, ServerToClientMessage,
-            TakePlaceRefusedReason,
+            ClientToServerCityMessage, ClientToServerMessage, ClientToServerUnitMessage, NotificationLevel, ServerToClientInGameMessage, ServerToClientMessage,
         },
         Client, ClientId,
     },
-    space::window::{Resolution, SetWindow, Window},
     task::{CreateTaskError, GamePlayReason},
     world::reader::WorldReader,
 };
@@ -34,14 +27,11 @@ use thiserror::Error;
 use crate::{
     context::Context,
     effect::{
-        self, Action, ClientEffect, ClientsEffect, Effect, StateEffect, TaskEffect, UnitEffect,
+        self, Effect, StateEffect, TaskEffect,
     },
     game::{
-        access::Access,
-        extractor::Extractor,
         placer::{PlacerBox, RandomPlacer},
         task::settle::Settle,
-        unit::{Unit, UnitCanBuilder},
     },
     state::{NoLongerExist, State, StateError},
     task::{

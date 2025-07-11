@@ -1,4 +1,4 @@
-use bevy::{animation::transition, prelude::*};
+use bevy::prelude::*;
 use bevy_egui::egui::{self, Ui};
 use common::{
     game::{nation::flag::Flag, server::ServerResume, PlayerId},

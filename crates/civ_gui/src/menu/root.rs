@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_egui::egui::Ui;
 
-use super::{state::MenuState, switch::SwitchMenuScreenEvent};
+use super::switch::SwitchMenuScreenEvent;
 
 #[derive(Debug, Default)]
 pub struct RootState {}
