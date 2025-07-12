@@ -1,5 +1,5 @@
-pub mod flag;
 pub mod clients;
+pub mod flag;
 
 use clients::Clients;
 use common::{
@@ -12,15 +12,12 @@ use common::{
     },
     network::Client,
     rules::RuleSetBox,
-    space::window::Window,
 };
 use index::Index;
 use thiserror::Error;
 
 use crate::{
-    effect::{
-        Action, CityEffect, ClientEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect,
-    },
+    effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
     game::{city::City, unit::Unit},
     snapshot::Snapshot,
     task::{TaskBox, TaskId},
@@ -159,14 +156,6 @@ impl State {
                     },
                     StateEffect::Testing => {
                         self.testing += 1;
-                    }
-                },
-                Effect::Action(action) => match action {
-                    Action::UpdateClientWindow(client, set_window) => {
-                        let window = Window::from(set_window.clone());
-                        self.clients
-                            .apply_client(client, &ClientEffect::SetWindow(window))
-                            .unwrap();
                     }
                 },
                 Effect::Shines(_) => {}

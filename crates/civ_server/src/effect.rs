@@ -4,7 +4,7 @@ use common::game::unit::UnitId;
 use common::game::PlayerId;
 use common::network::message::ServerToClientMessage;
 use common::network::{Client, ClientId};
-use common::space::window::{SetWindow, Window};
+use common::space::window::Window;
 
 use crate::game::{city::City, unit::Unit};
 
@@ -14,11 +14,9 @@ use crate::task::{Concern, TaskBox, TaskId};
 pub enum Effect {
     /// Effect which will modify the state
     State(StateEffect),
+    // FIXME BS NOW: not simply "SendToClients" ?
     /// Effect which only product reflects
     Shines(Vec<(ServerToClientMessage, Vec<ClientId>)>),
-    /// Effect which product immediate action
-    // FIXME BS NOW: should not be a simple StateEffect or Shines?
-    Action(Action),
 }
 
 #[derive(Debug, Clone)]
@@ -37,11 +35,6 @@ pub enum StateEffect {
 pub enum ClientsEffect {
     // FIXME BS NOW: when disconnected, remove
     Insert(ClientId, PlayerId),
-}
-
-#[derive(Debug, Clone)]
-pub enum Action {
-    UpdateClientWindow(Client, SetWindow),
 }
 
 #[derive(Debug, Clone)]

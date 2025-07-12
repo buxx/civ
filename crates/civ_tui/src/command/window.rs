@@ -2,7 +2,7 @@ use common::{
     network::message::{
         ClientToServerGameMessage, ClientToServerInGameMessage, ClientToServerMessage,
     },
-    space::window::SetWindow,
+    space::window::{DisplayStep, Window},
 };
 
 use crate::error::PublicError;
@@ -20,13 +20,15 @@ pub fn set(context: CommandContext, start_x: u64, start_y: u64, end_x: u64, end_
         return;
     }
 
-    let window = SetWindow::new((start_x, start_y).into(), (end_x, end_y).into());
+    let window = Window::new(
+        (start_x, start_y).into(),
+        (end_x, end_y).into(),
+        DisplayStep::Close,
+    );
     context
         .to_server_sender
         .send(ClientToServerMessage::Game(
-            ClientToServerGameMessage::InGame(ClientToServerInGameMessage::SetWindow(
-                window.clone(),
-            )),
+            ClientToServerGameMessage::InGame(ClientToServerInGameMessage::SetWindow(window)),
         ))
         .unwrap();
 }

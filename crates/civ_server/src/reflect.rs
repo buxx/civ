@@ -4,13 +4,13 @@ use common::{
         message::{ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage},
         Client, ClientId,
     },
-    space::window::{SetWindow, Window},
+    space::window::Window,
 };
 use log::error;
 use thiserror::Error;
 
 use crate::{
-    effect::{Action, CityEffect, Effect, StateEffect, UnitEffect},
+    effect::{CityEffect, Effect, StateEffect, UnitEffect},
     game::{city::City, extractor::Extractor, unit::Unit, IntoClientModel},
     runner::Runner,
     state::StateError,
@@ -68,11 +68,6 @@ impl Runner {
                     UnitEffect::Remove(unit) => self.removed_unit_reflects(unit),
                 },
                 StateEffect::IncrementGameFrame => self.increment_game_frame_reflects(),
-            },
-            Effect::Action(action) => match action {
-                Action::UpdateClientWindow(client, window) => {
-                    self.update_client_window_reflects(client, window)
-                }
             },
         }
     }
@@ -162,29 +157,6 @@ impl Runner {
         }
 
         Ok(vec![])
-    }
-
-    fn update_client_window_reflects(
-        &self,
-        client: &Client,
-        window: &SetWindow,
-    ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
-        let window = Window::from(window.clone());
-        let game_slice = Extractor::new(
-            self.context.state(),
-            self.context
-                .world
-                .read()
-                .expect("Consider world as always readable"),
-        )
-        .game_slice(client, &window);
-
-        Ok(vec![(
-            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                ClientStateMessage::SetGameSlice(game_slice),
-            )),
-            vec![*client.client_id()],
-        )])
     }
 }
 

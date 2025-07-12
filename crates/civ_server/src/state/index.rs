@@ -169,7 +169,6 @@ impl Index {
                     StateEffect::Testing => {}
                 },
                 Effect::Shines(_) => {}
-                Effect::Action(_) => {}
             }
         }
 

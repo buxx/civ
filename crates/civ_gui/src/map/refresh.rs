@@ -3,7 +3,7 @@ use common::{
     game::slice::ClientCity,
     geo::ImaginaryWorldPoint,
     network::message::ClientToServerInGameMessage,
-    space::window::{Resolution, SetWindow},
+    space::window::Resolution,
     world::{CtxTile, Tile},
 };
 use derive_more::Constructor;
@@ -70,8 +70,10 @@ pub fn refresh_grid(
 
             let new_center =
                 ImaginaryWorldPoint::new(screen_center_hex.x as i64, screen_center_hex.y as i64);
-            let window =
-                SetWindow::from_around(&new_center, &Resolution::new(tiles_size, tiles_size));
+            let window = common::space::window::Window::from_around(
+                &new_center,
+                &Resolution::new(tiles_size, tiles_size),
+            );
             waiting.0 = true;
 
             to_server!(commands, ClientToServerInGameMessage::SetWindow(window));

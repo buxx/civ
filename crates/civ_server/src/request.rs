@@ -3,7 +3,7 @@ use common::{
         message::{ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage},
         Client,
     },
-    space::window::{SetWindow, Window},
+    space::window::Window,
 };
 
 use crate::{
@@ -22,7 +22,7 @@ impl<'a> SetWindowRequestDealer<'a> {
         Self { context, client }
     }
 
-    pub fn deal(&self, set_window: &SetWindow) -> Result<Vec<Effect>, RunnerError> {
+    pub fn deal(&self, set_window: &Window) -> Result<Vec<Effect>, RunnerError> {
         let window = Window::from(set_window.clone());
 
         let new_game_slice = Extractor::new(
