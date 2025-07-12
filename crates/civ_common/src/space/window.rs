@@ -127,64 +127,6 @@ impl Display for Window {
     }
 }
 
-impl From<SetWindow> for Window {
-    fn from(value: SetWindow) -> Self {
-        Self::new(
-            *value.start(),
-            *value.end(),
-            DisplayStep::from_shape(value.shape()),
-        )
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct SetWindow {
-    start: ImaginaryWorldPoint,
-    end: ImaginaryWorldPoint,
-}
-
-impl SetWindow {
-    pub fn new(start: ImaginaryWorldPoint, end: ImaginaryWorldPoint) -> Self {
-        // TODO: Check start is inferior to end
-        Self { start, end }
-    }
-
-    fn _from(point: ImaginaryWorldPoint, resolution: &Resolution) -> Self {
-        let start = ImaginaryWorldPoint::new(point.x, point.y);
-        let end = ImaginaryWorldPoint::new(
-            point.x + resolution.width as i64,
-            point.y + resolution.height as i64,
-        );
-        SetWindow::new(start, end)
-    }
-
-    pub fn from_around(point: &ImaginaryWorldPoint, resolution: &Resolution) -> Self {
-        let rectangle = resolution.rectangle();
-        let start_x = point.x - rectangle.left as i64;
-        let start_y = point.y - rectangle.top as i64;
-        let end_x = point.x + rectangle.right as i64;
-        let end_y = point.y + rectangle.bottom as i64;
-        SetWindow::new(
-            ImaginaryWorldPoint::new(start_x, start_y),
-            ImaginaryWorldPoint::new(end_x, end_y),
-        )
-    }
-
-    pub fn shape(&self) -> u64 {
-        let width = self.end.x - self.start.x;
-        let height = self.end.y - self.start.y;
-        (width * height) as u64
-    }
-
-    pub fn start(&self) -> &ImaginaryWorldPoint {
-        &self.start
-    }
-
-    pub fn end(&self) -> &ImaginaryWorldPoint {
-        &self.end
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq)]
 pub enum DisplayStep {
     Close,
@@ -222,35 +164,35 @@ impl DisplayStep {
 mod test {
     use crate::geo::ImaginaryWorldPoint;
 
-    use super::{Resolution, SetWindow};
+    use super::*;
 
     #[test]
     fn test_set_window_from_around() {
         let (point, resolution) = (ImaginaryWorldPoint::new(4, 4), Resolution::new(9, 9));
-        let set_window = SetWindow::from_around(&point, &resolution);
+        let set_window = Window::from_around(&point, &resolution);
         assert_eq!(
             set_window,
-            SetWindow::new(
+            Window::new(
                 ImaginaryWorldPoint::new(0, 0),
                 ImaginaryWorldPoint::new(8, 8)
             )
         );
 
         let (point, resolution) = (ImaginaryWorldPoint::new(100, 100), Resolution::new(100, 10));
-        let set_window = SetWindow::from_around(&point, &resolution);
+        let set_window = Window::from_around(&point, &resolution);
         assert_eq!(
             set_window,
-            SetWindow::new(
+            Window::new(
                 ImaginaryWorldPoint::new(50, 95),
                 ImaginaryWorldPoint::new(149, 104)
             )
         );
 
         let (point, resolution) = (ImaginaryWorldPoint::new(0, 0), Resolution::new(9, 9));
-        let set_window = SetWindow::from_around(&point, &resolution);
+        let set_window = Window::from_around(&point, &resolution);
         assert_eq!(
             set_window,
-            SetWindow::new(
+            Window::new(
                 ImaginaryWorldPoint::new(-4, -4),
                 ImaginaryWorldPoint::new(4, 4)
             )

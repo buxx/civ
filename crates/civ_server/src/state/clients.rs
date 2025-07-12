@@ -60,6 +60,12 @@ impl Clients {
             ClientsEffect::Insert(client_id, player_id) => {
                 self.index.insert(*client_id, *player_id);
             }
+            ClientsEffect::UpdateClientWindow(client, set_window) => {
+                let window = Window::from(set_window.clone());
+                self.clients
+                    .apply_client(client, &ClientEffect::SetWindow(window))
+                    .unwrap();
+            }
         };
 
         Ok(())

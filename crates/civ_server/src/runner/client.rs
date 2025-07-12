@@ -1,5 +1,5 @@
 use crate::{
-    effect::{Action, ClientEffect, ClientsEffect, Effect, StateEffect, UnitEffect},
+    effect::{ClientEffect, ClientsEffect, Effect, StateEffect, UnitEffect},
     game::{
         access::Access,
         extractor::Extractor,
@@ -23,7 +23,7 @@ use common::{
         },
         Client,
     },
-    space::window::{Resolution, SetWindow, Window},
+    space::window::{Resolution, Window},
 };
 
 impl Runner {
@@ -153,9 +153,10 @@ impl Runner {
 
         match message {
             ClientToServerInGameMessage::SetWindow(window) => {
-                //
-                Ok(vec![Effect::Action(Action::UpdateClientWindow(
-                    *client, window,
+                // FIXME BS NOW: why not call direct concerned code ?
+                Ok(vec![Effect::State(StateEffect::Client(
+                    *client,
+                    ClientEffect::SetWindow(window),
                 ))])
             }
             ClientToServerInGameMessage::Unit(unit_id, message) => {
@@ -211,20 +212,22 @@ impl Runner {
             .build();
 
         let server_resume = self.state().server_resume(rules);
-        // FIXME BS NOW: on a vraiment besoin de ce SetWindow là ?
-        let client_window = SetWindow::from_around(&point.into(), &resolution);
-        let window = Window::from(client_window.clone());
+        let window = Window::from_around(&point.into(), &resolution);
         Ok(vec![
             Effect::State(StateEffect::Unit(settler_id, UnitEffect::New(settler))),
             Effect::State(StateEffect::Client(
                 *client,
                 ClientEffect::PlayerTookPlace(*flag, window),
             )),
-            Effect::Action(Action::UpdateClientWindow(*client, client_window.clone())),
+            Effect::State(StateEffect::Client(
+                *client,
+                ClientEffect::SetWindow(window.clone()),
+            )),
             Effect::Shines(vec![
+                // Need to send window to client as he took place and is not the origin of this window
                 (
                     ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                        ClientStateMessage::SetWindow(client_window.into()),
+                        ClientStateMessage::SetWindow(window),
                     )),
                     vec![*client.client_id()],
                 ),

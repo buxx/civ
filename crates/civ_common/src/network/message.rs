@@ -10,7 +10,7 @@ use crate::{
         unit::UnitId,
         GameFrame,
     },
-    space::window::{Resolution, SetWindow, Window},
+    space::window::{Resolution, Window},
 };
 
 use super::Client;
@@ -65,8 +65,8 @@ impl From<ClientToServerEstablishmentMessage> for ClientToServerMessage {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientToServerInGameMessage {
-    /// Client moved its window
-    SetWindow(SetWindow),
+    /// Client moved its window and signal it to the server
+    SetWindow(Window),
     Unit(UnitId, ClientToServerUnitMessage),
     City(CityId, ClientToServerCityMessage),
 }
