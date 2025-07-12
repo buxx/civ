@@ -28,6 +28,7 @@ typetag.workspace = true
 clap.workspace = true
 derive_more.workspace = true
 async-std = "1.13.0"
+extfn.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true

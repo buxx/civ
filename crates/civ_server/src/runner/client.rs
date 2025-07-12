@@ -6,6 +6,7 @@ use crate::{
         unit::{Unit, UnitCanBuilder},
     },
     runner::{DealClientRequestError, Runner, RunnerError},
+    state::flag::player_flag,
 };
 use common::{
     game::{
@@ -57,11 +58,7 @@ impl Runner {
     ) -> Result<Vec<Effect>, RunnerError> {
         let state = self.state();
         let server_resume = state.server_resume(self.context.context.rules());
-        let player_flag = state
-            .clients()
-            .player_state(client.player_id())
-            .map(|s| s.flag())
-            .cloned();
+        let player_flag = state.player_flag(client.player_id());
         let mut shines = vec![(
             ServerToClientMessage::Establishment(ServerToClientEstablishmentMessage::ServerResume(
                 server_resume,

@@ -1,3 +1,4 @@
+pub mod flag;
 pub mod clients;
 
 use clients::Clients;
