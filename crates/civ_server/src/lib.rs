@@ -34,7 +34,6 @@ pub mod context;
 pub mod effect;
 pub mod game;
 pub mod reflect;
-pub mod request;
 pub mod runner;
 pub mod snapshot;
 pub mod state;

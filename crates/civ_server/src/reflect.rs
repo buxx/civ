@@ -2,16 +2,15 @@ use common::{
     geo::Geo,
     network::{
         message::{ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage},
-        Client, ClientId,
+        ClientId,
     },
-    space::window::Window,
 };
 use log::error;
 use thiserror::Error;
 
 use crate::{
     effect::{CityEffect, Effect, StateEffect, UnitEffect},
-    game::{city::City, extractor::Extractor, unit::Unit, IntoClientModel},
+    game::{city::City, unit::Unit, IntoClientModel},
     runner::Runner,
     state::StateError,
 };

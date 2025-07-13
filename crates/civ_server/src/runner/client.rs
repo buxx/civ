@@ -2,7 +2,7 @@ use crate::{
     effect::{ClientEffect, ClientsEffect, Effect, StateEffect, UnitEffect},
     game::{
         access::Access,
-        extractor::Extractor,
+        extractor::game_slice,
         unit::{Unit, UnitCanBuilder},
     },
     runner::{DealClientRequestError, Runner, RunnerError},
@@ -87,14 +87,7 @@ impl Runner {
                 ),
             ]);
             // FIXME BS NOW: c'est le bazar entre take place et hello !
-            let game_slice = Extractor::new(
-                self.context.state(),
-                self.context
-                    .world
-                    .read()
-                    .expect("Consider world as always readable"),
-            )
-            .game_slice(client, &window);
+            let game_slice = self.game_slice(&window);
 
             shines.push((
                 ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
@@ -153,15 +146,7 @@ impl Runner {
 
         match message {
             ClientToServerInGameMessage::SetWindow(window) => {
-                // FIXME BS NOW: why not call direct concerned code ?
-                let game_slice = Extractor::new(
-                    self.context.state(),
-                    self.context
-                        .world
-                        .read()
-                        .expect("Consider world as always readable"),
-                )
-                .game_slice(client, &window);
+                let game_slice = self.game_slice(&window);
 
                 Ok(vec![
                     Effect::State(StateEffect::Client(
