@@ -732,7 +732,7 @@ mod test {
             .unwrap();
         runner.do_one_iteration();
 
-        assert_eq!(testing.to_clients_receiver.len(), 4);
+        assert_eq!(testing.to_clients_receiver.len(), 3);
 
         let message1 = testing.to_clients_receiver.try_recv();
         assert!(matches!(
@@ -750,10 +750,15 @@ mod test {
             Ok((
                 _,
                 ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                    ClientStateMessage::SetGameSlice(_)
+                    ClientStateMessage::SetWindow(_)
                 ))
             ))
         ));
+        let message2 = testing.to_clients_receiver.try_recv();
+        assert_eq!(message2, Ok((client_id, expected_server_resume.clone())));
+
+        let message2 = testing.to_clients_receiver.try_recv();
+        dbg!(&message2);
         let received_unit = if let Ok((
             _,
             ServerToClientMessage::InGame(ServerToClientInGameMessage::State(

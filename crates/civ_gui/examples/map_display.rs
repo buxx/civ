@@ -22,7 +22,7 @@ use common::network::message::{
     ClientStateMessage, ClientToServerGameMessage, ClientToServerInGameMessage,
     ClientToServerMessage, ServerToClientInGameMessage, ServerToClientMessage,
 };
-use common::space::window::{DisplayStep, Resolution, SetWindow, Window as SpaceWindow};
+use common::space::window::{DisplayStep, Resolution, Window as SpaceWindow};
 use common::world::partial::PartialWorld;
 use common::world::reader::WorldReader;
 use common::world::{CtxTile, TerrainType, Tile};
@@ -180,7 +180,7 @@ fn entrypoint() -> Result<(), JsValue> {
             to_server_sender_
                 .send(ClientToServerMessage::Game(
                     ClientToServerGameMessage::InGame(ClientToServerInGameMessage::SetWindow(
-                        SetWindow::from_around(
+                        SpaceWindow::from_around(
                             &ImaginaryWorldPoint::new(5, 5),
                             &Resolution::new(50, 50),
                         ),
@@ -194,7 +194,6 @@ fn entrypoint() -> Result<(), JsValue> {
                 )) = message
                 {
                     // Intent is to reproduce civ_server::runner::Runner::update_client_window_reflects
-                    let window = SpaceWindow::from(window);
                     let window_tiles = world.window_tiles(&window);
                     let partial_world = PartialWorld::new(
                         ImaginaryWorldPoint::new(window.start().x, window.start().y),
@@ -210,7 +209,7 @@ fn entrypoint() -> Result<(), JsValue> {
                     from_server_sender_
                         .send(ServerToClientMessage::InGame(
                             ServerToClientInGameMessage::State(ClientStateMessage::SetWindow(
-                                window.clone(),
+                                window,
                             )),
                         ))
                         .await
