@@ -174,7 +174,8 @@ mod test {
             set_window,
             Window::new(
                 ImaginaryWorldPoint::new(0, 0),
-                ImaginaryWorldPoint::new(8, 8)
+                ImaginaryWorldPoint::new(8, 8),
+                DisplayStep::Close,
             )
         );
 
@@ -184,7 +185,8 @@ mod test {
             set_window,
             Window::new(
                 ImaginaryWorldPoint::new(50, 95),
-                ImaginaryWorldPoint::new(149, 104)
+                ImaginaryWorldPoint::new(149, 104),
+                DisplayStep::Close,
             )
         );
 
@@ -194,7 +196,8 @@ mod test {
             set_window,
             Window::new(
                 ImaginaryWorldPoint::new(-4, -4),
-                ImaginaryWorldPoint::new(4, 4)
+                ImaginaryWorldPoint::new(4, 4),
+                DisplayStep::Close,
             )
         );
     }
