@@ -25,6 +25,7 @@ use common::{
     },
     space::window::{Resolution, Window},
 };
+use log::debug;
 
 impl Runner {
     pub fn client(
@@ -189,6 +190,7 @@ impl Runner {
             .map(|s| s.flag())
             .any(|s| s == flag)
         {
+            debug!("Client {}: establishment refused", client.client_id());
             return Ok(vec![Effect::Shines(vec![(
                 ServerToClientMessage::Establishment(
                     ServerToClientEstablishmentMessage::TakePlaceRefused(
@@ -215,6 +217,7 @@ impl Runner {
 
         let server_resume = self.state().server_resume(rules);
         let window = Window::from_around(&point.into(), &resolution);
+        let game_slice = self.game_slice(&window);
         Ok(vec![
             Effect::State(StateEffect::Unit(settler_id, UnitEffect::New(settler))),
             Effect::State(StateEffect::Client(
@@ -227,6 +230,12 @@ impl Runner {
             )),
             Effect::Shines(vec![
                 // Need to send window to client as he took place and is not the origin of this window
+                (
+                    ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                        ClientStateMessage::SetGameSlice(game_slice),
+                    )),
+                    vec![*client.client_id()],
+                ),
                 (
                     ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
                         ClientStateMessage::SetWindow(window),

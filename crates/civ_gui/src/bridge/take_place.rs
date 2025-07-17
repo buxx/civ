@@ -7,7 +7,7 @@ pub fn take_place(
     trigger: Trigger<TakePlaceEvent>,
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
-    cameras: Query<&GlobalTransform>,
+    cameras: Query<&GlobalTransform, With<Camera>>,
 ) {
     let flag = trigger.event().0;
     let window = windows.single();
