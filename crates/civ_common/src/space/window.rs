@@ -6,7 +6,7 @@ use crate::{
     geo::{GeoContext, ImaginaryWorldPoint},
     utils::Rectangle,
 };
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Resolution {
     width: u64,
     height: u64,

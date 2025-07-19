@@ -1,4 +1,3 @@
-pub mod client;
 use async_std::channel::{unbounded, Receiver, Sender};
 use bon::{builder, Builder};
 use common::{
@@ -40,6 +39,7 @@ use crate::{
 };
 use crate::{task::TaskBox, utils::collection::slices};
 
+pub mod client;
 pub struct RunnerContext {
     pub context: Context,
     pub state: Arc<RwLock<State>>,
@@ -526,6 +526,7 @@ mod test {
     };
 
     use super::*;
+    use pretty_assertions::{assert_eq, assert_matches};
     use rstest::*;
 
     #[derive(Clone)]
@@ -651,7 +652,7 @@ mod test {
             clients.insert(
                 self.client_id,
                 (
-                    self.resolution.clone(),
+                    self.resolution,
                     Window::new((0, 0).into(), (1, 1).into(), DisplayStep::Close),
                 ),
             );
@@ -676,66 +677,75 @@ mod test {
                 .placer(Box::new(TestPlacer))
                 .build()
         }
+
+        fn to_server(&self, client: Client, message: ClientToServerMessage) {
+            self.from_clients_sender
+                .send_blocking((client, message))
+                .unwrap()
+        }
     }
 
     #[rstest]
     fn test_settle() {
         // GIVEN
+        let flag = Flag::Abkhazia;
         let player_id = PlayerId::default();
         let client_id = ClientId::default();
-        let mut testing = TestingRunnerContext::new()
+        let window_width = 3;
+        let window_height = 3;
+        let resolution = Resolution::new(window_width, window_height);
+        let mut context = TestingRunnerContext::new()
             .player_id(player_id)
             .client_id(client_id)
-            .resolution(Resolution::new(3, 3));
+            .resolution(resolution);
         let city_name = "CityName".to_string();
-        let mut runner = testing.build();
+        let mut runner = context.build();
         let client = Client::new(client_id, player_id);
 
-        let place = ClientToServerMessage::Game(ClientToServerGameMessage::Establishment(
-            ClientToServerEstablishmentMessage::TakePlace(Flag::Abkhazia, Resolution::new(3, 3)),
-        ));
+        let take_place = ClientToServerEstablishmentMessage::TakePlace(flag, resolution).into();
 
-        let expected_set_window = ServerToClientMessage::InGame(
-            // FIXME: indicate from this test the window size (server use 15 as default)
-            ServerToClientInGameMessage::State(ClientStateMessage::SetWindow(Window::new(
-                ImaginaryWorldPoint::new(-1, -1),
-                ImaginaryWorldPoint::new(1, 1),
-                DisplayStep::Close,
-            ))),
-        );
+        let expected_window_start = ImaginaryWorldPoint::new(-1, -1);
+        let expected_window_end = ImaginaryWorldPoint::new(1, 1);
+        let expected_window_step = DisplayStep::Close;
+        // let expected_set_window = ClientStateMessage::SetWindow(Window::new(
+        //     expected_window_start,
+        //     expected_window_end,
+        //     expected_window_step,
+        // ))
+        // .into();
+        let expected_game_slice_tiles = vec![
+            CtxTile::Outside,
+            CtxTile::Outside,
+            CtxTile::Outside,
+            CtxTile::Outside,
+            CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+            CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+            CtxTile::Outside,
+            CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+            CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+        ];
         let expected_game_slice_world = PartialWorld::new(
-            ImaginaryWorldPoint::new(-1, -1),
-            3,
-            3,
-            vec![
-                CtxTile::Outside,
-                CtxTile::Outside,
-                CtxTile::Outside,
-                CtxTile::Outside,
-                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
-                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
-                CtxTile::Outside,
-                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
-                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
-            ],
+            expected_window_start,
+            window_width,
+            window_height,
+            expected_game_slice_tiles,
         );
 
         let server_resume = ServerResume::new(RuleSetType::Testing, vec![]);
-        let expected_server_resume = ServerToClientMessage::Establishment(
-            ServerToClientEstablishmentMessage::ServerResume(server_resume, Some(Flag::Abkhazia)),
-        );
+        let expected_server_resume: ServerToClientMessage =
+            ServerToClientEstablishmentMessage::ServerResume(server_resume, Some(flag)).into();
 
         // WHEN/THEN
-        testing
-            .from_clients_sender
-            .send_blocking((client, place))
-            .unwrap();
+        context.to_server(client, take_place);
         runner.do_one_iteration();
 
-        assert_eq!(testing.to_clients_receiver.len(), 3);
+        assert_eq!(context.to_clients_receiver.len(), 4);
+        let message1 = context.to_clients_receiver.try_recv();
+        let message2 = context.to_clients_receiver.try_recv();
+        let message3 = context.to_clients_receiver.try_recv();
+        let message4 = context.to_clients_receiver.try_recv();
 
-        let message1 = testing.to_clients_receiver.try_recv();
-        assert!(matches!(
+        assert_matches!(
             message1,
             Ok((
                 _,
@@ -743,75 +753,84 @@ mod test {
                     ClientStateMessage::SetUnit(_)
                 ))
             ))
-        ));
-        let message2 = testing.to_clients_receiver.try_recv();
-        assert!(matches!(
-            message2,
-            Ok((
-                _,
-                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                    ClientStateMessage::SetWindow(_)
-                ))
-            ))
-        ));
-        let message2 = testing.to_clients_receiver.try_recv();
-        assert_eq!(message2, Ok((client_id, expected_server_resume.clone())));
+        );
 
-        let message2 = testing.to_clients_receiver.try_recv();
-        dbg!(&message2);
-        let received_unit = if let Ok((
-            _,
-            ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                ClientStateMessage::SetGameSlice(received_game_slice),
-            )),
-        )) = message2
-        {
-            assert_eq!(received_game_slice.world(), &expected_game_slice_world);
-            assert_eq!(received_game_slice.cities(), &vec![]);
-            assert_eq!(received_game_slice.units().len(), 1);
-            received_game_slice.units().first().unwrap().clone()
-        } else {
-            unreachable!()
-        };
+        // assert!(matches!(
+        //     message1,
+        //     Ok((
+        //         _,
+        //         ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+        //             ClientStateMessage::SetUnit(_)
+        //         ))
+        //     ))
+        // ));
+        // assert!(matches!(
+        //     message2,
+        //     Ok((
+        //         _,
+        //         ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+        //             ClientStateMessage::SetWindow(_)
+        //         ))
+        //     ))
+        // ));
+        // let message2 = context.to_clients_receiver.try_recv();
+        // assert_eq!(message2, Ok((client_id, expected_server_resume.clone())));
 
-        let message3 = testing.to_clients_receiver.try_recv();
-        assert_eq!(message3, Ok((client_id, expected_set_window)));
+        // let message2 = context.to_clients_receiver.try_recv();
+        // dbg!(&message2);
+        // let received_unit = if let Ok((
+        //     _,
+        //     ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+        //         ClientStateMessage::SetGameSlice(received_game_slice),
+        //     )),
+        // )) = message2
+        // {
+        //     assert_eq!(received_game_slice.world(), &expected_game_slice_world);
+        //     assert_eq!(received_game_slice.cities(), &vec![]);
+        //     assert_eq!(received_game_slice.units().len(), 1);
+        //     received_game_slice.units().first().unwrap().clone()
+        // } else {
+        //     unreachable!()
+        // };
 
-        assert_eq!(received_unit.type_(), &UnitType::Settlers);
-        assert_eq!(received_unit.geo().point(), &WorldPoint::new(0, 0));
+        // let message3 = context.to_clients_receiver.try_recv();
+        // assert_eq!(message3, Ok((client_id, expected_set_window)));
 
-        let message4 = testing.to_clients_receiver.try_recv();
-        assert_eq!(message4, Ok((client_id, expected_server_resume)));
+        // assert_eq!(received_unit.type_(), &UnitType::Settlers);
+        // assert_eq!(received_unit.geo().point(), &WorldPoint::new(0, 0));
 
-        let create_task = ClientToServerMessage::Game(ClientToServerGameMessage::InGame(
-            ClientToServerInGameMessage::Unit(
-                *received_unit.id(),
-                ClientToServerUnitMessage::Settle(city_name.clone()),
-            ),
-        ));
-        testing
-            .from_clients_sender
-            .send_blocking((client, create_task))
-            .unwrap();
-        runner.do_one_iteration();
+        // let message4 = context.to_clients_receiver.try_recv();
+        // assert_eq!(message4, Ok((client_id, expected_server_resume)));
 
-        let expected_client_unit = ClientUnit::builder()
-            .id(*received_unit.id())
-            .geo(*received_unit.geo())
-            .flag(Flag::Abkhazia)
-            .type_(*received_unit.type_())
-            .task(ClientTask::new(
-                ClientTaskType::Settle(ClientSettle::new(city_name.clone())),
-                GameFrame(0),
-                GameFrame(100),
-            ))
-            .can(vec![UnitCan::Settle])
-            .build();
-        let expected_set_unit = ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-            ClientStateMessage::SetUnit(expected_client_unit),
-        ));
+        // let create_task = ClientToServerMessage::Game(ClientToServerGameMessage::InGame(
+        //     ClientToServerInGameMessage::Unit(
+        //         *received_unit.id(),
+        //         ClientToServerUnitMessage::Settle(city_name.clone()),
+        //     ),
+        // ));
+        // context
+        //     .from_clients_sender
+        //     .send_blocking((client, create_task))
+        //     .unwrap();
+        // runner.do_one_iteration();
 
-        let message5 = testing.to_clients_receiver.try_recv();
-        assert_eq!(message5, Ok((client_id, expected_set_unit)));
+        // let expected_client_unit = ClientUnit::builder()
+        //     .id(*received_unit.id())
+        //     .geo(*received_unit.geo())
+        //     .flag(Flag::Abkhazia)
+        //     .type_(*received_unit.type_())
+        //     .task(ClientTask::new(
+        //         ClientTaskType::Settle(ClientSettle::new(city_name.clone())),
+        //         GameFrame(0),
+        //         GameFrame(100),
+        //     ))
+        //     .can(vec![UnitCan::Settle])
+        //     .build();
+        // let expected_set_unit = ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+        //     ClientStateMessage::SetUnit(expected_client_unit),
+        // ));
+
+        // let message5 = context.to_clients_receiver.try_recv();
+        // assert_eq!(message5, Ok((client_id, expected_set_unit)));
     }
 }

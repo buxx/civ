@@ -107,6 +107,12 @@ pub enum ServerToClientEstablishmentMessage {
     TakePlaceRefused(TakePlaceRefusedReason),
 }
 
+impl From<ServerToClientEstablishmentMessage> for ServerToClientMessage {
+    fn from(value: ServerToClientEstablishmentMessage) -> Self {
+        Self::Establishment(value)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum ServerToClientInGameMessage {
     State(ClientStateMessage),
@@ -122,6 +128,12 @@ pub enum ClientStateMessage {
     RemoveCity(CityId),
     SetUnit(ClientUnit),
     RemoveUnit(UnitId),
+}
+
+impl From<ClientStateMessage> for ServerToClientMessage {
+    fn from(value: ClientStateMessage) -> Self {
+        Self::InGame(ServerToClientInGameMessage::State(value))
+    }
 }
 
 #[derive(Error, Serialize, Deserialize, Clone, Debug, PartialEq)]
