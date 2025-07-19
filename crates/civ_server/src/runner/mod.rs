@@ -500,7 +500,7 @@ mod test {
             city::CityProductionTons,
             nation::flag::Flag,
             server::ServerResume,
-            slice::ClientUnit,
+            slice::{ClientUnit, GameSlice},
             tasks::client::{settle::ClientSettle, ClientTask, ClientTaskType},
             unit::{TaskType, UnitCan, UnitType},
             GameFrame, PlayerId,
@@ -707,12 +707,11 @@ mod test {
         let expected_window_start = ImaginaryWorldPoint::new(-1, -1);
         let expected_window_end = ImaginaryWorldPoint::new(1, 1);
         let expected_window_step = DisplayStep::Close;
-        // let expected_set_window = ClientStateMessage::SetWindow(Window::new(
-        //     expected_window_start,
-        //     expected_window_end,
-        //     expected_window_step,
-        // ))
-        // .into();
+        let expected_window = Window::new(
+            expected_window_start,
+            expected_window_end,
+            expected_window_step,
+        );
         let expected_game_slice_tiles = vec![
             CtxTile::Outside,
             CtxTile::Outside,
@@ -754,6 +753,41 @@ mod test {
                 ))
             ))
         );
+        assert_matches!(
+            message2,
+            Ok((
+                _,
+                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                    ClientStateMessage::SetGameSlice(_)
+                ))
+            ))
+        );
+        assert_matches!(
+            message3,
+            Ok((
+                _,
+                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+                    ClientStateMessage::SetWindow(_)
+                ))
+            ))
+        );
+        assert_matches!(
+            message4,
+            Ok((
+                _,
+                ServerToClientMessage::Establishment(
+                    ServerToClientEstablishmentMessage::ServerResume(_, _)
+                )
+            ))
+        );
+
+        let ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+            ClientStateMessage::SetUnit(set_unit),
+        )) = message1.unwrap().1
+        else {
+            unreachable!()
+        };
+        assert_eq!(set_unit.type_(), &UnitType::Settlers);
 
         // assert!(matches!(
         //     message1,
