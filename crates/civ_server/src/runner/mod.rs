@@ -789,6 +789,14 @@ mod test {
         };
         assert_eq!(set_unit.type_(), &UnitType::Settlers);
 
+        let ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+            ClientStateMessage::SetGameSlice(game_slice),
+        )) = message2.unwrap().1
+        else {
+            unreachable!()
+        };
+        assert_eq!(game_slice.world(), &expected_game_slice_world);
+
         // assert!(matches!(
         //     message1,
         //     Ok((
