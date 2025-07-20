@@ -786,6 +786,7 @@ mod test {
             unreachable!()
         };
         assert_eq!(set_unit.type_(), &UnitType::Settlers);
+        assert_eq!(set_unit.geo().point(), &WorldPoint::new(0, 0));
 
         let ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
             ClientStateMessage::SetGameSlice(game_slice),
@@ -795,7 +796,7 @@ mod test {
         };
         assert_eq!(game_slice.world(), &expected_game_slice_world);
         assert_eq!(game_slice.cities(), vec![]);
-        assert_eq!(game_slice.units().len(), 0); // Unit will be added next in separated message
+        assert_eq!(game_slice.units().len(), 0); // FIXME Unit will be added next in separated message ? it has been received ?
 
         let ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
             ClientStateMessage::SetWindow(set_window),
@@ -814,82 +815,33 @@ mod test {
         };
         assert_eq!(set_server_resume, expected_server_resume);
         assert_eq!(set_flag, Some(flag));
-        // assert!(matches!(
-        //     message1,
-        //     Ok((
-        //         _,
-        //         ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-        //             ClientStateMessage::SetUnit(_)
-        //         ))
-        //     ))
-        // ));
-        // assert!(matches!(
-        //     message2,
-        //     Ok((
-        //         _,
-        //         ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-        //             ClientStateMessage::SetWindow(_)
-        //         ))
-        //     ))
-        // ));
-        // let message2 = context.to_clients_receiver.try_recv();
-        // assert_eq!(message2, Ok((client_id, expected_server_resume.clone())));
 
-        // let message2 = context.to_clients_receiver.try_recv();
-        // dbg!(&message2);
-        // let received_unit = if let Ok((
-        //     _,
-        //     ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-        //         ClientStateMessage::SetGameSlice(received_game_slice),
-        //     )),
-        // )) = message2
-        // {
-        //     assert_eq!(received_game_slice.world(), &expected_game_slice_world);
-        //     assert_eq!(received_game_slice.cities(), &vec![]);
-        //     assert_eq!(received_game_slice.units().len(), 1);
-        //     received_game_slice.units().first().unwrap().clone()
-        // } else {
-        //     unreachable!()
-        // };
+        // WHEN/THEN
+        let task = ClientToServerInGameMessage::Unit(
+            *set_unit.id(),
+            ClientToServerUnitMessage::Settle(city_name.clone()),
+        )
+        .into();
+        context.to_server(client, task);
+        runner.do_one_iteration();
 
-        // let message3 = context.to_clients_receiver.try_recv();
-        // assert_eq!(message3, Ok((client_id, expected_set_window)));
+        let expected_client_unit = ClientUnit::builder()
+            .id(*set_unit.id())
+            .geo(*set_unit.geo())
+            .flag(flag)
+            .type_(*set_unit.type_())
+            .task(ClientTask::new(
+                ClientTaskType::Settle(ClientSettle::new(city_name.clone())),
+                GameFrame(0),
+                GameFrame(100), // Depends on SettleTask
+            ))
+            .can(vec![UnitCan::Settle])
+            .build();
+        let expected_set_unit = ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+            ClientStateMessage::SetUnit(expected_client_unit),
+        ));
 
-        // assert_eq!(received_unit.type_(), &UnitType::Settlers);
-        // assert_eq!(received_unit.geo().point(), &WorldPoint::new(0, 0));
-
-        // let message4 = context.to_clients_receiver.try_recv();
-        // assert_eq!(message4, Ok((client_id, expected_server_resume)));
-
-        // let create_task = ClientToServerMessage::Game(ClientToServerGameMessage::InGame(
-        //     ClientToServerInGameMessage::Unit(
-        //         *received_unit.id(),
-        //         ClientToServerUnitMessage::Settle(city_name.clone()),
-        //     ),
-        // ));
-        // context
-        //     .from_clients_sender
-        //     .send_blocking((client, create_task))
-        //     .unwrap();
-        // runner.do_one_iteration();
-
-        // let expected_client_unit = ClientUnit::builder()
-        //     .id(*received_unit.id())
-        //     .geo(*received_unit.geo())
-        //     .flag(Flag::Abkhazia)
-        //     .type_(*received_unit.type_())
-        //     .task(ClientTask::new(
-        //         ClientTaskType::Settle(ClientSettle::new(city_name.clone())),
-        //         GameFrame(0),
-        //         GameFrame(100),
-        //     ))
-        //     .can(vec![UnitCan::Settle])
-        //     .build();
-        // let expected_set_unit = ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-        //     ClientStateMessage::SetUnit(expected_client_unit),
-        // ));
-
-        // let message5 = context.to_clients_receiver.try_recv();
-        // assert_eq!(message5, Ok((client_id, expected_set_unit)));
+        let message5 = context.to_clients_receiver.try_recv();
+        assert_eq!(message5, Ok((client_id, expected_set_unit)));
     }
 }
