@@ -730,9 +730,7 @@ mod test {
             expected_game_slice_tiles,
         );
 
-        let server_resume = ServerResume::new(RuleSetType::Testing, vec![]);
-        let expected_server_resume: ServerToClientMessage =
-            ServerToClientEstablishmentMessage::ServerResume(server_resume, Some(flag)).into();
+        let expected_server_resume = ServerResume::new(RuleSetType::Testing, vec![]);
 
         // WHEN/THEN
         context.to_server(client, take_place);
@@ -796,7 +794,26 @@ mod test {
             unreachable!()
         };
         assert_eq!(game_slice.world(), &expected_game_slice_world);
+        assert_eq!(game_slice.cities(), vec![]);
+        assert_eq!(game_slice.units().len(), 0); // Unit will be added next in separated message
 
+        let ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
+            ClientStateMessage::SetWindow(set_window),
+        )) = message3.unwrap().1
+        else {
+            unreachable!()
+        };
+        assert_eq!(set_window, expected_window);
+
+        let ServerToClientMessage::Establishment(ServerToClientEstablishmentMessage::ServerResume(
+            set_server_resume,
+            set_flag,
+        )) = message4.unwrap().1
+        else {
+            unreachable!()
+        };
+        assert_eq!(set_server_resume, expected_server_resume);
+        assert_eq!(set_flag, Some(flag));
         // assert!(matches!(
         //     message1,
         //     Ok((
