@@ -28,8 +28,8 @@ impl std::ops::Deref for Grid {
 
 #[derive(Debug, Constructor)]
 pub struct GridHex {
-    pub imaginary: ImaginaryWorldPoint,
-    pub point: WorldPoint,
+    pub _imaginary: ImaginaryWorldPoint,
+    pub _point: WorldPoint,
     pub tile: GridHexResource<CtxTile<Tile>>,
     pub city: Option<GridHexResource<ClientCity>>,
     pub units: Option<GridHexResource<Vec<ClientUnit>>>,

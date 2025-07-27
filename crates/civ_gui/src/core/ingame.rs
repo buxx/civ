@@ -27,7 +27,14 @@ pub fn react_server_message(
     mut window: ResMut<GameWindowResource>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    debug!("Received event from server: {:?}", &trigger.event().0);
+    if !matches!(
+        trigger.event(),
+        MessageReceivedFromServerEvent(ServerToClientMessage::InGame(
+            ServerToClientInGameMessage::State(ClientStateMessage::SetGameFrame(_))
+        ))
+    ) {
+        debug!("Received event from server: {:?}", &trigger.event().0);
+    }
 
     match &trigger.event().0 {
         ServerToClientMessage::Establishment(message) => match message {
@@ -59,27 +66,31 @@ pub fn react_server_message(
                 }
                 ClientStateMessage::SetCity(city) => {
                     if let Some(ref mut slice) = &mut (game_slice.0) {
-                        slice.cities_mut().retain(|c| c.id() != city.id());
-                        slice.cities_mut().push(city.clone());
+                        slice
+                            .cities_mut()
+                            .set(city.geo().point(), Some(city.clone()));
                     }
                     commands.trigger(GameSliceUpdated);
                 }
-                ClientStateMessage::RemoveCity(city_id) => {
+                ClientStateMessage::RemoveCity(point, _) => {
                     if let Some(ref mut slice) = &mut (game_slice.0) {
-                        slice.cities_mut().retain(|c| c.id() != city_id);
+                        slice.cities_mut().set(point, None);
                     }
                     commands.trigger(GameSliceUpdated);
                 }
                 ClientStateMessage::SetUnit(unit) => {
                     if let Some(ref mut slice) = &mut (game_slice.0) {
-                        slice.units_mut().retain(|u| u.id() != unit.id());
-                        slice.units_mut().push(unit.clone());
+                        if let Some(Some(units)) = slice.units_mut().get_mut(unit.geo().point()) {
+                            units.push(unit.clone())
+                        }
                     }
                     commands.trigger(GameSliceUpdated);
                 }
-                ClientStateMessage::RemoveUnit(unit_id) => {
+                ClientStateMessage::RemoveUnit(point, unit_id) => {
                     if let Some(ref mut slice) = &mut (game_slice.0) {
-                        slice.units_mut().retain(|u| u.id() != unit_id);
+                        if let Some(Some(units)) = slice.units_mut().get_mut(point) {
+                            units.retain(|u| u.id() != unit_id);
+                        }
                     }
                     commands.trigger(GameSliceUpdated);
                 }

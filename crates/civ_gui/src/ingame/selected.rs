@@ -114,7 +114,7 @@ pub fn select_on_game_slice_propagated(
             match select.0 {
                 Selected::Unit(selected_unit) => match selected_unit {
                     SelectedUnit::One(unit_id) => {
-                        if slice.unit(&unit_id).is_none() {
+                        if !slice.units_map().contains_key(&unit_id) {
                             commands.entity(entity).despawn();
                         }
                     }

@@ -13,7 +13,7 @@ use hexx::{Hex, HexLayout};
 // use dyn_clone::DynClone;
 
 use crate::{
-    assets::tile::{absolute_layout, relative_layout, TILES_ATLAS_PATH},
+    assets::tile::{relative_layout, TILES_ATLAS_PATH},
     ingame::{HexCity, HexTile, HexUnit},
     map::{AtlasIndex, AtlasesResource},
 };
@@ -102,13 +102,8 @@ impl<'a> DrawHexContext<'a> {
         relative_layout(&self.slice.center())
     }
 
-    pub fn absolute_layout(&self) -> HexLayout {
-        absolute_layout()
-    }
-
     pub fn point(&self) -> Option<WorldPoint> {
         self.slice
-            .world()
             .try_world_point_for_center_rel((self.hex.x as isize, self.hex.y as isize))
     }
 }

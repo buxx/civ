@@ -1,6 +1,10 @@
 use std::{collections::HashMap, fs, io, path::PathBuf};
 
-use common::game::{GameFrame, PlayerId};
+use common::{
+    game::{GameFrame, PlayerId},
+    space::D2Size,
+    utils::Vec2d,
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -17,9 +21,12 @@ use crate::{
 #[derive(Serialize, Deserialize)]
 pub struct Snapshot {
     frame_i: GameFrame,
+    world_size: D2Size,
     tasks: Vec<Box<dyn Task>>,
-    cities: Vec<City>,
-    units: Vec<Unit>,
+    cities: Vec2d<City>,
+    cities_count: usize,
+    units: Vec2d<Vec<Unit>>,
+    units_count: usize,
     client_states: HashMap<PlayerId, PlayerState>,
 }
 
@@ -49,11 +56,11 @@ impl Snapshot {
         &self.tasks
     }
 
-    pub fn cities(&self) -> &[City] {
+    pub fn cities(&self) -> &Vec2d<City> {
         &self.cities
     }
 
-    pub fn units(&self) -> &[Unit] {
+    pub fn units(&self) -> &Vec2d<Vec<Unit>> {
         &self.units
     }
 
@@ -72,9 +79,12 @@ impl From<&State> for Snapshot {
             .collect();
         Self {
             frame_i: *value.frame(),
+            world_size: value.world_size(),
             tasks,
-            cities: value.cities().to_vec(),
-            units: value.units().to_vec(),
+            cities: value.cities().clone(),
+            cities_count: value.cities_count(),
+            units: value.units().clone(),
+            units_count: value.units_count(),
             client_states: value.clients().states().clone(),
         }
     }
@@ -85,7 +95,7 @@ impl TryFrom<&PathBuf> for Snapshot {
 
     fn try_from(value: &PathBuf) -> Result<Self, Self::Error> {
         bincode::deserialize(&fs::read(value).map_err(|e| SnapshotError::Io(e.kind()))?)
-                .map_err(|e| SnapshotError::Serialize(e.to_string()))
+            .map_err(|e| SnapshotError::Serialize(e.to_string()))
     }
 }
 
@@ -104,7 +114,10 @@ impl From<Snapshot> for State {
             index,
             tasks,
             value.cities,
+            value.cities_count,
             value.units,
+            value.units_count,
+            value.world_size,
             0,
         )
     }

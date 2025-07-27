@@ -34,3 +34,4 @@ derive_more = { version = "2.0.1", features = ["constructor"] }
 home = "0.5.11"
 factori = "1.1.0"
 extfn = "0.1.1"
+rustc-hash = "2.1.1"

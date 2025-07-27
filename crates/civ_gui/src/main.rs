@@ -15,7 +15,6 @@ use state::StatePlugin;
 use window::window_plugin;
 
 mod assets;
-mod atlas;
 mod bridge;
 mod context;
 mod core;

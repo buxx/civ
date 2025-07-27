@@ -1,5 +1,3 @@
-use std::sync::RwLockReadGuard;
-
 use bon::Builder;
 use common::{
     game::{
@@ -73,7 +71,7 @@ impl Geo for City {
 }
 
 impl IntoClientModel<ClientCity> for City {
-    fn into_client(self, _state: &RwLockReadGuard<State>) -> ClientCity {
+    fn into_client(self, _state: &State) -> ClientCity {
         ClientCity::builder()
             .id(self.id)
             .geo(self.geo)

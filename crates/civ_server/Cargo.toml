@@ -29,6 +29,7 @@ clap.workspace = true
 derive_more.workspace = true
 async-std = "1.13.0"
 extfn.workspace = true
+rustc-hash.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true

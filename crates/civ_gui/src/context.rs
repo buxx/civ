@@ -11,6 +11,7 @@ pub struct Context;
 
 pub enum EntryPoint {
     Root,
+    #[allow(unused)]
     Join,
 }
 
@@ -38,9 +39,5 @@ impl Context {
 
     pub fn default_server_address(&self) -> ServerAddress {
         ServerAddress("127.0.0.1:9876".to_string())
-    }
-
-    pub fn protocol(&self) -> &str {
-        ""
     }
 }

@@ -28,7 +28,7 @@ impl Clients {
         self.endpoints.get(client_id)
     }
 
-    pub fn length(&self) -> usize {
+    pub fn _length(&self) -> usize {
         self.clients.len()
     }
 }

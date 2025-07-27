@@ -10,6 +10,7 @@ use crate::{
         unit::UnitId,
         GameFrame,
     },
+    geo::WorldPoint,
     space::window::{Resolution, Window},
 };
 
@@ -125,9 +126,9 @@ pub enum ClientStateMessage {
     SetWindow(Window),
     SetGameSlice(GameSlice),
     SetCity(ClientCity),
-    RemoveCity(CityId),
+    RemoveCity(WorldPoint, CityId),
     SetUnit(ClientUnit),
-    RemoveUnit(UnitId),
+    RemoveUnit(WorldPoint, UnitId),
 }
 
 impl From<ClientStateMessage> for ServerToClientMessage {

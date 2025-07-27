@@ -35,6 +35,7 @@ use super::{
 
 pub enum SingleConfiguration {
     FromScratch(FromScratchConfig),
+    #[allow(unused)]
     LoadFrom(LoadFromConfig),
 }
 

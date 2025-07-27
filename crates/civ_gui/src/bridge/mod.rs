@@ -2,6 +2,7 @@ use async_std::channel::{unbounded, Receiver, Sender};
 
 use bevy::prelude::*;
 use bon::Builder;
+use civ_server::world::reader::WorldReaderError;
 #[cfg(not(target_arch = "wasm32"))]
 use civ_world::WorldGeneratorError;
 use common::{
@@ -10,7 +11,6 @@ use common::{
         ServerAddress,
     },
     utils::Progress,
-    world::reader::WorldReaderError,
 };
 
 use crate::{

@@ -7,7 +7,7 @@ use common::{
     },
     network::{message::ClientStateMessage, ClientId},
     space::window::Window,
-    world::partial::PartialWorld,
+    world::{slice::Slice, CtxTile, Tile},
 };
 use thiserror::Error;
 
@@ -21,7 +21,7 @@ pub struct State {
     window: Option<Window>,
     errors: Vec<PublicError>,
     frame: Option<GameFrame>,
-    world: Option<PartialWorld>,
+    tiles: Option<Slice<CtxTile<Tile>>>,
     cities: Option<Vec<ClientCity>>,
     units: Option<Vec<ClientUnit>>,
 }
@@ -36,7 +36,7 @@ impl State {
             window: None,
             errors: vec![],
             frame: None,
-            world: None,
+            tiles: None,
             cities: None,
             units: None,
         }
@@ -82,17 +82,18 @@ impl State {
             ClientStateMessage::SetWindow(window) => {
                 self.set_window(Some(window));
             }
-            ClientStateMessage::SetGameSlice(slice) => {
-                self.world = Some(slice.world().clone());
-                self.cities = Some(slice.cities().into());
-                self.units = Some(slice.units().into());
+            ClientStateMessage::SetGameSlice(_slice) => {
+                todo!();
+                // self.tiles = Some(slice.tiles().clone());
+                // self.cities = Some(slice.cities().into());
+                // self.units = Some(slice.units().into());
             }
             ClientStateMessage::SetCity(city) => {
                 if let Some(cities) = &mut self.cities {
                     cities.push(city)
                 }
             }
-            ClientStateMessage::RemoveCity(city_id) => {
+            ClientStateMessage::RemoveCity(_, city_id) => {
                 if let Some(cities) = &mut self.cities {
                     cities.retain(|c| c.id() != &city_id)
                 }
@@ -106,7 +107,7 @@ impl State {
                     }
                 }
             }
-            ClientStateMessage::RemoveUnit(unit_id) => {
+            ClientStateMessage::RemoveUnit(_, unit_id) => {
                 if let Some(units) = &mut self.units {
                     units.retain(|u| u.id() != &unit_id)
                 }
@@ -126,8 +127,8 @@ impl State {
         self.frame.ok_or(StateError::NotReady)
     }
 
-    pub fn world(&self) -> Option<&PartialWorld> {
-        self.world.as_ref()
+    pub fn tiles(&self) -> Option<&Slice<CtxTile<Tile>>> {
+        self.tiles.as_ref()
     }
 
     pub fn server(&self) -> Option<&ServerResume> {

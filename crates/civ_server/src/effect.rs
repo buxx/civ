@@ -31,6 +31,12 @@ pub enum StateEffect {
     Testing,
 }
 
+impl From<StateEffect> for Effect {
+    fn from(value: StateEffect) -> Self {
+        Self::State(value)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ClientsEffect {
     // FIXME BS NOW: when disconnected, remove

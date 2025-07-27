@@ -1,10 +1,11 @@
 use std::sync::RwLockReadGuard;
 
-use common::{geo::WorldPoint, rules::RuleSetBox, world::reader::WorldReader};
+use common::{geo::WorldPoint, rules::RuleSetBox};
 use rand::Rng;
 use thiserror::Error;
 
 use crate::state::State;
+use crate::world::reader::WorldReader;
 
 pub type PlacerBox = Box<dyn for<'a> Placer<'a> + Sync + Send>;
 
@@ -41,14 +42,9 @@ impl<'a> Placer<'a> for RandomPlacer {
             if let Some(tile) = world.tile(x, y) {
                 if rules.can_be_startup(tile) {
                     // TODO: is free land
-                    if state.index().xy_cities(&point).is_none()
-                        && state
-                            .index()
-                            .xy_units(&point)
-                            .map(|units| units.len())
-                            .unwrap_or(0)
-                            == 0
-                    {
+                    let there_is_city = state.cities().get_by_point(WorldPoint::new(x, y));
+                    let there_is_units = state.units().get_by_point(WorldPoint::new(x, y));
+                    if there_is_city.is_none() && there_is_units.is_none() {
                         return Ok(point);
                     }
                 }

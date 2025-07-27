@@ -2,7 +2,6 @@ use crate::{
     effect::{ClientEffect, ClientsEffect, Effect, StateEffect, UnitEffect},
     game::{
         access::Access,
-        extractor::game_slice,
         unit::{Unit, UnitCanBuilder},
     },
     runner::{DealClientRequestError, Runner, RunnerError},

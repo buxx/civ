@@ -113,7 +113,7 @@ impl Runner {
         if !clients.is_empty() {
             return Ok(vec![(
                 ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                    ClientStateMessage::RemoveCity(*city.id()),
+                    ClientStateMessage::RemoveCity(*city.geo().point(), *city.id()),
                 )),
                 clients,
             )]);
@@ -149,7 +149,7 @@ impl Runner {
         if !clients.is_empty() {
             return Ok(vec![(
                 ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                    ClientStateMessage::RemoveUnit(*unit.id()),
+                    ClientStateMessage::RemoveUnit(*unit.geo().point(), *unit.id()),
                 )),
                 clients,
             )]);

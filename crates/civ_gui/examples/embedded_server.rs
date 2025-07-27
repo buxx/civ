@@ -10,12 +10,11 @@ use civ_world::config::WorldConfig;
 use civ_world::writer::FilesWriter;
 use common::game::nation::flag::Flag;
 use common::game::unit::UnitType;
-use common::geo::{GeoContext, ImaginaryWorldPoint, WorldPoint};
-use common::network::message::{
-    ClientStateMessage, ServerToClientInGameMessage, ServerToClientMessage,
-};
+use common::game::GameFrame;
+use common::geo::{GeoContext, GeoVec, ImaginaryWorldPoint, WorldPoint};
 use common::network::Client;
-use common::space::window::{DisplayStep, Resolution, Window};
+use common::space::window::{DisplayStep, Window};
+use common::space::D2Size;
 use common::utils::Progress;
 use common::world::TerrainType;
 use std::error::Error;
@@ -23,9 +22,7 @@ use std::thread;
 use uuid::Uuid;
 use world::generator::PatternGenerator;
 
-use civ_gui::bridge::{
-    BridgeMessage, BridgePlugin, ClientToServerSenderResource, ServerToClientReceiverResource,
-};
+use civ_gui::bridge::{BridgePlugin, ClientToServerSenderResource, ServerToClientReceiverResource};
 use civ_gui::context::Context;
 use civ_gui::core::CorePlugin;
 use civ_gui::ingame::InGamePlugin;
@@ -44,7 +41,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tmp_path = std::env::temp_dir();
     let game_path = tmp_path.join(Uuid::new_v4().to_string());
     let world_path = game_path.join("world");
-    let world_config = WorldConfig::new(world_path.clone(), 1000, 1000, 100);
+    let world_width = 1000;
+    let world_height = 1000;
+    let world_config = WorldConfig::new(world_path.clone(), world_width, world_height, 100);
+    // FIXME: From world config/world
+    let world_size = D2Size::new(world_width, world_height);
     let client = Client::default();
     let server_config = ServerArgs::builder()
         .world(world_path.clone())
@@ -93,7 +94,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build();
 
     let cities = vec![];
-    let units = vec![settler1, settler2];
+    let units = vec![
+        GeoVec::new(settler1.geo, vec![settler1]),
+        GeoVec::new(settler2.geo, vec![settler2]),
+    ];
 
     // Start server
     println!("Start server");
@@ -106,10 +110,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             .into_iter()
             .collect(),
         );
-        let state = civ_server::state::State::default()
-            .with_clients(clients)
-            .with_cities(cities)
-            .with_units(units);
+        let state = civ_server::state::State::build_from(
+            GameFrame(0),
+            world_size,
+            clients,
+            cities,
+            units,
+            &[],
+        );
         let bridge =
             DirectBridgeBuilder::new(client, client_to_server_receiver, server_to_client_sender);
         let _ = start_server()

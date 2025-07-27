@@ -1,5 +1,3 @@
-use std::sync::RwLockReadGuard;
-
 use bon::Builder;
 #[cfg(test)]
 use common::geo::WorldPoint;
@@ -63,7 +61,7 @@ impl Geo for Unit {
 }
 
 impl IntoClientModel<ClientUnit> for Unit {
-    fn into_client(self, _state: &RwLockReadGuard<State>) -> ClientUnit {
+    fn into_client(self, _state: &State) -> ClientUnit {
         ClientUnit::builder()
             .id(self.id)
             .type_(self.type_)

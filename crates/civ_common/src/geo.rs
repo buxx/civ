@@ -1,9 +1,11 @@
 use bon::Builder;
 use derive_more::Constructor;
-use glam::Vec2;
+use glam::{U64Vec2, Vec2};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(
+    Clone, Copy, Serialize, Deserialize, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Default,
+)]
 pub struct WorldPoint {
     pub x: u64,
     pub y: u64,
@@ -47,6 +49,15 @@ impl From<(u64, u64)> for WorldPoint {
         Self {
             x: value.0,
             y: value.1,
+        }
+    }
+}
+
+impl From<WorldPoint> for U64Vec2 {
+    fn from(value: WorldPoint) -> Self {
+        Self {
+            x: value.x,
+            y: value.y,
         }
     }
 }
@@ -105,7 +116,20 @@ pub trait Geo {
     fn geo_mut(&mut self) -> &mut GeoContext;
 }
 
-#[derive(Builder, Clone, Copy, Serialize, Deserialize, Debug, PartialEq, Constructor)]
+#[derive(
+    Builder,
+    Clone,
+    Copy,
+    Serialize,
+    Deserialize,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Constructor,
+)]
 pub struct GeoContext {
     point: WorldPoint,
 }
@@ -117,5 +141,46 @@ impl GeoContext {
 
     pub fn set_point(&mut self, value: WorldPoint) {
         self.point = value
+    }
+}
+
+#[derive(Debug, Constructor)]
+pub struct GeoVec<T> {
+    geo: GeoContext,
+    items: Vec<T>,
+}
+
+impl<T> GeoVec<T> {
+    pub fn items(&self) -> &[T] {
+        &self.items
+    }
+
+    pub fn items_mut(&mut self) -> &mut Vec<T> {
+        &mut self.items
+    }
+}
+
+impl<T> Geo for GeoVec<T> {
+    fn geo(&self) -> &GeoContext {
+        &self.geo
+    }
+
+    fn geo_mut(&mut self) -> &mut GeoContext {
+        &mut self.geo
+    }
+}
+
+impl<T> From<(GeoContext, Vec<T>)> for GeoVec<T> {
+    fn from(value: (GeoContext, Vec<T>)) -> Self {
+        Self {
+            geo: value.0,
+            items: value.1,
+        }
+    }
+}
+
+impl<T> From<GeoVec<T>> for Vec<T> {
+    fn from(val: GeoVec<T>) -> Self {
+        val.items
     }
 }

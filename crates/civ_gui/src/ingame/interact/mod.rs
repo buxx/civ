@@ -69,7 +69,7 @@ pub trait UiComponentResource: Resource {
     type Resource: DrawUiComponent;
     type OnEvent: Event;
 
-    fn component(&self) -> &Option<Self::Resource>;
+    fn _component(&self) -> &Option<Self::Resource>;
     fn component_mut(&mut self) -> &mut Option<Self::Resource>;
 }
 
@@ -80,7 +80,7 @@ macro_rules! impl_ui_component_resource {
             type Resource = $inner;
             type OnEvent = $event;
 
-            fn component(&self) -> &Option<$inner> {
+            fn _component(&self) -> &Option<$inner> {
                 &self.0
             }
 

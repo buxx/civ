@@ -60,7 +60,7 @@ fn inject_massive(index: &mut Index, count: usize) {
     }
 
     index.reindex_cities(&cities);
-    index.reindex_units(&units);
+    index.reindex_units_at(&units);
 }
 
 fn index_write_unit(unit_count: usize, cities: &[City]) {

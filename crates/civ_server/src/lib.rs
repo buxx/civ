@@ -11,6 +11,7 @@ use crate::snapshot::{Snapshot, SnapshotError};
 use crate::state::State;
 use crate::task::snapshot::SnapshotTask;
 use crate::task::{TaskContext, TaskId};
+use crate::world::reader::{WorldReader, WorldReaderError};
 use async_std::channel::Sender;
 use bon::{builder, Builder};
 use bridge::{Bridge, BridgeBuilder};
@@ -18,8 +19,8 @@ use clap::Parser;
 use common::game::unit::{SystemTaskType, TaskType};
 use common::game::GameFrame;
 use common::rules::std1::Std1RuleSet;
+use common::space::D2Size;
 use common::utils::Progress;
-use common::world::reader::{WorldReader, WorldReaderError};
 use log::info;
 use std::io;
 use std::{
@@ -40,6 +41,7 @@ pub mod state;
 pub mod task;
 pub mod test;
 pub mod utils;
+pub mod world;
 
 pub const TICK_BASE_PERIOD: u64 = 60;
 
@@ -84,14 +86,15 @@ pub fn start<B: Bridge + 'static>(
         .map(|s| s.send_blocking(Progress::InProgress(0.)));
     let config = ServerConfig::from(args.clone());
     let rules = Std1RuleSet;
-    let state = match state {
-        Some(state) => state,
-        None => build_state(&config)?,
-    };
 
     info!("Read world ...");
     let world = WorldReader::from(args.world.clone(), &progress)?;
     info!("Read world ... OK ({} tiles)", world.shape());
+
+    let state = match state {
+        Some(state) => state,
+        None => build_state(&config, world.size())?,
+    };
 
     let context = Context::new(Box::new(rules), config.clone());
     let state = Arc::new(RwLock::new(state));
@@ -120,7 +123,7 @@ pub fn start<B: Bridge + 'static>(
     Ok(())
 }
 
-fn build_state(config: &ServerConfig) -> Result<State, Error> {
+fn build_state(config: &ServerConfig, world_size: D2Size) -> Result<State, Error> {
     let state = match config.snapshot() {
         Some(snapshot_path) => {
             let snapshot_task = Box::new(SnapshotTask::new(
@@ -140,7 +143,7 @@ fn build_state(config: &ServerConfig) -> Result<State, Error> {
                             "No snapshot found at {}: create empty state",
                             snapshot_path.display()
                         );
-                        State::default()
+                        State::empty(world_size)
                     }
                     _ => return Err(Error::from(SnapshotError::Io(error))),
                 },
@@ -148,7 +151,7 @@ fn build_state(config: &ServerConfig) -> Result<State, Error> {
             }
             .with_replaced_task_type(TaskType::System(SystemTaskType::Snapshot), snapshot_task)
         }
-        None => State::default(),
+        None => State::empty(world_size),
     };
     Ok(state)
 }

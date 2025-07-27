@@ -35,7 +35,6 @@ pub struct InGamePlugin {
 impl Plugin for InGamePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GameWindowResource>()
-            .init_resource::<CameraInitializedResource>()
             .init_resource::<GameFrameResource>()
             .init_resource::<LastKnownCursorPositionResource>()
             .init_resource::<SelectedResource>()
@@ -67,9 +66,6 @@ impl Plugin for InGamePlugin {
         add_unit_component!(app, UnitInfoResource);
     }
 }
-
-#[derive(Resource, Default)]
-pub struct CameraInitializedResource(pub bool);
 
 #[derive(Resource, Default)]
 pub struct LastKnownCursorPositionResource(pub Vec2);

@@ -1,3 +1,4 @@
+pub mod slice;
 use async_std::channel::{unbounded, Receiver, Sender};
 use bon::{builder, Builder};
 use common::{
@@ -14,7 +15,6 @@ use common::{
         Client, ClientId,
     },
     task::{CreateTaskError, GamePlayReason},
-    world::reader::WorldReader,
 };
 use log::{debug, error, info};
 use std::{
@@ -36,6 +36,7 @@ use crate::{
         city::{BuildCityFrom, BuildCityFromChange, CityGenerator},
         Concern, TaskError, TaskId,
     },
+    world::reader::WorldReader,
 };
 use crate::{task::TaskBox, utils::collection::slices};
 
@@ -282,8 +283,8 @@ impl Runner {
         let tasks_length = state.tasks().len();
         let clients_count = state.clients().clients_count();
         let players_count = state.clients().players_count();
-        let cities_count = state.cities().len();
-        let units_count = state.units().len();
+        let cities_count = state.cities_count();
+        let units_count = state.units_count();
         drop(state);
 
         if Instant::now().duration_since(self.last_stat).as_millis() >= 1000 {
@@ -500,19 +501,22 @@ mod test {
             city::CityProductionTons,
             nation::flag::Flag,
             server::ServerResume,
-            slice::{ClientUnit, GameSlice},
+            slice::ClientUnit,
             tasks::client::{settle::ClientSettle, ClientTask, ClientTaskType},
             unit::{TaskType, UnitCan, UnitType},
             GameFrame, PlayerId,
         },
         geo::{ImaginaryWorldPoint, WorldPoint},
         network::message::{
-            ClientStateMessage, ClientToServerEstablishmentMessage, ClientToServerGameMessage,
-            ClientToServerInGameMessage, ServerToClientEstablishmentMessage,
+            ClientStateMessage, ClientToServerEstablishmentMessage, ClientToServerInGameMessage,
+            ServerToClientEstablishmentMessage,
         },
         rules::{RuleSet, RuleSetType},
-        space::window::{DisplayStep, Resolution, Window},
-        world::{partial::PartialWorld, CtxTile, TerrainType, Tile},
+        space::{
+            window::{DisplayStep, Resolution, Window},
+            D2Size,
+        },
+        world::{slice::Slice, CtxTile, TerrainType, Tile},
     };
 
     use crate::{
@@ -631,7 +635,7 @@ mod test {
         }
 
         fn build(&mut self) -> Runner {
-            let mut state = State::default();
+            let mut state = State::empty(D2Size::new(2, 2));
             let world = WorldReader::new(
                 PathBuf::new(),
                 2,
@@ -723,7 +727,7 @@ mod test {
             CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
             CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
         ];
-        let expected_game_slice_world = PartialWorld::new(
+        let expected_game_slice_world = Slice::new(
             expected_window_start,
             window_width,
             window_height,
@@ -794,9 +798,25 @@ mod test {
         else {
             unreachable!()
         };
-        assert_eq!(game_slice.world(), &expected_game_slice_world);
-        assert_eq!(game_slice.cities(), vec![]);
-        assert_eq!(game_slice.units().len(), 0); // FIXME Unit will be added next in separated message ? it has been received ?
+        assert_eq!(game_slice.tiles(), &expected_game_slice_world);
+        assert_eq!(
+            game_slice.cities(),
+            &Slice::new(
+                ImaginaryWorldPoint { x: -1, y: -1 },
+                3,
+                3,
+                vec![None, None, None, None]
+            )
+        );
+        assert_eq!(
+            game_slice.units(),
+            &Slice::new(
+                ImaginaryWorldPoint { x: -1, y: -1 },
+                3,
+                3,
+                vec![None, None, None, None]
+            )
+        ); // FIXME Unit will be added next in separated message ? it has been received ?
 
         let ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
             ClientStateMessage::SetWindow(set_window),

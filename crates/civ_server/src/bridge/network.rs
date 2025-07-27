@@ -55,7 +55,7 @@ enum Signal {
 
 pub struct NetworkBridge {
     context: Context,
-    state: Arc<RwLock<State>>,
+    _state: Arc<RwLock<State>>,
     from_clients_sender: Sender<(Client, ClientToServerMessage)>,
     to_client_receiver: Receiver<(ClientId, ServerToClientMessage)>,
     tcp_listen_addr: String,
@@ -76,7 +76,7 @@ impl NetworkBridge {
     ) -> io::Result<Self> {
         Ok(Self {
             context,
-            state,
+            _state: state,
             from_clients_sender,
             to_client_receiver,
             tcp_listen_addr,
@@ -133,7 +133,6 @@ impl Bridge for NetworkBridge {
                             }
                         },
                         ClientToServerMessage::Game(_message) => {
-                            info!("DEBUG game clients: {:?}", self.clients);
                             let client = self.clients.client_for_endpoint(&endpoint).unwrap();
                             self.from_clients_sender
                                 .send_blocking((*client, message.clone()))
