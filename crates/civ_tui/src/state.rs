@@ -7,7 +7,7 @@ use common::{
     },
     network::{message::ClientStateMessage, ClientId},
     space::window::Window,
-    world::partial::PartialWorld,
+    world::{partial::Slice, CtxTile, Tile},
 };
 use thiserror::Error;
 
@@ -21,7 +21,7 @@ pub struct State {
     window: Option<Window>,
     errors: Vec<PublicError>,
     frame: Option<GameFrame>,
-    world: Option<PartialWorld>,
+    tiles: Option<Slice<CtxTile<Tile>>>,
     cities: Option<Vec<ClientCity>>,
     units: Option<Vec<ClientUnit>>,
 }
@@ -36,7 +36,7 @@ impl State {
             window: None,
             errors: vec![],
             frame: None,
-            world: None,
+            tiles: None,
             cities: None,
             units: None,
         }
@@ -83,7 +83,7 @@ impl State {
                 self.set_window(Some(window));
             }
             ClientStateMessage::SetGameSlice(slice) => {
-                self.world = Some(slice.world().clone());
+                self.tiles = Some(slice.tiles().clone());
                 self.cities = Some(slice.cities().into());
                 self.units = Some(slice.units().into());
             }
@@ -126,8 +126,8 @@ impl State {
         self.frame.ok_or(StateError::NotReady)
     }
 
-    pub fn world(&self) -> Option<&PartialWorld> {
-        self.world.as_ref()
+    pub fn tiles(&self) -> Option<&Slice<CtxTile<Tile>>> {
+        self.tiles.as_ref()
     }
 
     pub fn server(&self) -> Option<&ServerResume> {

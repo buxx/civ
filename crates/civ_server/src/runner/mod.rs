@@ -500,19 +500,19 @@ mod test {
             city::CityProductionTons,
             nation::flag::Flag,
             server::ServerResume,
-            slice::{ClientUnit, GameSlice},
+            slice::ClientUnit,
             tasks::client::{settle::ClientSettle, ClientTask, ClientTaskType},
             unit::{TaskType, UnitCan, UnitType},
             GameFrame, PlayerId,
         },
         geo::{ImaginaryWorldPoint, WorldPoint},
         network::message::{
-            ClientStateMessage, ClientToServerEstablishmentMessage, ClientToServerGameMessage,
-            ClientToServerInGameMessage, ServerToClientEstablishmentMessage,
+            ClientStateMessage, ClientToServerEstablishmentMessage, ClientToServerInGameMessage,
+            ServerToClientEstablishmentMessage,
         },
         rules::{RuleSet, RuleSetType},
         space::window::{DisplayStep, Resolution, Window},
-        world::{partial::PartialWorld, CtxTile, TerrainType, Tile},
+        world::{partial::Slice, CtxTile, TerrainType, Tile},
     };
 
     use crate::{
@@ -723,7 +723,7 @@ mod test {
             CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
             CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
         ];
-        let expected_game_slice_world = PartialWorld::new(
+        let expected_game_slice_world = Slice::new(
             expected_window_start,
             window_width,
             window_height,
@@ -794,7 +794,7 @@ mod test {
         else {
             unreachable!()
         };
-        assert_eq!(game_slice.world(), &expected_game_slice_world);
+        assert_eq!(game_slice.tiles(), &expected_game_slice_world);
         assert_eq!(game_slice.cities(), vec![]);
         assert_eq!(game_slice.units().len(), 0); // FIXME Unit will be added next in separated message ? it has been received ?
 

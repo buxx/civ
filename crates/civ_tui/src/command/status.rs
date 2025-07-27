@@ -11,7 +11,7 @@ pub fn status(context: CommandContext) {
         .map(|w| w.to_string())
         .unwrap_or("n/a".to_string());
     let tiles_str = state
-        .world()
+        .tiles()
         .map(|w| w.tiles().len().to_string())
         .unwrap_or("n/a".to_string());
     let flag_str = state

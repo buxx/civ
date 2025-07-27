@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     geo::{GeoContext, ImaginaryWorldPoint, WorldPoint},
-    world::partial::PartialWorld,
+    world::{partial::Slice, CtxTile, Tile},
 };
 
 use super::{
@@ -16,26 +16,30 @@ use super::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct GameSlice {
-    world: PartialWorld,
+    tiles: Slice<CtxTile<Tile>>,
     cities: Vec<ClientCity>,
     units: Vec<ClientUnit>,
 }
 
 impl GameSlice {
-    pub fn new(world: PartialWorld, cities: Vec<ClientCity>, units: Vec<ClientUnit>) -> Self {
+    pub fn new(
+        tiles: Slice<CtxTile<Tile>>,
+        cities: Vec<ClientCity>,
+        units: Vec<ClientUnit>,
+    ) -> Self {
         Self {
-            world,
+            tiles,
             cities,
             units,
         }
     }
 
-    pub fn world(&self) -> &PartialWorld {
-        &self.world
+    pub fn tiles(&self) -> &Slice<CtxTile<Tile>> {
+        &self.tiles
     }
 
     pub fn center(&self) -> ImaginaryWorldPoint {
-        self.world().imaginary_world_point_for_center_rel((0, 0))
+        self.tiles().imaginary_world_point_for_center_rel((0, 0))
     }
 
     pub fn cities(&self) -> &[ClientCity] {
@@ -90,11 +94,11 @@ impl std::fmt::Debug for GameSlice {
                 "world",
                 &format!(
                     "{} world tiles, start at {}.{}, width {}, height {}",
-                    self.world.tiles().len(),
-                    self.world.original().x,
-                    self.world.original().y,
-                    self.world.width(),
-                    self.world.height()
+                    self.tiles.tiles().len(),
+                    self.tiles.original().x,
+                    self.tiles.original().y,
+                    self.tiles.width(),
+                    self.tiles.height()
                 ),
             )
             .field("cities", &format!("{} cities", self.cities.len()))

@@ -3,7 +3,7 @@ use std::sync::RwLockReadGuard;
 use common::{
     game::slice::{ClientCity, ClientUnit, GameSlice},
     space::window::Window,
-    world::{partial::PartialWorld, reader::WorldReader, CtxTile, Tile},
+    world::{partial::Slice, reader::WorldReader, CtxTile, Tile},
 };
 use extfn::extfn;
 
@@ -52,9 +52,12 @@ pub fn extract_cities(self: &RwLockReadGuard<'_, State>, window: &Window) -> Vec
 }
 
 #[extfn]
-pub fn extract_world(self: &RwLockReadGuard<'_, WorldReader>, window: &Window) -> PartialWorld {
+pub fn extract_tiles(
+    self: &RwLockReadGuard<'_, WorldReader>,
+    window: &Window,
+) -> Slice<CtxTile<Tile>> {
     let tiles = self.window_tiles(window);
-    PartialWorld::new(
+    Slice::new(
         *window.start(),
         (window.end().x - window.start().x + 1) as u64,
         (window.end().y - window.start().y + 1) as u64,
@@ -74,7 +77,7 @@ pub fn game_slice(self: &Runner, window: &Window) -> GameSlice {
         .read()
         .expect("Consider world as always readable");
     GameSlice::new(
-        world.extract_world(window),
+        world.extract_tiles(window),
         state.extract_cities(window),
         state.extract_units(window),
     )

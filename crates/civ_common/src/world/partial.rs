@@ -1,50 +1,27 @@
 use crate::geo::{ImaginaryWorldPoint, WorldPoint};
 use serde::{Deserialize, Serialize};
 
-use super::{CtxTile, Tile};
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct PartialWorld {
+pub struct Slice<T> {
     original: ImaginaryWorldPoint,
     width: u64,
     height: u64,
-    tiles: Vec<CtxTile<Tile>>,
+    items: Vec<T>,
 }
 
-impl PartialWorld {
-    pub fn new(
-        original: ImaginaryWorldPoint,
-        width: u64,
-        height: u64,
-        tiles: Vec<CtxTile<Tile>>,
-    ) -> Self {
+impl<T> Slice<T> {
+    pub fn new(original: ImaginaryWorldPoint, width: u64, height: u64, items: Vec<T>) -> Self {
         Self {
             original,
             width,
             height,
-            tiles,
+            items,
         }
     }
 
-    pub fn tiles(&self) -> &[CtxTile<Tile>] {
-        &self.tiles
+    pub fn tiles(&self) -> &[T] {
+        &self.items
     }
-
-    // pub fn rectangle(&self) -> Rectangle<i32> {
-    //     let (left, right) = if self.width % 2 == 0 {
-    //         ((self.width / 2) as i32, (self.width / 2) as i32 - 1)
-    //     } else {
-    //         ((self.width / 2) as i32, (self.width / 2) as i32)
-    //     };
-
-    //     let (top, bottom) = if self.height % 2 == 0 {
-    //         ((self.height / 2) as i32, (self.height / 2) as i32 - 1)
-    //     } else {
-    //         ((self.height / 2) as i32, (self.height / 2) as i32)
-    //     };
-
-    //     Rectangle::from([left, right, top, bottom])
-    // }
 
     pub fn original(&self) -> &ImaginaryWorldPoint {
         &self.original
@@ -92,23 +69,22 @@ impl PartialWorld {
         ImaginaryWorldPoint::new(world_x as i64, world_y as i64)
     }
 
-    pub fn tile(&self, point: &WorldPoint) -> &CtxTile<Tile> {
-        let rel_point = match self.original.relative_to((point.x as i32, point.y as i32)) {
-            Some(rel_point) => rel_point,
-            None => return &CtxTile::Outside,
-        };
+    pub fn tile(&self, point: &WorldPoint) -> Option<&T> {
+        let rel_point = self
+            .original
+            .relative_to((point.x as i32, point.y as i32))?;
         let index = (rel_point.y * self.height as i64) + (rel_point.x % self.width as i64);
 
-        match self.tiles.get(index as usize) {
-            Some(tile) => tile,
-            None => &CtxTile::Outside,
+        match self.items.get(index as usize) {
+            Some(tile) => Some(tile),
+            None => None,
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::world::TerrainType;
+    use crate::world::{CtxTile, TerrainType, Tile};
 
     use super::*;
     use rstest::rstest;
@@ -131,7 +107,7 @@ mod test {
         #[case] rel: (isize, isize),
         #[case] expected: (u64, u64),
     ) {
-        let world = PartialWorld::new(point.into(), size.0, size.1, vec![]);
+        let world = Slice::<()>::new(point.into(), size.0, size.1, vec![]);
         assert_eq!(
             world.try_world_point_for_center_rel(rel),
             Some(expected.into())
@@ -140,7 +116,7 @@ mod test {
 
     #[test]
     fn test_partial_world_get_tile_minimal() {
-        let world = PartialWorld::new(
+        let world = Slice::new(
             ImaginaryWorldPoint::new(5, 5),
             1,
             1,
@@ -151,12 +127,12 @@ mod test {
         );
         assert_eq!(
             world.tile(&WorldPoint::new(6, 6)),
-            &CtxTile::Visible(Tile::new(TerrainType::GrassLand))
+            Some(&CtxTile::Visible(Tile::new(TerrainType::GrassLand)))
         );
     }
 
-    fn partial_world_by_one() -> PartialWorld {
-        PartialWorld::new(
+    fn partial_world_by_one() -> Slice<CtxTile<Tile>> {
+        Slice::new(
             ImaginaryWorldPoint::new(10, 100),
             4,
             4,
@@ -227,12 +203,12 @@ mod test {
         let world = partial_world_by_one();
         assert_eq!(
             world.tile(&point.into()),
-            &CtxTile::Visible(Tile::new(expected_terrain))
+            Some(&CtxTile::Visible(Tile::new(expected_terrain)))
         );
     }
 
-    fn create_partial_world_various_by_two() -> PartialWorld {
-        PartialWorld::new(
+    fn create_partial_world_various_by_two() -> Slice<CtxTile<Tile>> {
+        Slice::new(
             ImaginaryWorldPoint::new(10, 100),
             4,
             4,
@@ -307,7 +283,7 @@ mod test {
         let world = create_partial_world_various_by_two();
         assert_eq!(
             world.tile(&point.into()),
-            &CtxTile::Visible(Tile::new(expected_terrain))
+            Some(&CtxTile::Visible(Tile::new(expected_terrain)))
         );
     }
 }

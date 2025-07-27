@@ -108,7 +108,7 @@ impl<'a> DrawHexContext<'a> {
 
     pub fn point(&self) -> Option<WorldPoint> {
         self.slice
-            .world()
+            .tiles()
             .try_world_point_for_center_rel((self.hex.x as isize, self.hex.y as isize))
     }
 }

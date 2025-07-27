@@ -23,7 +23,7 @@ use common::network::message::{
     ClientToServerMessage, ServerToClientInGameMessage, ServerToClientMessage,
 };
 use common::space::window::{DisplayStep, Resolution, Window as SpaceWindow};
-use common::world::partial::PartialWorld;
+use common::world::partial::Slice;
 use common::world::reader::WorldReader;
 use common::world::{CtxTile, TerrainType, Tile};
 
@@ -149,7 +149,7 @@ fn entrypoint() -> Result<(), JsValue> {
     let window_end = ImaginaryWorldPoint::new(4, 4);
     let window = SpaceWindow::new(window_start, window_end, DisplayStep::Close);
     let window_tiles = world.window_tiles(&window);
-    let partial_world = PartialWorld::new(
+    let partial_world = Slice::new(
         window_start,
         5,
         5,
@@ -195,7 +195,7 @@ fn entrypoint() -> Result<(), JsValue> {
                 {
                     // Intent is to reproduce civ_server::runner::Runner::update_client_window_reflects
                     let window_tiles = world.window_tiles(&window);
-                    let partial_world = PartialWorld::new(
+                    let partial_world = Slice::new(
                         ImaginaryWorldPoint::new(window.start().x, window.start().y),
                         (window.end().x - window.start().x + 1) as u64,
                         (window.end().y - window.start().y + 1) as u64,

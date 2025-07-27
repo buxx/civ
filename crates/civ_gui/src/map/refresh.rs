@@ -99,7 +99,7 @@ impl<'a> GridUpdater<'a> {
         let tiles_size = tiles_in_height.max(tiles_in_width);
         let tiles_size = tiles_size * 2;
 
-        let world = ctx.slice.world();
+        let tiles = ctx.slice.tiles();
         let shape = shapes::parallelogram(
             hex(-(tiles_size / 2), -(tiles_size / 2)),
             hex(tiles_size / 2, tiles_size / 2),
@@ -108,9 +108,9 @@ impl<'a> GridUpdater<'a> {
 
         for hex in shape {
             let imaginary =
-                world.imaginary_world_point_for_center_rel((hex.x as isize, hex.y as isize));
+                tiles.imaginary_world_point_for_center_rel((hex.x as isize, hex.y as isize));
             let Some(point) =
-                world.try_world_point_for_center_rel((hex.x as isize, hex.y as isize))
+                tiles.try_world_point_for_center_rel((hex.x as isize, hex.y as isize))
             else {
                 continue;
             };
@@ -133,7 +133,12 @@ impl<'a> GridUpdater<'a> {
         ctx: &DrawHexContext,
     ) -> GridHexResource<CtxTile<Tile>> {
         let point = ctx.point().expect("Tile called only on world point");
-        let tile = ctx.slice.world().tile(&point).clone();
+        let tile = ctx
+            .slice
+            .tiles()
+            .tile(&point)
+            .unwrap_or(&CtxTile::Outside)
+            .clone();
         let entity = tile.spawn(commands, ctx, TILE_Z);
 
         GridHexResource::new(entity, tile)
@@ -172,7 +177,7 @@ impl<'a> GridUpdater<'a> {
 
     // TODO: despawn/spawn only really out/in in screen
     fn update(&mut self, commands: &mut Commands, ctx: &'a DrawContext<'a>) {
-        let world = ctx.slice.world();
+        let world = ctx.slice.tiles();
         let center = world.imaginary_world_point_for_center_rel((0, 0));
         let absolute_layout = absolute_layout();
         let relative_layout = relative_layout(&center);
@@ -250,7 +255,7 @@ mod test {
     use common::{
         game::slice::GameSlice as BaseGameSlice,
         geo::{ImaginaryWorldPoint, WorldPoint},
-        world::{partial::PartialWorld, CtxTile, TerrainType, Tile},
+        world::{partial::Slice, CtxTile, TerrainType, Tile},
     };
     use hexx::{hex, shapes, Hex};
 
@@ -290,9 +295,9 @@ mod test {
             CtxTile::Visible(Tile::new(TerrainType::Plain)),
             CtxTile::Visible(Tile::new(TerrainType::Plain)),
         ];
-        let world = PartialWorld::new(original.into(), 5, 5, tiles);
+        let world = Slice::new(original.into(), 5, 5, tiles);
         let slice = BaseGameSlice::new(world, vec![], vec![]);
-        let world = slice.world();
+        let world = slice.tiles();
         let world_ref = world.original();
         let shape: Vec<Hex> = shapes::parallelogram(hex(-2, -2), hex(2, 2)).collect();
         let shape_tuple: Vec<(i32, i32)> = shape.iter().map(|p| (p.x, p.y)).collect();
@@ -395,8 +400,8 @@ mod test {
                     .try_world_point_for_center_rel((relative.0 as isize, relative.1 as isize))
                     .unwrap(),
             ) {
-                CtxTile::Outside => None,
-                CtxTile::Visible(tile) => Some(tile.type_()),
+                Some(CtxTile::Outside) | None => None,
+                Some(CtxTile::Visible(tile)) => Some(tile.type_()),
             };
             assert_eq!(value, Some(expected));
         }
