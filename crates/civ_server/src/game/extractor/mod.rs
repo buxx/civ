@@ -32,7 +32,10 @@ pub fn extract_units(self: &RwLockReadGuard<'_, State>, window: &Window) -> Vec<
 }
 
 #[extfn]
-pub fn extract_cities(self: &RwLockReadGuard<'_, State>, window: &Window) -> Vec<ClientCity> {
+pub fn extract_cities(
+    self: &RwLockReadGuard<'_, State>,
+    window: &Window,
+) -> Slice<Option<ClientCity>> {
     let index = self.index();
     index
         .window_cities(window)
@@ -77,6 +80,9 @@ pub fn game_slice(self: &Runner, window: &Window) -> GameSlice {
         .read()
         .expect("Consider world as always readable");
     GameSlice::new(
+        *window.start(),
+        (window.end().x - window.start().x + 1) as u64,
+        (window.end().y - window.start().y + 1) as u64,
         world.extract_tiles(window),
         state.extract_cities(window),
         state.extract_units(window),

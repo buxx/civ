@@ -1,40 +1,7 @@
 use bon::Builder;
 use serde::{Deserialize, Serialize};
 
-pub mod item;
-pub mod slice;
-pub mod tile;
-
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
-pub enum TerrainType {
-    GrassLand,
-    Plain,
-}
-
-pub trait TileDetail {
-    fn type_(&self) -> TerrainType;
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Tile {
-    type_: TerrainType,
-}
-
-impl Tile {
-    pub fn new(type_: TerrainType) -> Self {
-        Self { type_ }
-    }
-
-    pub fn type_(&self) -> TerrainType {
-        self.type_
-    }
-}
-
-impl TileDetail for Tile {
-    fn type_(&self) -> TerrainType {
-        self.type_
-    }
-}
+use crate::world::Tile;
 
 #[derive(Serialize, Deserialize)]
 pub struct Chunk<T> {
@@ -50,7 +17,6 @@ pub struct World {
     pub height: u64,
 }
 
-// FIXME BS NOW: not necessary anymore ? (Because Option<WorldTile> now)
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CtxTile<T> {
     Outside,

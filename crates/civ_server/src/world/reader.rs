@@ -1,14 +1,16 @@
 use std::{fs, io, path::PathBuf};
 
 use async_std::channel::Sender;
+use common::world::{Chunk, CtxTile, World};
 use thiserror::Error;
 
-use crate::space::window::Window;
+use common::{space::window::Window, world::Tile};
 
-use crate::utils::Progress;
-use crate::world::{Chunk, Tile, World};
+use common::utils::Progress;
 
-use super::CtxTile;
+use crate::game::city::City;
+use crate::game::unit::Unit;
+use crate::world::WorldItem;
 
 #[derive(Error, Debug, Clone)]
 pub enum WorldReaderError {
@@ -28,21 +30,22 @@ pub enum InitWorldError {
     InvalidChunk(String),
 }
 
+// TODO: rename ... ?
 pub struct WorldReader {
     // FIXME: not required as attribute ?
     source: PathBuf,
     width: u64,
     height: u64,
-    tiles: Vec<Tile>,
+    items: Vec<WorldItem>,
 }
 
 impl WorldReader {
-    pub fn new(source: PathBuf, width: u64, height: u64, tiles: Vec<Tile>) -> Self {
+    pub fn new(source: PathBuf, width: u64, height: u64, items: Vec<WorldItem>) -> Self {
         Self {
             source,
             width,
             height,
-            tiles,
+            items,
         }
     }
 
@@ -54,7 +57,7 @@ impl WorldReader {
             source,
             width: 0,
             height: 0,
-            tiles: vec![],
+            items: vec![],
         };
 
         let world: World = ron::from_str(
@@ -66,7 +69,7 @@ impl WorldReader {
         let chunked_width = world.width / world.chunk_size;
         let chunked_height = world.height / world.chunk_size;
 
-        self_.tiles.clear();
+        self_.items.clear();
         self_.width = world.width;
         self_.height = world.height;
         let mut done = 0;
@@ -75,7 +78,7 @@ impl WorldReader {
         for chunk_x in 0..chunked_width {
             for chunk_y in 0..chunked_height {
                 let file_name = format!("{}_{}.ct", chunk_x, chunk_y);
-                let chunk: Chunk =
+                let chunk: Chunk<WorldItem> =
                     bincode::deserialize(&fs::read(self_.source.join(file_name)).map_err(|e| {
                         WorldReaderError::InitWorldError(InitWorldError::Io(e.kind()))
                     })?)
@@ -85,8 +88,8 @@ impl WorldReader {
                         ))
                     })?;
 
-                done += chunk.tiles.len();
-                self_.tiles.extend(chunk.tiles);
+                done += chunk.item.len();
+                self_.items.extend(chunk.item);
 
                 let progress_ = done as f32 / expected as f32;
                 progress
@@ -103,15 +106,28 @@ impl WorldReader {
 
     pub fn tile(&self, x: u64, y: u64) -> Option<&Tile> {
         let index = y * self.width + x;
-        self.tiles.get(index as usize)
+        self.items.get(index as usize).map(|i| &i.tile)
+    }
+
+    pub fn city(&self, x: u64, y: u64) -> Option<&City> {
+        let index = y * self.width + x;
+        self.items.get(index as usize).and_then(|i| i.city.as_ref())
+    }
+
+    pub fn units(&self, x: u64, y: u64) -> &[Unit] {
+        let index = y * self.width + x;
+        self.items
+            .get(index as usize)
+            .map(|i| i.units.as_ref())
+            .unwrap_or(&[])
     }
 
     pub fn shape(&self) -> u64 {
-        self.tiles.len() as u64
+        self.items.len() as u64
     }
 
-    pub fn window_tiles(&self, window: &Window) -> Vec<CtxTile<&Tile>> {
-        tiles_from_window(&self.tiles, window, self.width as i64, self.height as i64)
+    pub fn items(&self, window: &Window) -> Vec<Option<&WorldItem>> {
+        window_items(&self.items, window, self.width as i64, self.height as i64)
     }
 
     pub fn width(&self) -> u64 {
@@ -123,19 +139,18 @@ impl WorldReader {
     }
 }
 
-// TODO: generic for Units and Cities
-pub fn tiles_from_window<'a>(
-    world_tiles: &'a [Tile],
+pub fn window_items<'a>(
+    world_tiles: &'a [WorldItem],
     window: &Window,
     world_width: i64,
     world_height: i64,
-) -> Vec<CtxTile<&'a Tile>> {
+) -> Vec<Option<&'a WorldItem>> {
     let row_width = (window.end().x - window.start().x + 1) as usize;
     let mut tiles = Vec::with_capacity(window.shape() as usize);
 
     for y in window.start().y..=window.end().y {
         if y < 0 || y >= world_height {
-            tiles.resize(tiles.len() + row_width, CtxTile::Outside);
+            tiles.resize(tiles.len() + row_width, None);
             continue;
         }
 
@@ -144,7 +159,7 @@ pub fn tiles_from_window<'a>(
 
         // Left out-of-bounds padding
         let left_padding = (-start_x).max(0).min(row_width as i64) as usize;
-        tiles.resize(tiles.len() + left_padding, CtxTile::Outside);
+        tiles.resize(tiles.len() + left_padding, None);
 
         // Visible tiles within world bounds
         if start_x < world_width && end_x >= 0 {
@@ -155,17 +170,13 @@ pub fn tiles_from_window<'a>(
                 let line_start_idx = (y * world_width + clamped_start_x) as usize;
                 let line_end_idx = (y * world_width + clamped_end_x) as usize;
 
-                tiles.extend(
-                    world_tiles[line_start_idx..=line_end_idx]
-                        .iter()
-                        .map(CtxTile::Visible),
-                );
+                tiles.extend(world_tiles[line_start_idx..=line_end_idx].iter().map(Some));
             }
         }
 
         // Right out-of-bounds padding
         let right_padding = ((end_x + 1) - world_width).max(0).min(row_width as i64) as usize;
-        tiles.resize(tiles.len() + right_padding, CtxTile::Outside);
+        tiles.resize(tiles.len() + right_padding, None);
     }
 
     tiles
@@ -174,7 +185,7 @@ pub fn tiles_from_window<'a>(
 // FIXME BS NOW: add tests with CtxTile::Outside
 #[cfg(test)]
 mod test {
-    use crate::{geo::ImaginaryWorldPoint, space::window::DisplayStep, world::TerrainType};
+    use common::{geo::ImaginaryWorldPoint, space::window::DisplayStep, world::TerrainType};
     use rstest::rstest;
 
     use super::*;
@@ -184,57 +195,25 @@ mod test {
         // GIVEN
         let world_tiles = vec![
             // line 0
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
+            Tile::new(TerrainType::GrassLand),
+            Tile::new(TerrainType::GrassLand),
+            Tile::new(TerrainType::GrassLand),
+            Tile::new(TerrainType::GrassLand),
             // line 1
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
-            Tile {
-                type_: TerrainType::Plain,
-            },
-            Tile {
-                type_: TerrainType::Plain,
-            },
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
+            Tile::new(TerrainType::GrassLand),
+            Tile::new(TerrainType::Plain),
+            Tile::new(TerrainType::Plain),
+            Tile::new(TerrainType::GrassLand),
             // line 2
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
-            Tile {
-                type_: TerrainType::Plain,
-            },
-            Tile {
-                type_: TerrainType::Plain,
-            },
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
+            Tile::new(TerrainType::GrassLand),
+            Tile::new(TerrainType::Plain),
+            Tile::new(TerrainType::Plain),
+            Tile::new(TerrainType::GrassLand),
             // line 3
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
+            Tile::new(TerrainType::GrassLand),
+            Tile::new(TerrainType::GrassLand),
+            Tile::new(TerrainType::GrassLand),
+            Tile::new(TerrainType::GrassLand),
         ];
         let world_width = 4;
         let world_height = 4;
@@ -242,7 +221,7 @@ mod test {
 
         // WHEN
         let window_tiles: Vec<CtxTile<Tile>> =
-            tiles_from_window(&world_tiles, &window, world_width, world_height)
+            window_items(&world_tiles, &window, world_width, world_height)
                 .into_iter()
                 .map(|t| t.into())
                 .collect();
@@ -252,35 +231,17 @@ mod test {
             window_tiles,
             vec![
                 //
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::Plain,
-                }),
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::Plain,
-                }),
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::GrassLand,
-                }),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
                 //
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::Plain,
-                }),
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::Plain,
-                }),
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::GrassLand,
-                }),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
                 //
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::GrassLand,
-                }),
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::GrassLand,
-                }),
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::GrassLand,
-                }),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
             ]
         );
     }
@@ -290,19 +251,11 @@ mod test {
         // GIVEN
         let world_tiles = vec![
             // line 0
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
-            Tile {
-                type_: TerrainType::Plain,
-            },
+            Tile::new(TerrainType::GrassLand),
+            Tile::new(TerrainType::Plain),
             // line 1
-            Tile {
-                type_: TerrainType::GrassLand,
-            },
-            Tile {
-                type_: TerrainType::Plain,
-            },
+            Tile::new(TerrainType::GrassLand),
+            Tile::new(TerrainType::Plain),
         ];
         let world_width = 2;
         let world_height = 2;
@@ -314,7 +267,7 @@ mod test {
 
         // WHEN
         let window_tiles: Vec<CtxTile<Tile>> =
-            tiles_from_window(&world_tiles, &window, world_width, world_height)
+            window_items(&world_tiles, &window, world_width, world_height)
                 .into_iter()
                 .map(|t| t.into())
                 .collect();
@@ -330,21 +283,13 @@ mod test {
                 CtxTile::Outside,
                 //
                 CtxTile::Outside,
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::GrassLand,
-                }),
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::Plain,
-                }),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
                 CtxTile::Outside,
                 //
                 CtxTile::Outside,
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::GrassLand,
-                }),
-                CtxTile::Visible(Tile {
-                    type_: TerrainType::Plain,
-                }),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
                 CtxTile::Outside,
                 //
                 CtxTile::Outside,
@@ -358,12 +303,7 @@ mod test {
     #[rstest]
     fn test_tiles_from_window_non_reg_slice() {
         // GIVEN
-        let world_tiles = vec![
-            Tile {
-                type_: TerrainType::GrassLand,
-            };
-            100
-        ];
+        let world_tiles = vec![Tile::new(TerrainType::GrassLand); 100];
         let world_width = 10;
         let world_height = 10;
         let window = Window::new(
@@ -373,18 +313,13 @@ mod test {
         );
 
         // WHEN-THEN
-        tiles_from_window(&world_tiles, &window, world_width, world_height);
+        window_items(&world_tiles, &window, world_width, world_height);
     }
 
     #[rstest]
     fn test_tiles_from_window_non_reg_slice2() {
         // GIVEN
-        let world_tiles = vec![
-            Tile {
-                type_: TerrainType::GrassLand,
-            };
-            100
-        ];
+        let world_tiles = vec![Tile::new(TerrainType::GrassLand); 100];
         let world_width = 10;
         let world_height = 10;
         let window = Window::new(
@@ -394,18 +329,13 @@ mod test {
         );
 
         // WHEN-THEN
-        tiles_from_window(&world_tiles, &window, world_width, world_height);
+        window_items(&world_tiles, &window, world_width, world_height);
     }
 
     #[rstest]
     fn test_tiles_from_window_outside2() {
         // GIVEN
-        let world_tiles = vec![
-            Tile {
-                type_: TerrainType::GrassLand,
-            };
-            100
-        ];
+        let world_tiles = vec![Tile::new(TerrainType::GrassLand); 100];
         let world_width = 10;
         let world_height = 10;
         let window = Window::new(
@@ -417,7 +347,7 @@ mod test {
         // WHEN-THEN
         // WHEN
         let window_tiles: Vec<CtxTile<Tile>> =
-            tiles_from_window(&world_tiles, &window, world_width, world_height)
+            window_items(&world_tiles, &window, world_width, world_height)
                 .into_iter()
                 .map(|t| t.into())
                 .collect();

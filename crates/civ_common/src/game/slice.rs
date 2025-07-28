@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     geo::{GeoContext, ImaginaryWorldPoint, WorldPoint},
-    world::{partial::Slice, CtxTile, Tile},
+    world::{slice::Slice, CtxTile, Tile},
 };
 
 use super::{
@@ -14,14 +14,13 @@ use super::{
     GameFrame,
 };
 
-// FIXME: "pure" point method from slices in GameSlice
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct GameSlice {
     original: ImaginaryWorldPoint,
     width: u64,
     height: u64,
     tiles: Slice<CtxTile<Tile>>,
-    cities: Slice<ClientCity>,
+    cities: Slice<Option<ClientCity>>,
     units: Slice<Vec<ClientUnit>>,
 }
 
@@ -31,7 +30,7 @@ impl GameSlice {
         width: u64,
         height: u64,
         tiles: Slice<CtxTile<Tile>>,
-        cities: Slice<ClientCity>,
+        cities: Slice<Option<ClientCity>>,
         units: Slice<Vec<ClientUnit>>,
     ) -> Self {
         Self {
@@ -86,11 +85,11 @@ impl GameSlice {
         self.imaginary_world_point_for_center_rel((0, 0))
     }
 
-    pub fn cities(&self) -> &Slice<ClientCity> {
+    pub fn cities(&self) -> &Slice<Option<ClientCity>> {
         &self.cities
     }
 
-    pub fn cities_mut(&mut self) -> &mut Slice<ClientCity> {
+    pub fn cities_mut(&mut self) -> &mut Slice<Option<ClientCity>> {
         &mut self.cities
     }
 

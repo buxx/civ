@@ -11,6 +11,7 @@ use crate::snapshot::{Snapshot, SnapshotError};
 use crate::state::State;
 use crate::task::snapshot::SnapshotTask;
 use crate::task::{TaskContext, TaskId};
+use crate::world::reader::{WorldReader, WorldReaderError};
 use async_std::channel::Sender;
 use bon::{builder, Builder};
 use bridge::{Bridge, BridgeBuilder};
@@ -19,7 +20,6 @@ use common::game::unit::{SystemTaskType, TaskType};
 use common::game::GameFrame;
 use common::rules::std1::Std1RuleSet;
 use common::utils::Progress;
-use common::world::reader::{WorldReader, WorldReaderError};
 use log::info;
 use std::io;
 use std::{
@@ -40,6 +40,7 @@ pub mod state;
 pub mod task;
 pub mod test;
 pub mod utils;
+pub mod world;
 
 pub const TICK_BASE_PERIOD: u64 = 60;
 
