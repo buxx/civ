@@ -136,7 +136,7 @@ impl<'a> GridUpdater<'a> {
         let tile = ctx
             .slice
             .tiles()
-            .tile(&point)
+            .item(&point)
             .unwrap_or(&CtxTile::Outside)
             .clone();
         let entity = tile.spawn(commands, ctx, TILE_Z);
@@ -395,7 +395,7 @@ mod test {
             ((2, 1), TerrainType::GrassLand),
             ((2, 2), TerrainType::Plain),
         ] {
-            let value = match world.tile(
+            let value = match world.item(
                 &world
                     .try_world_point_for_center_rel((relative.0 as isize, relative.1 as isize))
                     .unwrap(),

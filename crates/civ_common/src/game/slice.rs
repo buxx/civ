@@ -14,24 +14,68 @@ use super::{
     GameFrame,
 };
 
-#[derive(Serialize, Deserialize, Clone, PartialEq)]
+// FIXME: "pure" point method from slices in GameSlice
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct GameSlice {
+    original: ImaginaryWorldPoint,
+    width: u64,
+    height: u64,
     tiles: Slice<CtxTile<Tile>>,
-    cities: Vec<ClientCity>,
-    units: Vec<ClientUnit>,
+    cities: Slice<ClientCity>,
+    units: Slice<Vec<ClientUnit>>,
 }
 
 impl GameSlice {
     pub fn new(
+        original: ImaginaryWorldPoint,
+        width: u64,
+        height: u64,
         tiles: Slice<CtxTile<Tile>>,
-        cities: Vec<ClientCity>,
-        units: Vec<ClientUnit>,
+        cities: Slice<ClientCity>,
+        units: Slice<Vec<ClientUnit>>,
     ) -> Self {
         Self {
+            original,
+            width,
+            height,
             tiles,
             cities,
             units,
         }
+    }
+
+    pub fn try_world_point_for_center_rel(&self, pos: (isize, isize)) -> Option<WorldPoint> {
+        let original_x = self.original.x as isize;
+        let original_y = self.original.y as isize;
+        let rel_center_x = (self.width / 2) as isize;
+        let rel_center_y = (self.height / 2) as isize;
+        let rel_x = rel_center_x + pos.0;
+        let rel_y = rel_center_y + pos.1;
+        let world_x = original_x + rel_x;
+        let world_y = original_y + rel_y;
+
+        if world_x < 0
+            || world_y < 0
+            || world_x > (original_x + (self.width as isize - 1))
+            || world_y > (original_y + (self.height as isize - 1))
+        {
+            return None;
+        }
+
+        Some(WorldPoint::new(world_x as u64, world_y as u64))
+    }
+
+    pub fn imaginary_world_point_for_center_rel(&self, pos: (isize, isize)) -> ImaginaryWorldPoint {
+        let original_x = self.original.x as isize;
+        let original_y = self.original.y as isize;
+        let rel_center_x = (self.width / 2) as isize;
+        let rel_center_y = (self.height / 2) as isize;
+        let rel_x = rel_center_x + pos.0;
+        let rel_y = rel_center_y + pos.1;
+        let world_x = original_x + rel_x;
+        let world_y = original_y + rel_y;
+
+        ImaginaryWorldPoint::new(world_x as i64, world_y as i64)
     }
 
     pub fn tiles(&self) -> &Slice<CtxTile<Tile>> {
@@ -39,71 +83,23 @@ impl GameSlice {
     }
 
     pub fn center(&self) -> ImaginaryWorldPoint {
-        self.tiles().imaginary_world_point_for_center_rel((0, 0))
+        self.imaginary_world_point_for_center_rel((0, 0))
     }
 
-    pub fn cities(&self) -> &[ClientCity] {
+    pub fn cities(&self) -> &Slice<ClientCity> {
         &self.cities
     }
 
-    pub fn cities_mut(&mut self) -> &mut Vec<ClientCity> {
+    pub fn cities_mut(&mut self) -> &mut Slice<ClientCity> {
         &mut self.cities
     }
 
-    pub fn units(&self) -> &[ClientUnit] {
+    pub fn units(&self) -> &Slice<Vec<ClientUnit>> {
         &self.units
     }
 
-    pub fn units_mut(&mut self) -> &mut Vec<ClientUnit> {
+    pub fn units_mut(&mut self) -> &mut Slice<Vec<ClientUnit>> {
         &mut self.units
-    }
-
-    // FIXME: cities by index like tiles
-    pub fn city_at(&self, point: &WorldPoint) -> Option<&ClientCity> {
-        self.cities.iter().find(|c| c.geo().point() == point)
-    }
-
-    // FIXME: cities by index like tiles
-    pub fn units_at(&self, point: &WorldPoint) -> Option<Vec<&ClientUnit>> {
-        let units: Vec<&ClientUnit> = self
-            .units
-            .iter()
-            .filter(|c| c.geo().point() == point)
-            .collect();
-
-        if units.is_empty() {
-            return None;
-        }
-
-        Some(units)
-    }
-
-    pub fn city(&self, id: &CityId) -> Option<&ClientCity> {
-        self.cities.iter().find(|u| u.id() == id)
-    }
-
-    pub fn unit(&self, id: &UnitId) -> Option<&ClientUnit> {
-        self.units.iter().find(|u| u.id() == id)
-    }
-}
-
-impl std::fmt::Debug for GameSlice {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("GameSlice")
-            .field(
-                "world",
-                &format!(
-                    "{} world tiles, start at {}.{}, width {}, height {}",
-                    self.tiles.tiles().len(),
-                    self.tiles.original().x,
-                    self.tiles.original().y,
-                    self.tiles.width(),
-                    self.tiles.height()
-                ),
-            )
-            .field("cities", &format!("{} cities", self.cities.len()))
-            .field("units", &format!("{} units", self.units.len()))
-            .finish()
     }
 }
 
@@ -192,5 +188,107 @@ impl ClientUnit {
 
     pub fn can(&self) -> &[UnitCan] {
         &self.can
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case((0, 0), (9, 9), (0, 0), (4, 4))]
+    #[case((0, 0), (9, 9), (0, -4), (4, 0))]
+    #[case((0, 0), (9, 9), (-4, 0), (0, 4))]
+    #[case((0, 0), (9, 9), (-4, -4), (0, 0))]
+    #[case((0, 0), (9, 9), (4, 4), (8, 8))]
+    #[case((0, 0), (10, 10), (0, 0), (5,5))]
+    #[case((0, 0), (10, 10), (0, -4), (5, 1))]
+    #[case((0, 0), (10, 10), (-4, 0), (1, 5))]
+    #[case((0, 0), (10, 10), (-4, -4), (1, 1))]
+    #[case((0, 0), (10, 10), (4, 4), (9, 9))]
+    #[case((0, 0), (15, 12), (0, 0), (7, 6))]
+    fn test_partial_world_point_for_center_rel(
+        #[case] point: (u64, u64),
+        #[case] size: (u64, u64),
+        #[case] rel: (isize, isize),
+        #[case] expected: (u64, u64),
+    ) {
+        let world = GameSlice::new(
+            point.into(),
+            size.0,
+            size.1,
+            Slice::zero(),
+            Slice::zero(),
+            Slice::zero(),
+        );
+        assert_eq!(
+            world.try_world_point_for_center_rel(rel),
+            Some(expected.into())
+        );
+    }
+
+    #[rstest]
+    #[case((-2, -2), (10, 100))]
+    #[case((-1, -2), (11, 100))]
+    #[case((0, -2), (12, 100))]
+    #[case((1, -2), (13, 100))]
+    #[case((-2, -1), (10, 101))]
+    #[case((-1, -1), (11, 101))]
+    #[case((0, -1), (12, 101))]
+    #[case((1, -1), (13, 101))]
+    #[case((-2, 0), (10, 102))]
+    #[case((-1, 0), (11, 102))]
+    #[case((0, 0), (12, 102))]
+    #[case((1, 0), (13, 102))]
+    #[case((-2, 1), (10, 103))]
+    #[case((-1, 1), (11, 103))]
+    #[case((0, 1), (12, 103))]
+    #[case((1, 1), (13, 103))]
+    fn test_try_world_point_for_center_rel_by_one(
+        #[case] rel: (isize, isize),
+        #[case] abs: (u64, u64),
+    ) {
+        let world = GameSlice::new(
+            ImaginaryWorldPoint::new(10, 100),
+            4,
+            4,
+            Slice::zero(),
+            Slice::zero(),
+            Slice::zero(),
+        );
+        assert_eq!(world.try_world_point_for_center_rel(rel), Some(abs.into()));
+    }
+
+    #[rstest]
+    #[case((-2, -2), (10, 100))]
+    #[case((-1, -2), (11, 100))]
+    #[case((0, -2), (12, 100))]
+    #[case((1, -2), (13, 100))]
+    #[case((-2, -1), (10, 101))]
+    #[case((-1, -1), (11, 101))]
+    #[case((0, -1), (12, 101))]
+    #[case((1, -1), (13, 101))]
+    #[case((-2, 0), (10, 102))]
+    #[case((-1, 0), (11, 102))]
+    #[case((0, 0), (12, 102))]
+    #[case((1, 0), (13, 102))]
+    #[case((-2, 1), (10, 103))]
+    #[case((-1, 1), (11, 103))]
+    #[case((0, 1), (12, 103))]
+    #[case((1, 1), (13, 103))]
+    fn test_try_world_point_for_center_rel_by_two(
+        #[case] rel: (isize, isize),
+        #[case] abs: (u64, u64),
+    ) {
+        let world = GameSlice::new(
+            ImaginaryWorldPoint::new(10, 100),
+            4,
+            4,
+            Slice::zero(),
+            Slice::zero(),
+            Slice::zero(),
+        );
+        assert_eq!(world.try_world_point_for_center_rel(rel), Some(abs.into()));
     }
 }
