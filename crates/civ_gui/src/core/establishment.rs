@@ -1,5 +1,3 @@
-
-
 // use crate::state::ServerResource;
 
 // pub fn react_establishment(

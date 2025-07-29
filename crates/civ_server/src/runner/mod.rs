@@ -14,7 +14,6 @@ use common::{
         Client, ClientId,
     },
     task::{CreateTaskError, GamePlayReason},
-    world::reader::WorldReader,
 };
 use log::{debug, error, info};
 use std::{
@@ -36,6 +35,7 @@ use crate::{
         city::{BuildCityFrom, BuildCityFromChange, CityGenerator},
         Concern, TaskError, TaskId,
     },
+    world::reader::WorldReader,
 };
 use crate::{task::TaskBox, utils::collection::slices};
 

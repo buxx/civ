@@ -106,19 +106,21 @@ impl WorldReader {
 
     pub fn tile(&self, x: u64, y: u64) -> Option<&Tile> {
         let index = y * self.width + x;
-        self.items.get(index as usize).map(|i| &i.tile)
+        self.items.get(index as usize).map(|i| &i.0.tile)
     }
 
     pub fn city(&self, x: u64, y: u64) -> Option<&City> {
         let index = y * self.width + x;
-        self.items.get(index as usize).and_then(|i| i.city.as_ref())
+        self.items
+            .get(index as usize)
+            .and_then(|i| i.0.city.as_ref())
     }
 
     pub fn units(&self, x: u64, y: u64) -> &[Unit] {
         let index = y * self.width + x;
         self.items
             .get(index as usize)
-            .map(|i| i.units.as_ref())
+            .map(|i| i.0.units.as_ref())
             .unwrap_or(&[])
     }
 
@@ -126,6 +128,7 @@ impl WorldReader {
         self.items.len() as u64
     }
 
+    // FIXME BS NOW: replace directly by GameSlice ?
     pub fn items(&self, window: &Window) -> Vec<Option<&WorldItem>> {
         window_items(&self.items, window, self.width as i64, self.height as i64)
     }

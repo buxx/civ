@@ -85,7 +85,7 @@ impl TryFrom<&PathBuf> for Snapshot {
 
     fn try_from(value: &PathBuf) -> Result<Self, Self::Error> {
         bincode::deserialize(&fs::read(value).map_err(|e| SnapshotError::Io(e.kind()))?)
-                .map_err(|e| SnapshotError::Serialize(e.to_string()))
+            .map_err(|e| SnapshotError::Serialize(e.to_string()))
     }
 }
 

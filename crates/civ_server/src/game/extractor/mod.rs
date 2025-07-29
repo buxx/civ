@@ -3,16 +3,16 @@ use std::sync::RwLockReadGuard;
 use common::{
     game::slice::{ClientCity, ClientUnit, GameSlice},
     space::window::Window,
-    world::{partial::Slice, reader::WorldReader, CtxTile, Tile},
+    world::{slice::Slice, CtxTile, Tile},
 };
 use extfn::extfn;
 
-use crate::{runner::Runner, state::State};
+use crate::{runner::Runner, state::State, world::reader::WorldReader};
 
 use super::IntoClientModel;
 
 #[extfn]
-pub fn extract_units(self: &RwLockReadGuard<'_, State>, window: &Window) -> Vec<ClientUnit> {
+pub fn extract_units(self: &RwLockReadGuard<'_, State>, window: &Window) -> Slice<Vec<ClientUnit>> {
     let index = self.index();
     index
         .window_units(window)
@@ -59,7 +59,7 @@ pub fn extract_tiles(
     self: &RwLockReadGuard<'_, WorldReader>,
     window: &Window,
 ) -> Slice<CtxTile<Tile>> {
-    let tiles = self.window_tiles(window);
+    let tiles = self.items(window);
     Slice::new(
         *window.start(),
         (window.end().x - window.start().x + 1) as u64,
