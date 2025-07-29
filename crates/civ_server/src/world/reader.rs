@@ -218,12 +218,16 @@ mod test {
         let world_width = 4;
         let world_height = 4;
         let window = Window::new((1, 1).into(), (3, 3).into(), DisplayStep::Close);
+        let world_items: Vec<WorldItem> = world_tiles
+            .into_iter()
+            .map(|t| common::world::item::WorldItem::new(t, None, vec![]).into())
+            .collect();
 
         // WHEN
-        let window_tiles: Vec<CtxTile<Tile>> =
-            window_items(&world_tiles, &window, world_width, world_height)
-                .into_iter()
-                .map(|t| t.into())
+        let window_tiles: Vec<Option<Tile>> =
+            window_items(&world_items, &window, world_width, world_height)
+                .iter()
+                .map(|i| i.map(|i| i.tile.clone()))
                 .collect();
 
         // THEN
@@ -231,17 +235,17 @@ mod test {
             window_tiles,
             vec![
                 //
-                CtxTile::Visible(Tile::new(TerrainType::Plain)),
-                CtxTile::Visible(Tile::new(TerrainType::Plain)),
-                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                Some(Tile::new(TerrainType::Plain)),
+                Some(Tile::new(TerrainType::Plain)),
+                Some(Tile::new(TerrainType::GrassLand)),
                 //
-                CtxTile::Visible(Tile::new(TerrainType::Plain)),
-                CtxTile::Visible(Tile::new(TerrainType::Plain)),
-                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                Some(Tile::new(TerrainType::Plain)),
+                Some(Tile::new(TerrainType::Plain)),
+                Some(Tile::new(TerrainType::GrassLand)),
                 //
-                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
-                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
-                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                Some(Tile::new(TerrainType::GrassLand)),
+                Some(Tile::new(TerrainType::GrassLand)),
+                Some(Tile::new(TerrainType::GrassLand)),
             ]
         );
     }

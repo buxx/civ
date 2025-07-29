@@ -14,3 +14,9 @@ impl std::ops::Deref for WorldItem {
         &self.0
     }
 }
+
+impl From<common::world::item::WorldItem<City, Unit>> for WorldItem {
+    fn from(value: common::world::item::WorldItem<City, Unit>) -> Self {
+        Self(value)
+    }
+}

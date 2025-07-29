@@ -1,8 +1,9 @@
+use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
 
 use crate::world::Tile;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Constructor)]
 pub struct WorldItem<C, U> {
     pub tile: Tile,
     pub city: Option<C>,
