@@ -6,7 +6,7 @@ use crate::{
         city::{CityExploitation, CityId, CityProduction},
         nation::flag::Flag,
         server::ServerResume,
-        slice::{ClientCity, ClientUnit, GameSlice},
+        slice::{ClientCity, ClientUnit},
         unit::UnitId,
         GameFrame,
     },

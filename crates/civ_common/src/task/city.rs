@@ -161,43 +161,6 @@ fn production_task(
         .build()
 }
 
-#[derive(Debug, Builder, Clone, Serialize, Deserialize)]
-pub struct CityTasks {
-    production: CityProductionTask,
-}
-
-impl CityTasks {
-    pub fn new(production: CityProductionTask) -> Self {
-        Self { production }
-    }
-}
-
-impl From<CityTasks> for Vec<TaskBox> {
-    fn from(value: CityTasks) -> Self {
-        vec![Box::new(value.production)]
-    }
-}
-
-impl From<CityTasks> for ClientCityTasks {
-    fn from(value: CityTasks) -> Self {
-        ClientCityTasks::new(value.production.into())
-    }
-}
-
-// impl From<CityTasks> for Vec<TaskWrapper> {
-//     fn from(value: CityTasks) -> Self {
-//         vec![TaskWrapper::City(CityTaskWrapper::Production(
-//             value.production,
-//         ))]
-//     }
-// }
-
-// impl From<CityTasks> for Vec<CityTaskWrapper> {
-//     fn from(value: CityTasks) -> Self {
-//         vec![CityTaskWrapper::Production(value.production)]
-//     }
-// }
-
 #[cfg(test)]
 mod test {
     use common::{

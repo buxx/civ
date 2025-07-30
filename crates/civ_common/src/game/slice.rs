@@ -1,10 +1,7 @@
 use bon::Builder;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    geo::{GeoContext, ImaginaryWorldPoint, WorldPoint},
-    world::{slice::Slice, CtxTile, Tile},
-};
+use crate::geo::{GeoContext, ImaginaryWorldPoint, WorldPoint};
 
 use super::{
     city::{CityExploitation, CityId, CityProduction},
@@ -14,32 +11,21 @@ use super::{
     GameFrame,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct GameSlice {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Slice<T> {
     original: ImaginaryWorldPoint,
     width: u64,
     height: u64,
-    tiles: Slice<CtxTile<Tile>>,
-    cities: Slice<Option<ClientCity>>,
-    units: Slice<Vec<ClientUnit>>,
+    items: Vec<T>,
 }
 
-impl GameSlice {
-    pub fn new(
-        original: ImaginaryWorldPoint,
-        width: u64,
-        height: u64,
-        tiles: Slice<CtxTile<Tile>>,
-        cities: Slice<Option<ClientCity>>,
-        units: Slice<Vec<ClientUnit>>,
-    ) -> Self {
+impl<T> Slice<T> {
+    pub fn new(original: ImaginaryWorldPoint, width: u64, height: u64, items: Vec<T>) -> Self {
         Self {
             original,
             width,
             height,
-            tiles,
-            cities,
-            units,
+            items,
         }
     }
 
@@ -77,28 +63,16 @@ impl GameSlice {
         ImaginaryWorldPoint::new(world_x as i64, world_y as i64)
     }
 
-    pub fn tiles(&self) -> &Slice<CtxTile<Tile>> {
-        &self.tiles
-    }
+    pub fn item(&self, point: &WorldPoint) -> Option<&T> {
+        let rel_point = self
+            .original
+            .relative_to((point.x as i32, point.y as i32))?;
+        let index = (rel_point.y * self.height as i64) + (rel_point.x % self.width as i64);
 
-    pub fn center(&self) -> ImaginaryWorldPoint {
-        self.imaginary_world_point_for_center_rel((0, 0))
-    }
-
-    pub fn cities(&self) -> &Slice<Option<ClientCity>> {
-        &self.cities
-    }
-
-    pub fn cities_mut(&mut self) -> &mut Slice<Option<ClientCity>> {
-        &mut self.cities
-    }
-
-    pub fn units(&self) -> &Slice<Vec<ClientUnit>> {
-        &self.units
-    }
-
-    pub fn units_mut(&mut self) -> &mut Slice<Vec<ClientUnit>> {
-        &mut self.units
+        match self.items.get(index as usize) {
+            Some(tile) => Some(tile),
+            None => None,
+        }
     }
 }
 
@@ -193,6 +167,7 @@ impl ClientUnit {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::world::{CtxTile, TerrainType, Tile};
     use rstest::rstest;
 
     #[rstest]
@@ -213,14 +188,7 @@ mod test {
         #[case] rel: (isize, isize),
         #[case] expected: (u64, u64),
     ) {
-        let world = GameSlice::new(
-            point.into(),
-            size.0,
-            size.1,
-            Slice::zero(),
-            Slice::zero(),
-            Slice::zero(),
-        );
+        let world = Slice::<()>::new(point.into(), size.0, size.1, vec![]);
         assert_eq!(
             world.try_world_point_for_center_rel(rel),
             Some(expected.into())
@@ -248,14 +216,7 @@ mod test {
         #[case] rel: (isize, isize),
         #[case] abs: (u64, u64),
     ) {
-        let world = GameSlice::new(
-            ImaginaryWorldPoint::new(10, 100),
-            4,
-            4,
-            Slice::zero(),
-            Slice::zero(),
-            Slice::zero(),
-        );
+        let world = Slice::<()>::new(ImaginaryWorldPoint::new(10, 100), 4, 4, vec![]);
         assert_eq!(world.try_world_point_for_center_rel(rel), Some(abs.into()));
     }
 
@@ -280,14 +241,130 @@ mod test {
         #[case] rel: (isize, isize),
         #[case] abs: (u64, u64),
     ) {
-        let world = GameSlice::new(
+        let world = Slice::<()>::new(ImaginaryWorldPoint::new(10, 100), 4, 4, vec![]);
+        assert_eq!(world.try_world_point_for_center_rel(rel), Some(abs.into()));
+    }
+
+    #[test]
+    fn test_partial_world_get_tile_minimal() {
+        let world = Slice::new(
+            ImaginaryWorldPoint::new(5, 5),
+            1,
+            1,
+            vec![
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+            ],
+        );
+        assert_eq!(
+            world.item(&WorldPoint::new(6, 6)),
+            Some(&CtxTile::Visible(Tile::new(TerrainType::GrassLand)))
+        );
+    }
+
+    fn partial_world_by_one() -> Slice<CtxTile<Tile>> {
+        Slice::new(
             ImaginaryWorldPoint::new(10, 100),
             4,
             4,
-            Slice::zero(),
-            Slice::zero(),
-            Slice::zero(),
+            vec![
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+            ],
+        )
+    }
+
+    #[rstest]
+    #[case((10, 100), TerrainType::Plain)]
+    #[case((11, 100), TerrainType::GrassLand)]
+    #[case((12, 100), TerrainType::Plain)]
+    #[case((13, 100), TerrainType::GrassLand)]
+    #[case((10, 101), TerrainType::Plain)]
+    #[case((11, 101), TerrainType::GrassLand)]
+    #[case((12, 101), TerrainType::Plain)]
+    #[case((13, 101), TerrainType::GrassLand)]
+    #[case((10, 102), TerrainType::Plain)]
+    #[case((11, 102), TerrainType::GrassLand)]
+    #[case((12, 102), TerrainType::Plain)]
+    #[case((13, 102), TerrainType::GrassLand)]
+    #[case((10, 103), TerrainType::Plain)]
+    #[case((11, 103), TerrainType::GrassLand)]
+    #[case((12, 103), TerrainType::Plain)]
+    #[case((13, 103), TerrainType::GrassLand)]
+    fn test_get_tile_by_one(#[case] point: (u64, u64), #[case] expected_terrain: TerrainType) {
+        let world = partial_world_by_one();
+        assert_eq!(
+            world.item(&point.into()),
+            Some(&CtxTile::Visible(Tile::new(expected_terrain)))
         );
-        assert_eq!(world.try_world_point_for_center_rel(rel), Some(abs.into()));
+    }
+
+    fn create_partial_world_various_by_two() -> Slice<CtxTile<Tile>> {
+        Slice::new(
+            ImaginaryWorldPoint::new(10, 100),
+            4,
+            4,
+            vec![
+                // Line 0
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                // Line 1
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                // Line 2
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                // Line 3
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::Plain)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+                CtxTile::Visible(Tile::new(TerrainType::GrassLand)),
+            ],
+        )
+    }
+
+    #[rstest]
+    #[case((10, 100), TerrainType::Plain)]
+    #[case((11, 100), TerrainType::Plain)]
+    #[case((12, 100), TerrainType::GrassLand)]
+    #[case((13, 100), TerrainType::GrassLand)]
+    #[case((10, 101), TerrainType::Plain)]
+    #[case((11, 101), TerrainType::Plain)]
+    #[case((12, 101), TerrainType::GrassLand)]
+    #[case((13, 101), TerrainType::GrassLand)]
+    #[case((10, 102), TerrainType::Plain)]
+    #[case((11, 102), TerrainType::Plain)]
+    #[case((12, 102), TerrainType::GrassLand)]
+    #[case((13, 102), TerrainType::GrassLand)]
+    #[case((10, 103), TerrainType::Plain)]
+    #[case((11, 103), TerrainType::Plain)]
+    #[case((12, 103), TerrainType::GrassLand)]
+    #[case((13, 103), TerrainType::GrassLand)]
+    fn test_get_tile_by_two(#[case] point: (u64, u64), #[case] expected_terrain: TerrainType) {
+        let world = create_partial_world_various_by_two();
+        assert_eq!(
+            world.item(&point.into()),
+            Some(&CtxTile::Visible(Tile::new(expected_terrain)))
+        );
     }
 }

@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::world::Tile;
 
-#[derive(Debug, Serialize, Deserialize, Constructor)]
-pub struct WorldItem<C, U> {
+#[derive(Debug, Clone, Serialize, Deserialize, Constructor)]
+pub struct WorldItem {
     pub tile: Tile,
-    pub city: Option<C>,
-    pub units: Vec<U>,
+    pub city: Option<City>,
+    pub units: Vec<Unit>,
 }

@@ -88,7 +88,7 @@ impl Runner {
                 ),
             ]);
             // FIXME BS NOW: c'est le bazar entre take place et hello !
-            let game_slice = self.game_slice(&window);
+            let game_slice = self.slice(&window);
 
             shines.push((
                 ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
@@ -147,7 +147,7 @@ impl Runner {
 
         match message {
             ClientToServerInGameMessage::SetWindow(window) => {
-                let game_slice = self.game_slice(&window);
+                let game_slice = self.slice(&window);
 
                 Ok(vec![
                     Effect::State(StateEffect::Client(
@@ -217,7 +217,7 @@ impl Runner {
 
         let server_resume = self.state().server_resume(rules);
         let window = Window::from_around(&point.into(), &resolution);
-        let game_slice = self.game_slice(&window);
+        let game_slice = self.slice(&window);
         Ok(vec![
             Effect::State(StateEffect::Unit(settler_id, UnitEffect::New(settler))),
             Effect::State(StateEffect::Client(

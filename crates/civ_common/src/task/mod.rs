@@ -3,7 +3,7 @@ use bon::Builder;
 use city::{BuildCityFrom, CityGenerator};
 use common::{
     game::{
-        city::CityId,
+        city::{City, CityId},
         unit::{TaskType, UnitId},
         GameFrame,
     },
@@ -17,17 +17,39 @@ use uuid::Uuid;
 
 use crate::{
     effect::{self, Effect},
-    game::{
-        city::City,
-        task::{production::CityProductionTask, settle::Settle},
-        unit::Unit,
-    },
+    game::{task::settle::Settle, unit::Unit},
     runner::RunnerContext,
     state::StateError,
 };
 
 pub mod city;
 pub mod unit;
+
+#[derive(Error, Debug)]
+pub enum CreateTaskError {
+    #[error("Action is not possible: {0}")]
+    GamePlay(GamePlayReason),
+    #[error("Unexpected error: {0}")]
+    Unexpected(String),
+}
+
+#[derive(Error, Debug)]
+pub enum GamePlayReason {
+    #[error("Cant settle: {0}")]
+    CantSettle(CantSettleReason),
+    #[error("City no longer exist")]
+    CityNoLongerExist,
+    #[error("Unit no longer exist")]
+    UnitNoLongerExist,
+    #[error("Player no longer exist")]
+    PlayerNoLongerExist,
+}
+
+#[derive(Error, Debug)]
+pub enum CantSettleReason {
+    #[error("{0} can't settle")]
+    WrongUnitType(UnitType),
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct TaskId(pub Uuid);

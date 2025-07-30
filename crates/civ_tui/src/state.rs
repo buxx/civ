@@ -83,9 +83,10 @@ impl State {
                 self.set_window(Some(window));
             }
             ClientStateMessage::SetGameSlice(slice) => {
-                self.tiles = Some(slice.tiles().clone());
-                self.cities = Some(slice.cities().into());
-                self.units = Some(slice.units().into());
+                todo!()
+                // self.tiles = Some(slice.tiles().clone());
+                // self.cities = Some(slice.cities().into());
+                // self.units = Some(slice.units().into());
             }
             ClientStateMessage::SetCity(city) => {
                 if let Some(cities) = &mut self.cities {

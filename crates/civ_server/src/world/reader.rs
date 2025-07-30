@@ -128,8 +128,7 @@ impl WorldReader {
         self.items.len() as u64
     }
 
-    // FIXME BS NOW: replace directly by GameSlice ?
-    pub fn items(&self, window: &Window) -> Vec<Option<&WorldItem>> {
+    pub fn slice(&self, window: &Window) -> Vec<Option<&WorldItem>> {
         window_items(&self.items, window, self.width as i64, self.height as i64)
     }
 

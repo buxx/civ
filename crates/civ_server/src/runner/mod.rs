@@ -1,3 +1,4 @@
+pub mod slice;
 use async_std::channel::{unbounded, Receiver, Sender};
 use bon::{builder, Builder};
 use common::{
