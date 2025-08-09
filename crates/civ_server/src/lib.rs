@@ -21,7 +21,7 @@ use common::game::GameFrame;
 use common::rules::std1::Std1RuleSet;
 use common::space::D2Size;
 use common::utils::Progress;
-use log::info;
+use log::{info, warn};
 use std::io;
 use std::{
     sync::{Arc, RwLock},
@@ -91,10 +91,12 @@ pub fn start<B: Bridge + 'static>(
     let world = WorldReader::from(args.world.clone(), &progress)?;
     info!("Read world ... OK ({} tiles)", world.shape());
 
+    info!("Read snapshot or create from scratch ...");
     let state = match state {
         Some(state) => state,
         None => build_state(&config, world.size())?,
     };
+    info!("Read snapshot or create from scratch ... OK");
 
     let context = Context::new(Box::new(rules), config.clone());
     let state = Arc::new(RwLock::new(state));
@@ -137,17 +139,14 @@ fn build_state(config: &ServerConfig, world_size: D2Size) -> Result<State, Error
 
             match Snapshot::try_from(snapshot_path) {
                 Ok(snapshot) => State::from(snapshot),
-                Err(SnapshotError::Io(error)) => match error {
-                    io::ErrorKind::NotFound => {
-                        info!(
-                            "No snapshot found at {}: create empty state",
-                            snapshot_path.display()
-                        );
-                        State::empty(world_size)
-                    }
-                    _ => return Err(Error::from(SnapshotError::Io(error))),
-                },
-                Err(error) => return Err(Error::from(error)),
+                Err(SnapshotError::Io(io::ErrorKind::NotFound)) => {
+                    warn!("No snapshot found, create from scratch");
+                    State::empty(world_size)
+                }
+                Err(error) => {
+                    dbg!(&error);
+                    return Err(Error::from(error));
+                }
             }
             .with_replaced_task_type(TaskType::System(SystemTaskType::Snapshot), snapshot_task)
         }

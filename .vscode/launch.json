@@ -22,7 +22,7 @@
             "args": [
                 "world",
                 "--snapshot=snapshot",
-                "--snapshot-interval=10"
+                "--snapshot-interval=100"
             ],
             "cwd": "${workspaceFolder}"
         },
