@@ -90,8 +90,14 @@ pub fn react_server_message(
                 }
                 ClientStateMessage::RemoveUnit(point, unit_id) => {
                     if let Some(ref mut slice) = &mut (game_slice.0) {
+                        let mut is_empty = false;
                         if let Some(Some(units)) = slice.units_mut().get_mut(point) {
                             units.retain(|u| u.id() != unit_id);
+                            is_empty = units.is_empty();
+                        }
+
+                        if is_empty {
+                            slice.units_mut().set(point, None);
                         }
                     }
                     commands.trigger(GameSliceUpdated);
