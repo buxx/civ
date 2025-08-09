@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use async_std::channel::unbounded;
 use civ_server::{
     config::ServerConfig,
     context::Context,
@@ -10,16 +11,23 @@ use civ_server::{
     state::State,
     task::{TaskContext, TaskId},
     test::task::{fibonacci, FibonacciTask},
-    FromClientsChannels, ToClientsChannels,
+    world::reader::WorldReader,
 };
-use common::{game::GameFrame, rules::std1::Std1RuleSet, world::reader::WorldReader};
+use common::{
+    game::GameFrame,
+    network::{
+        message::{ClientToServerMessage, ServerToClientMessage},
+        Client, ClientId,
+    },
+    rules::std1::Std1RuleSet,
+    space::D2Size,
+};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use crossbeam::channel::unbounded;
 
 fn runner(context: Context, state: Arc<RwLock<State>>) -> Runner {
     let world = WorldReader::new(PathBuf::new(), 0, 0, vec![]);
-    let (_, from_clients_receiver): FromClientsChannels = unbounded();
-    let (to_clients_sender, _): ToClientsChannels = unbounded();
+    let (_, from_clients_receiver) = unbounded::<(Client, ClientToServerMessage)>();
+    let (to_clients_sender, _) = unbounded::<(ClientId, ServerToClientMessage)>();
     let runner_context = RunnerContext::new(
         context,
         state,
@@ -36,7 +44,7 @@ fn runner(context: Context, state: Arc<RwLock<State>>) -> Runner {
 
 fn runner_with_fibonacci_tasks(tasks_count: usize, complexity: u64, iterations: usize) {
     let context = Context::new(Box::new(Std1RuleSet), ServerConfig::default());
-    let mut state = State::default();
+    let mut state = State::empty(D2Size::new(1, 1));
     for _ in 0..tasks_count {
         state.tasks_mut().push(Box::new(FibonacciTask::new(
             TaskContext::builder()

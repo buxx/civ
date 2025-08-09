@@ -69,7 +69,7 @@ impl Then for FibonacciTask {
     }
 }
 
-pub fn build_task() -> TaskBox {
+pub fn build_task() -> Box<dyn Task> {
     Box::new(FibonacciTask::new(
         TaskContext::builder()
             .id(TaskId::default())

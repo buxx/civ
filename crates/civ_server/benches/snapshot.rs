@@ -2,26 +2,32 @@ use std::path::PathBuf;
 
 use civ_server::{
     snapshot::Snapshot,
-    state::{clients::Clients, index::Index, State},
+    state::{clients::Clients, State},
+    task::Task,
     test::{city::build_city, task::build_task, unit::build_unit},
 };
-use common::game::GameFrame;
+use common::{game::GameFrame, geo::GeoVec, space::D2Size};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn build_snapshot(units_count: usize, cities_count: usize, tasks_count: usize) -> State {
-    let units = (0..units_count).map(build_unit).collect();
+    let units = (0..units_count)
+        .map(|i| {
+            let unit = build_unit(i);
+            GeoVec::new(unit.geo, vec![unit])
+        })
+        .collect();
     let cities = (0..cities_count).map(build_city).collect();
-    let tasks = (0..tasks_count).map(|_| build_task()).collect();
+    let tasks = (0..tasks_count)
+        .map(|_| build_task())
+        .collect::<Vec<Box<dyn Task>>>();
 
-    let index = Index::default();
-    State::new(
+    State::build_from(
         GameFrame(0),
+        D2Size::new(units_count.max(cities_count), units_count.max(cities_count)),
         Clients::default(),
-        index,
-        tasks,
         cities,
         units,
-        0,
+        &tasks,
     )
 }
 

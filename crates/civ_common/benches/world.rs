@@ -1,7 +1,8 @@
 use common::{
     geo::ImaginaryWorldPoint,
     space::window::{DisplayStep, Window},
-    world::{reader::tiles_from_window, TerrainType, Tile},
+    utils::slice,
+    world::{TerrainType, Tile},
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::hint::black_box;
@@ -16,7 +17,7 @@ fn bench_tiles_from_window(c: &mut Criterion) {
 
     c.bench_function("tiles_from_window", |b| {
         b.iter(|| {
-            tiles_from_window(
+            slice(
                 black_box(&world_tiles),
                 black_box(&window),
                 black_box(world_width),

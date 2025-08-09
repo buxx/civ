@@ -805,7 +805,7 @@ mod test {
                 ImaginaryWorldPoint { x: -1, y: -1 },
                 3,
                 3,
-                vec![None, None, None, None]
+                vec![None, None, None, None, None, None, None, None, None]
             )
         );
         assert_eq!(
@@ -814,7 +814,7 @@ mod test {
                 ImaginaryWorldPoint { x: -1, y: -1 },
                 3,
                 3,
-                vec![None, None, None, None]
+                vec![None, None, None, None, None, None, None, None, None]
             )
         ); // FIXME Unit will be added next in separated message ? it has been received ?
 

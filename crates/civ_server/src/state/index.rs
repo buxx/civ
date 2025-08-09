@@ -18,8 +18,6 @@ use crate::{
 pub struct Index {
     cities_index: FxHashMap<CityId, CityVec2dIndex>,
     units_index: FxHashMap<UnitId, UnitVec2dIndex>,
-    // xy_cities: FxHashMap<WorldPoint, CityId>,
-    // xy_units: FxHashMap<WorldPoint, Vec<UnitId>>,
     flag_cities: FxHashMap<Flag, Vec<CityId>>,
     flag_units: FxHashMap<Flag, Vec<UnitId>>,
     city_tasks: FxHashMap<CityId, Vec<TaskId>>,
@@ -56,19 +54,6 @@ impl Index {
         index
     }
 
-    // // FIXME BS NOW: supprimer reindex ?
-    // pub fn reindex_cities(&mut self, cities: &Vec2d<City>) {
-    //     self.cities_index.clear();
-    //     // self.xy_cities.clear();
-    //     self.flag_cities.clear();
-
-    //     for (i, city) in cities.iter().enumerate() {
-    //         self.cities_index.insert(*city.id(), i);
-    //         // self.xy_cities.insert(*city.geo().point(), *city.id());
-    //         self.flag_cities.insert(*city.flag(), *city.id());
-    //     }
-    // }
-
     pub fn reindex_units_at(&mut self, geos: Vec<GeoContext>, units: &Vec2d<Vec<Unit>>) {
         for geo in geos {
             if let Some(units_) = units.get_by_point(*geo.point()) {
@@ -79,69 +64,6 @@ impl Index {
             }
         }
     }
-
-    // pub fn reindex_tasks(&mut self, tasks: &Vec<TaskBox>) {
-    //     self.city_tasks.clear();
-    //     self.unit_tasks.clear();
-
-    //     for task in tasks {
-    //         match task.concern() {
-    //             Concern::Unit(uuid) => self
-    //                 .unit_tasks
-    //                 .entry(uuid)
-    //                 .or_default()
-    //                 .push(*task.context().id()),
-    //             Concern::City(uuid) => self
-    //                 .city_tasks
-    //                 .entry(uuid)
-    //                 .or_default()
-    //                 .push(*task.context().id()),
-    //             Concern::Nothing => {}
-    //         }
-    //     }
-    // }
-
-    // pub fn xy_cities(&self, point: &WorldPoint) -> Option<&CityId> {
-    //     self.xy_cities.get(point)
-    // }
-
-    // pub fn window_cities(&self, window: &Window) -> Vec<CityId> {
-    //     if !window.step().include_cities() {
-    //         return vec![];
-    //     }
-
-    //     let mut cities = vec![];
-    //     for x in window.start().x..window.end().x {
-    //         for y in window.start().y..window.end().y {
-    //             if let Some(uuid) = self.xy_cities.get(&WorldPoint::new(x as u64, y as u64)) {
-    //                 cities.push(*uuid);
-    //             }
-    //         }
-    //     }
-
-    //     cities
-    // }
-
-    // pub fn xy_units(&self, point: &WorldPoint) -> Option<&Vec<UnitId>> {
-    //     self.xy_units.get(point)
-    // }
-
-    // pub fn window_units(&self, window: &Window) -> Vec<UnitId> {
-    //     if !window.step().include_units() {
-    //         return vec![];
-    //     }
-
-    //     let mut units = vec![];
-    //     for x in window.start().x..window.end().x {
-    //         for y in window.start().y..window.end().y {
-    //             if let Some(uuids) = self.xy_units.get(&WorldPoint::new(x as u64, y as u64)) {
-    //                 units.extend(uuids);
-    //             }
-    //         }
-    //     }
-
-    //     units
-    // }
 
     pub fn apply(&mut self, effects: &Vec<Effect>, cities: &Vec2d<City>, units: &Vec2d<Vec<Unit>>) {
         let mut reindex_units_at = vec![];
