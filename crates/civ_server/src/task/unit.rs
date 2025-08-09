@@ -36,3 +36,14 @@ impl From<UnitTaskWrapper> for TaskBox {
         })
     }
 }
+
+#[macro_export]
+macro_rules! impl_into_unit_task_wrapper {
+    ($type:ty, $variant:expr) => {
+        impl From<$type> for $crate::task::unit::UnitTaskWrapper {
+            fn from(value: $type) -> Self {
+                $variant(value)
+            }
+        }
+    };
+}
