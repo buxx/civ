@@ -75,14 +75,7 @@ pub fn bench_index_write_unit(c: &mut Criterion) {
             )
         })
     });
-    group.bench_function("index_write_unit 1k🚹", |b| {
-        b.iter(|| {
-            index_write_unit(
-                black_box(1_000),
-                &Vec2d::from(D2Size::new(1_000, 1_000), Vec::<City>::new()),
-            )
-        })
-    });
+
     group.bench_function("index_write_unit 10k🚹", |b| {
         b.iter(|| {
             index_write_unit(
@@ -105,14 +98,6 @@ pub fn bench_index_write_unit(c: &mut Criterion) {
             index_write_city(
                 black_box(1_000),
                 &Vec2d::from(D2Size::new(1_000, 1_000), Vec::<GeoVec<Unit>>::new()),
-            )
-        })
-    });
-    group.bench_function("index_write_city 10k🏠", |b| {
-        b.iter(|| {
-            index_write_city(
-                black_box(10_000),
-                &Vec2d::from(D2Size::new(10_000, 10_000), Vec::<GeoVec<Unit>>::new()),
             )
         })
     });
