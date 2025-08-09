@@ -63,6 +63,7 @@ fn index_write_city(city_count: usize, units: &Vec2d<Vec<Unit>>) {
     inject_cities(&mut index, city_count, units);
 }
 
+// FIXME BS NOW: unit/city builds are done during test instead of before
 pub fn bench_index_write_unit(c: &mut Criterion) {
     let mut group = c.benchmark_group("index_write");
     group.sample_size(10);
