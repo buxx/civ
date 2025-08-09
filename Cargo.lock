@@ -1863,6 +1863,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "civ_derive"
+version = "0.1.0"
+dependencies = [
+ "civ_common",
+ "quote",
+ "syn 2.0.90",
+]
+
+[[package]]
 name = "civ_gui"
 version = "0.1.0"
 dependencies = [
@@ -1910,6 +1919,7 @@ dependencies = [
  "bincode",
  "bon",
  "civ_common",
+ "civ_derive",
  "clap",
  "criterion",
  "crossbeam",

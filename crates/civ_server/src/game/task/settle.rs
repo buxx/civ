@@ -1,6 +1,7 @@
 use std::sync::RwLockReadGuard;
 
 use bon::Builder;
+use civ_derive::Geo;
 use common::{
     game::{
         tasks::client::{settle::ClientSettle, ClientTaskType},
@@ -23,7 +24,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Builder, Clone, Serialize, Deserialize)]
+#[derive(Debug, Builder, Clone, Serialize, Deserialize, Geo)]
 pub struct Settle {
     context: TaskContext,
     geo: GeoContext,
@@ -59,16 +60,6 @@ impl Settle {
             )
             .build();
         Ok(task)
-    }
-}
-
-impl Geo for Settle {
-    fn geo(&self) -> &GeoContext {
-        &self.geo
-    }
-
-    fn geo_mut(&mut self) -> &mut GeoContext {
-        &mut self.geo
     }
 }
 

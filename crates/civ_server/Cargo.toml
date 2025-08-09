@@ -8,6 +8,7 @@ name = "server"
 path = "src/main.rs"
 
 [dependencies]
+civ_derive = { path = "../civ_derive", features = ["geo"] }
 civ_common = { path = "../civ_common" }
 env_logger.workspace = true
 log.workspace = true

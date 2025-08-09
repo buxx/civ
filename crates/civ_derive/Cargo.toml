@@ -1,0 +1,17 @@
+[package]
+name = "civ_derive"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[features]
+
+default = []
+geo = []
+
+[dependencies]
+civ_common = { path = "../civ_common" }
+syn = "2.0.58"
+quote = "1.0.35"

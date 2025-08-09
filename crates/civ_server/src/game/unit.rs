@@ -1,4 +1,5 @@
 use bon::Builder;
+use civ_derive::Geo;
 #[cfg(test)]
 use common::geo::WorldPoint;
 use common::{
@@ -18,7 +19,7 @@ use crate::{state::State, task::unit::UnitTaskWrapper};
 use super::IntoClientModel;
 
 // Note: fields are pub to permit factori usage in other crates ...
-#[derive(Debug, Builder, Clone, Serialize, Deserialize)]
+#[derive(Debug, Builder, Clone, Serialize, Deserialize, Geo)]
 pub struct Unit {
     pub id: UnitId,
     pub flag: Flag,
@@ -47,16 +48,6 @@ impl Unit {
 
     pub fn set_task(&mut self, task: Option<UnitTaskWrapper>) {
         self.task = task;
-    }
-}
-
-impl Geo for Unit {
-    fn geo(&self) -> &GeoContext {
-        &self.geo
-    }
-
-    fn geo_mut(&mut self) -> &mut GeoContext {
-        &mut self.geo
     }
 }
 

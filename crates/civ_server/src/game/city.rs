@@ -1,4 +1,5 @@
 use bon::Builder;
+use civ_derive::Geo;
 use common::{
     game::{
         city::{CityExploitation, CityId, CityProduction},
@@ -15,7 +16,7 @@ use crate::{state::State, task::city::CityTasks};
 
 use super::IntoClientModel;
 
-#[derive(Debug, Builder, Clone, Serialize, Deserialize)]
+#[derive(Debug, Builder, Clone, Serialize, Deserialize, Geo)]
 pub struct City {
     id: CityId,
     flag: Flag,
@@ -57,16 +58,6 @@ impl City {
 
     pub fn exploitation_mut(&mut self) -> &mut CityExploitation {
         &mut self.exploitation
-    }
-}
-
-impl Geo for City {
-    fn geo(&self) -> &GeoContext {
-        &self.geo
-    }
-
-    fn geo_mut(&mut self) -> &mut GeoContext {
-        &mut self.geo
     }
 }
 
