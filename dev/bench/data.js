@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754750629567,
+  "lastUpdate": 1754751408498,
   "repoUrl": "https://github.com/buxx/civ",
   "entries": {
     "Benchmark": [
@@ -3430,6 +3430,72 @@ window.BENCHMARK_DATA = {
           {
             "name": "index_write/index_write_city 10k🏠",
             "value": 84,
+            "range": "± 0",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "committer": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "distinct": true,
+          "id": "0d20ef66953406f448577ee2c751d70c163427b0",
+          "message": "chore: improve snaphot error handling",
+          "timestamp": "2025-08-09T16:53:26+02:00",
+          "tree_id": "2cdb393c1c3ebb94b598ad4657bca789221060e6",
+          "url": "https://github.com/buxx/civ/commit/0d20ef66953406f448577ee2c751d70c163427b0"
+        },
+        "date": 1754751407404,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "tiles_from_window",
+            "value": 619,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1🚹",
+            "value": 43,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1k🚹",
+            "value": 744003,
+            "range": "± 27190",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 10k🚹",
+            "value": 107811001,
+            "range": "± 1563306",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1🏠",
+            "value": 80,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1k🏠",
+            "value": 82,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 10k🏠",
+            "value": 85,
             "range": "± 0",
             "unit": "ns/iter"
           }
