@@ -26,20 +26,22 @@ pub type ToClientsChannels = (
     Receiver<(ClientId, ServerToClientMessage)>,
 );
 
+pub type Result<T> = std::result::Result<
+    (
+        T,
+        Receiver<(Client, ClientToServerMessage)>,
+        Sender<(ClientId, ServerToClientMessage)>,
+    ),
+    BridgeBuildError,
+>;
+
 pub trait BridgeBuilder<T> {
     fn build(
         &self,
         context: Context,
         state: Arc<RwLock<State>>,
         config: &ServerConfig,
-    ) -> Result<
-        (
-            T,
-            Receiver<(Client, ClientToServerMessage)>,
-            Sender<(ClientId, ServerToClientMessage)>,
-        ),
-        BridgeBuildError,
-    >;
+    ) -> Result<T>;
 }
 
 #[derive(Debug, Error)]

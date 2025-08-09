@@ -97,6 +97,7 @@ pub enum ClientToServerCityMessage {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[allow(clippy::large_enum_variant)]
 pub enum ServerToClientMessage {
     Establishment(ServerToClientEstablishmentMessage),
     InGame(ServerToClientInGameMessage),
@@ -114,6 +115,7 @@ impl From<ServerToClientEstablishmentMessage> for ServerToClientMessage {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum ServerToClientInGameMessage {
     State(ClientStateMessage),
