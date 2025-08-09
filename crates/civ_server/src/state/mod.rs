@@ -35,7 +35,8 @@ pub struct State {
     clients: Clients,
     index: Index,
     tasks: Vec<TaskBox>,
-    cities: Vec2d<City>,
+    // Don't store a Vec2d<Box<City>> to not allocate useless memory
+    cities: Vec2d<Box<City>>,
     cities_count: usize,
     units: Vec2d<Vec<Unit>>,
     units_count: usize,
@@ -93,7 +94,7 @@ impl State {
         clients: Clients,
         index: Index,
         tasks: Vec<TaskBox>,
-        cities: Vec2d<City>,
+        cities: Vec2d<Box<City>>,
         cities_count: usize,
         units: Vec2d<Vec<Unit>>,
         units_count: usize,
@@ -182,7 +183,8 @@ impl State {
                     },
                     StateEffect::City(_, effect) => match effect {
                         CityEffect::New(city) => {
-                            *self.cities.get_by_point_mut(*city.geo().point()) = Some(city.clone());
+                            *self.cities.get_by_point_mut(*city.geo().point()) =
+                                Some(Box::new(city.clone()));
                             self.cities_count += 1;
                         }
                         CityEffect::Replace(city) => {
@@ -236,7 +238,7 @@ impl State {
         self.index.apply(effects, &self.cities, &self.units);
     }
 
-    pub fn cities(&self) -> &Vec2d<City> {
+    pub fn cities(&self) -> &Vec2d<Box<City>> {
         &self.cities
     }
 

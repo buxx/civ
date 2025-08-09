@@ -26,13 +26,13 @@ pub struct Index {
 
 impl Index {
     pub fn build_from(
-        cities: &Vec2d<City>,
+        cities: &Vec2d<Box<City>>,
         units: &Vec2d<Vec<Unit>>,
         tasks: &Vec<Box<dyn Task>>,
     ) -> Self {
         let mut index = Self::default();
 
-        for city in cities.iter() {
+        for city in cities.into_iter() {
             if let Some(city) = city {
                 index.apply_new_city(city, cities);
             }
@@ -65,7 +65,12 @@ impl Index {
         }
     }
 
-    pub fn apply(&mut self, effects: &Vec<Effect>, cities: &Vec2d<City>, units: &Vec2d<Vec<Unit>>) {
+    pub fn apply(
+        &mut self,
+        effects: &Vec<Effect>,
+        cities: &Vec2d<Box<City>>,
+        units: &Vec2d<Vec<Unit>>,
+    ) {
         let mut reindex_units_at = vec![];
 
         for effect in effects {
@@ -164,7 +169,7 @@ impl Index {
         }
     }
 
-    fn apply_new_city(&mut self, city: &City, cities: &Vec2d<City>) {
+    fn apply_new_city(&mut self, city: &City, cities: &Vec2d<Box<City>>) {
         let index = cities.index(*city.geo().point());
         self.cities_index.insert(*city.id(), CityVec2dIndex(index));
         self.flag_cities
@@ -174,7 +179,7 @@ impl Index {
         // self.city_tasks already updated by TaskEffect::Push
     }
 
-    fn apply_remove_city(&mut self, city: &City, _cities: &Vec2d<City>) {
+    fn apply_remove_city(&mut self, city: &City, _cities: &Vec2d<Box<City>>) {
         self.cities_index.remove(city.id());
         self.flag_cities
             .get_mut(city.flag())

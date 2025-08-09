@@ -23,7 +23,7 @@ pub struct Snapshot {
     frame_i: GameFrame,
     world_size: D2Size,
     tasks: Vec<Box<dyn Task>>,
-    cities: Vec2d<City>,
+    cities: Vec2d<Box<City>>,
     cities_count: usize,
     units: Vec2d<Vec<Unit>>,
     units_count: usize,
@@ -56,7 +56,7 @@ impl Snapshot {
         &self.tasks
     }
 
-    pub fn cities(&self) -> &Vec2d<City> {
+    pub fn cities(&self) -> &Vec2d<Box<City>> {
         &self.cities
     }
 

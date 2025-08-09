@@ -7,7 +7,7 @@ use civ_server::{
 use common::{geo::GeoVec, space::D2Size, utils::Vec2d};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-fn inject_units(index: &mut Index, unit_count: usize, cities: &Vec2d<City>) {
+fn inject_units(index: &mut Index, unit_count: usize, cities: &Vec2d<Box<City>>) {
     let mut units = vec![];
 
     for i in 0..unit_count {
@@ -39,13 +39,13 @@ fn inject_cities(index: &mut Index, city_count: usize, units: &Vec2d<Vec<Unit>>)
         cities.push(city);
     }
 
-    let cities: Vec2d<City> = Vec2d::from(D2Size::new(city_count, city_count), cities);
+    let cities: Vec2d<Box<City>> = Vec2d::from(D2Size::new(city_count, city_count), cities);
 
     for city in cities.iter().flatten() {
         index.apply(
             &vec![Effect::State(StateEffect::City(
                 *city.id(),
-                CityEffect::New(city.clone()),
+                CityEffect::New(*city.clone()),
             ))],
             &cities,
             units,
@@ -53,7 +53,7 @@ fn inject_cities(index: &mut Index, city_count: usize, units: &Vec2d<Vec<Unit>>)
     }
 }
 
-fn index_write_unit(unit_count: usize, cities: &Vec2d<City>) {
+fn index_write_unit(unit_count: usize, cities: &Vec2d<Box<City>>) {
     let mut index = Index::default();
     inject_units(&mut index, unit_count, cities);
 }
@@ -73,6 +73,15 @@ pub fn bench_index_write_unit(c: &mut Criterion) {
             index_write_unit(
                 black_box(1),
                 &Vec2d::from(D2Size::new(1, 1), Vec::<City>::new()),
+            )
+        })
+    });
+
+    group.bench_function("index_write_unit 1k🚹", |b| {
+        b.iter(|| {
+            index_write_unit(
+                black_box(1_000),
+                &Vec2d::from(D2Size::new(1_000, 1_000), Vec::<City>::new()),
             )
         })
     });
@@ -99,6 +108,14 @@ pub fn bench_index_write_unit(c: &mut Criterion) {
             index_write_city(
                 black_box(1_000),
                 &Vec2d::from(D2Size::new(1_000, 1_000), Vec::<GeoVec<Unit>>::new()),
+            )
+        })
+    });
+    group.bench_function("index_write_city 10k🏠", |b| {
+        b.iter(|| {
+            index_write_city(
+                black_box(10_000),
+                &Vec2d::from(D2Size::new(10_000, 10_000), Vec::<GeoVec<Unit>>::new()),
             )
         })
     });
