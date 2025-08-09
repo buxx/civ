@@ -8,8 +8,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     effect::Effect,
+    impl_boxed, impl_with_context,
     runner::RunnerContext,
-    task::{Concern, Task, TaskBox, TaskContext, TaskError, Then},
+    task::{Concern, Task, TaskBox, TaskContext, TaskError, Then, WithContext},
 };
 
 #[derive(Debug, Builder, Clone, Serialize, Deserialize)]
@@ -25,6 +26,9 @@ impl CityProductionTask {
     }
 }
 
+impl_boxed!(CityProductionTask);
+impl_with_context!(CityProductionTask);
+
 #[typetag::serde]
 impl Task for CityProductionTask {
     fn type_(&self) -> TaskType {
@@ -33,14 +37,6 @@ impl Task for CityProductionTask {
 
     fn concern(&self) -> Concern {
         Concern::City(self.city)
-    }
-
-    fn context(&self) -> &TaskContext {
-        &self.context
-    }
-
-    fn boxed(&self) -> TaskBox {
-        Box::new(self.clone())
     }
 }
 

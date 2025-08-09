@@ -10,6 +10,7 @@ proc-macro = true
 
 default = []
 geo = []
+task = []
 
 [dependencies]
 civ_common = { path = "../civ_common" }

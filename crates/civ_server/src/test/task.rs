@@ -1,5 +1,6 @@
 use crate::{
     effect::{Effect, StateEffect},
+    impl_boxed, impl_with_context,
     runner::RunnerContext,
     task::{Concern, Task, TaskBox, TaskContext, TaskError, TaskId, Then},
 };
@@ -39,6 +40,9 @@ impl FibonacciTask {
     }
 }
 
+impl_boxed!(FibonacciTask);
+impl_with_context!(FibonacciTask);
+
 #[typetag::serde]
 impl Task for FibonacciTask {
     fn type_(&self) -> TaskType {
@@ -49,17 +53,9 @@ impl Task for FibonacciTask {
         Concern::Nothing
     }
 
-    fn context(&self) -> &TaskContext {
-        &self.context
-    }
-
     fn tick(&self, _frame: GameFrame) -> Vec<Effect> {
         fibonacci(self.complexity);
         vec![Effect::State(StateEffect::Testing)]
-    }
-
-    fn boxed(&self) -> TaskBox {
-        Box::new(self.clone())
     }
 }
 

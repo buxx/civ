@@ -16,7 +16,8 @@ use crate::{
     context::Context,
     effect::Effect,
     game::unit::Unit,
-    impl_then_transform_unit_into_city, impl_with_city_name, impl_with_unit,
+    impl_boxed, impl_then_transform_unit_into_city, impl_with_city_name, impl_with_context,
+    impl_with_unit,
     runner::RunnerContext,
     state::State,
     task::{
@@ -64,6 +65,8 @@ impl Settle {
     }
 }
 
+impl_boxed!(Settle);
+impl_with_context!(Settle);
 impl_with_unit!(Settle, settler);
 impl_with_city_name!(Settle, city_name);
 impl_then_transform_unit_into_city!(Settle);
@@ -74,16 +77,8 @@ impl Task for Settle {
         TaskType::Unit(UnitTaskType::Settle)
     }
 
-    fn context(&self) -> &TaskContext {
-        &self.context
-    }
-
     fn concern(&self) -> Concern {
         Concern::Unit(*self.settler.id())
-    }
-
-    fn boxed(&self) -> TaskBox {
-        Box::new(self.clone())
     }
 }
 

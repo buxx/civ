@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use super::{Concern, Task, TaskBox, TaskContext, TaskError, TaskId, Then};
-use crate::{effect::Effect, runner::RunnerContext};
+use crate::{effect::Effect, impl_boxed, impl_with_context, runner::RunnerContext};
 use bon::Builder;
 use common::game::unit::{SystemTaskType, TaskType};
 use log::info;
@@ -22,6 +22,9 @@ impl SnapshotTask {
     }
 }
 
+impl_boxed!(SnapshotTask);
+impl_with_context!(SnapshotTask);
+
 #[typetag::serde]
 impl Task for SnapshotTask {
     fn type_(&self) -> TaskType {
@@ -30,14 +33,6 @@ impl Task for SnapshotTask {
 
     fn concern(&self) -> Concern {
         Concern::Nothing
-    }
-
-    fn context(&self) -> &TaskContext {
-        &self.context
-    }
-
-    fn boxed(&self) -> TaskBox {
-        Box::new(self.clone())
     }
 }
 

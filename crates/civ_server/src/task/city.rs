@@ -14,9 +14,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     game::{city::City, task::production::CityProductionTask},
     runner::RunnerContext,
+    task::WithContext,
 };
 
-use super::{Task, TaskBox, TaskContext, TaskError, TaskId};
+use super::{TaskBox, TaskContext, TaskError, TaskId};
 
 #[derive(Builder)]
 pub struct CityGenerator<'a> {

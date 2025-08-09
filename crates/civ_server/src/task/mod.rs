@@ -40,15 +40,28 @@ impl Default for TaskId {
 
 pub type TaskBox = Box<dyn Task + Send + Sync>;
 
+pub trait Boxed {
+    fn boxed(&self) -> TaskBox;
+}
+
+#[macro_export]
+macro_rules! impl_boxed {
+    ($type:ty) => {
+        impl $crate::task::Boxed for $type {
+            fn boxed(&self) -> TaskBox {
+                Box::new(self.clone())
+            }
+        }
+    };
+}
+
 #[typetag::serde(tag = "type")]
-pub trait Task: DynClone + Then {
+pub trait Task: DynClone + Then + Boxed + WithContext {
     fn type_(&self) -> TaskType;
     fn concern(&self) -> Concern;
     fn tick(&self, _frame: GameFrame) -> Vec<Effect> {
         vec![]
     }
-    fn context(&self) -> &TaskContext;
-    fn boxed(&self) -> TaskBox;
 }
 dyn_clone::clone_trait_object!(Task);
 
@@ -182,6 +195,21 @@ impl TaskContext {
         let current = frame.0 - self.start.0;
         current as f32 / total as f32
     }
+}
+
+pub trait WithContext {
+    fn context(&self) -> &TaskContext;
+}
+
+#[macro_export]
+macro_rules! impl_with_context {
+    ($type:ty) => {
+        impl $crate::task::WithContext for $type {
+            fn context(&self) -> &TaskContext {
+                &self.context
+            }
+        }
+    };
 }
 
 pub enum TaskContainer {
