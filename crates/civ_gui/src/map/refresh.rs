@@ -223,7 +223,6 @@ pub fn react_game_slice_updated(
     mut center: ResMut<CurrentGridCenterResource>,
     frame: Res<GameFrameResource>,
     mut waiting: ResMut<WaitingForGameSlice>,
-    // mut camera_initialized: ResMut<CameraInitializedResource>,
 ) {
     waiting.0 = false;
 
@@ -239,11 +238,6 @@ pub fn react_game_slice_updated(
         GridUpdater::new(window, transform, &tiles, &cities, &units).update(&mut commands, &ctx);
 
         center.0 = Some(slice.center());
-        // if !camera_initialized.0 && center.0.is_some() {
-        //     camera_initialized.0 = true;
-        //     commands.trigger(CenterCameraOnGrid)
-        // }
-
         commands.trigger(GameSlicePropagated);
     }
 }
