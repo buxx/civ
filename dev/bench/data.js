@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754740055763,
+  "lastUpdate": 1754740456482,
   "repoUrl": "https://github.com/buxx/civ",
   "entries": {
     "Benchmark": [
@@ -3047,6 +3047,60 @@ window.BENCHMARK_DATA = {
             "name": "index_write/index_write_city 10k🏠",
             "value": 44179674033,
             "range": "± 3262280123",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "committer": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "distinct": true,
+          "id": "1be1e7292df31f950c63285b7829d6efc0b56158",
+          "message": "chore: add fixme",
+          "timestamp": "2025-08-09T13:47:57+02:00",
+          "tree_id": "aa72a65f46ceb36c0b56ce1bea137d29e788b184",
+          "url": "https://github.com/buxx/civ/commit/1be1e7292df31f950c63285b7829d6efc0b56158"
+        },
+        "date": 1754740456062,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "tiles_from_window",
+            "value": 635,
+            "range": "± 28",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1🚹",
+            "value": 237,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 10k🚹",
+            "value": 17563126096,
+            "range": "± 3250359132",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1🏠",
+            "value": 308,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1k🏠",
+            "value": 29428850,
+            "range": "± 1160896",
             "unit": "ns/iter"
           }
         ]
