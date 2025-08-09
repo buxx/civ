@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754740456482,
+  "lastUpdate": 1754740931986,
   "repoUrl": "https://github.com/buxx/civ",
   "entries": {
     "Benchmark": [
@@ -3101,6 +3101,72 @@ window.BENCHMARK_DATA = {
             "name": "index_write/index_write_city 1k🏠",
             "value": 29428850,
             "range": "± 1160896",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "committer": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "distinct": true,
+          "id": "890738895e58b2f2f2a81010811a6fb830aed753",
+          "message": "feat: reduce memory usage of cities by using box",
+          "timestamp": "2025-08-09T13:58:56+02:00",
+          "tree_id": "01383a06cad7279ee16e1e09adc5e8e2b30628b3",
+          "url": "https://github.com/buxx/civ/commit/890738895e58b2f2f2a81010811a6fb830aed753"
+        },
+        "date": 1754740931467,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "tiles_from_window",
+            "value": 619,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1🚹",
+            "value": 235,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1k🚹",
+            "value": 3645349,
+            "range": "± 83686",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 10k🚹",
+            "value": 635073215,
+            "range": "± 3622870",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1🏠",
+            "value": 344,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1k🏠",
+            "value": 3266626,
+            "range": "± 68282",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 10k🏠",
+            "value": 555105471,
+            "range": "± 3144833",
             "unit": "ns/iter"
           }
         ]
