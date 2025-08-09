@@ -90,6 +90,7 @@ impl Plugin for BridgePlugin {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum BridgeMessage {
     Internal(InternalBridgeMessage),
     Server(ServerToClientMessage),

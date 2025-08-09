@@ -89,6 +89,7 @@ impl State {
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         frame_i: GameFrame,
         clients: Clients,

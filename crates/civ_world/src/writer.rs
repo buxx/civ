@@ -5,6 +5,7 @@ use common::world::Chunk;
 use crate::WorldGeneratorError;
 
 pub trait Writer {
+    #[allow(unused)]
     fn write_chunk(&self, chunk: Chunk) -> Result<(), WorldGeneratorError>;
 }
 
@@ -13,6 +14,7 @@ pub struct FilesWriter {
 }
 
 impl FilesWriter {
+    #[allow(unused)]
     pub fn new(target: PathBuf) -> Self {
         Self { target }
     }

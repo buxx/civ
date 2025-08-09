@@ -32,17 +32,13 @@ impl Index {
     ) -> Self {
         let mut index = Self::default();
 
-        for city in cities.into_iter() {
-            if let Some(city) = city {
-                index.apply_new_city(city, cities);
-            }
+        for city in cities.into_iter().flatten() {
+            index.apply_new_city(city, cities);
         }
 
-        for units_ in units.iter() {
-            if let Some(units__) = units_ {
-                for unit in units__ {
-                    index.apply_new_unit(unit, units);
-                }
+        for units_ in units.iter().flatten() {
+            for unit in units_ {
+                index.apply_new_unit(unit, units);
             }
         }
 

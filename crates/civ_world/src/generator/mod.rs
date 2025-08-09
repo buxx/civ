@@ -11,6 +11,7 @@ use crate::{writer::Writer, WorldGeneratorError};
 pub mod random;
 
 pub trait Generator {
+    #[allow(unused)]
     fn generate_chunk(
         &self,
         world: &World,
@@ -18,6 +19,7 @@ pub trait Generator {
         chunk_y: u64,
     ) -> Result<Chunk, WorldGeneratorError>;
 
+    #[allow(unused)]
     fn generate(
         &self,
         world: &World,
@@ -59,11 +61,4 @@ pub trait Generator {
             .map(|s| s.send_blocking(Progress::Finished));
         Ok(())
     }
-}
-
-pub trait GeneratorConfig {
-    fn width(&self) -> usize;
-    fn height(&self) -> usize;
-    fn chunk_size(&self) -> usize;
-    fn target(&self) -> &PathBuf;
 }
