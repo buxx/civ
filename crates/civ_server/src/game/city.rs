@@ -1,12 +1,9 @@
 use bon::Builder;
 use civ_derive::Geo;
-use common::{
-    game::{
-        city::{CityExploitation, CityId, CityProduction},
-        nation::flag::Flag,
-        slice::ClientCity,
-    },
-    geo::Geo,
+use common::game::{
+    city::{CityExploitation, CityId, CityProduction},
+    nation::flag::Flag,
+    slice::ClientCity,
 };
 
 use common::geo::GeoContext;

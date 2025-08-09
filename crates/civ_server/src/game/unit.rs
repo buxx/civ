@@ -1,15 +1,12 @@
 use bon::Builder;
 use civ_derive::Geo;
+use common::game::{
+    nation::flag::Flag,
+    slice::ClientUnit,
+    unit::{UnitCan, UnitId, UnitType},
+};
 #[cfg(test)]
 use common::geo::WorldPoint;
-use common::{
-    game::{
-        nation::flag::Flag,
-        slice::ClientUnit,
-        unit::{UnitCan, UnitId, UnitType},
-    },
-    geo::Geo,
-};
 
 use common::geo::GeoContext;
 use serde::{Deserialize, Serialize};
