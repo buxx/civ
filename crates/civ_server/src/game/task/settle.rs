@@ -16,11 +16,12 @@ use crate::{
     context::Context,
     effect::Effect,
     game::unit::Unit,
+    impl_then_transform_unit_into_city, impl_with_city_name, impl_with_unit,
     runner::RunnerContext,
     state::State,
     task::{
-        unit::UnitTaskWrapper, CityName, Concern, Task, TaskBox, TaskContext, TaskError, TaskId,
-        Then, ThenTransformUnitIntoCity, WithUnit,
+        unit::UnitTaskWrapper, Concern, Task, TaskBox, TaskContext, TaskError, TaskId, Then,
+        ThenTransformUnitIntoCity, WithCityName, WithUnit,
     },
 };
 
@@ -63,25 +64,9 @@ impl Settle {
     }
 }
 
-impl WithUnit for Settle {
-    fn unit(&self) -> &Unit {
-        &self.settler
-    }
-}
-
-impl CityName for Settle {
-    fn city_name(&self) -> &str {
-        &self.city_name
-    }
-}
-
-impl ThenTransformUnitIntoCity for Settle {}
-
-impl Then for Settle {
-    fn then(&self, context: &RunnerContext) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError> {
-        self.transform_unit_into_city(context)
-    }
-}
+impl_with_unit!(Settle, settler);
+impl_with_city_name!(Settle, city_name);
+impl_then_transform_unit_into_city!(Settle);
 
 #[typetag::serde]
 impl Task for Settle {

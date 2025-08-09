@@ -82,15 +82,32 @@ pub trait WithUnit {
     fn unit(&self) -> &Unit;
 }
 
-// pub trait WithCity {
-//     fn city(&self) -> &City;
-// }
-
-pub trait CityName {
+#[macro_export]
+macro_rules! impl_with_unit {
+    ($type:ty, $field:ident) => {
+        impl WithUnit for $type {
+            fn unit(&self) -> &Unit {
+                &self.$field
+            }
+        }
+    };
+}
+pub trait WithCityName {
     fn city_name(&self) -> &str;
 }
 
-pub trait ThenTransformUnitIntoCity: WithUnit + CityName + Geo {
+#[macro_export]
+macro_rules! impl_with_city_name {
+    ($type:ty, $field:ident) => {
+        impl WithCityName for $type {
+            fn city_name(&self) -> &str {
+                &self.$field
+            }
+        }
+    };
+}
+
+pub trait ThenTransformUnitIntoCity: WithUnit + WithCityName + Geo {
     fn transform_unit_into_city(
         &self,
         context: &RunnerContext,
@@ -118,6 +135,23 @@ pub trait ThenTransformUnitIntoCity: WithUnit + CityName + Geo {
             .generate()
     }
 }
+
+#[macro_export]
+macro_rules! impl_then_transform_unit_into_city {
+    ($type:ty) => {
+        impl ThenTransformUnitIntoCity for $type {}
+
+        impl Then for $type {
+            fn then(
+                &self,
+                context: &RunnerContext,
+            ) -> Result<(Vec<Effect>, Vec<TaskBox>), TaskError> {
+                self.transform_unit_into_city(context)
+            }
+        }
+    };
+}
+
 #[derive(Debug, Builder, Clone, PartialEq, Serialize, Deserialize)]
 
 pub struct TaskContext {
