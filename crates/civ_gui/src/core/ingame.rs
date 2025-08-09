@@ -81,7 +81,9 @@ pub fn react_server_message(
                 ClientStateMessage::SetUnit(unit) => {
                     if let Some(ref mut slice) = &mut (game_slice.0) {
                         if let Some(Some(units)) = slice.units_mut().get_mut(unit.geo().point()) {
-                            units.push(unit.clone())
+                            if let Some(index) = units.iter().position(|u| u.id() == unit.id()) {
+                                units[index] = unit.clone();
+                            }
                         }
                     }
                     commands.trigger(GameSliceUpdated);

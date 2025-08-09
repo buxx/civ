@@ -144,7 +144,6 @@ fn build_state(config: &ServerConfig, world_size: D2Size) -> Result<State, Error
                     State::empty(world_size)
                 }
                 Err(error) => {
-                    dbg!(&error);
                     return Err(Error::from(error));
                 }
             }

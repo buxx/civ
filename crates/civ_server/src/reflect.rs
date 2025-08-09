@@ -130,9 +130,7 @@ impl Runner {
         let clients = state.clients().concerned(unit.geo());
         if !clients.is_empty() {
             return Ok(vec![(
-                ServerToClientMessage::InGame(ServerToClientInGameMessage::State(
-                    ClientStateMessage::SetUnit(unit.clone().into_client(&state)),
-                )),
+                ClientStateMessage::SetUnit(unit.clone().into_client(&state)).into(),
                 clients,
             )]);
         }
