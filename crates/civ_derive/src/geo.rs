@@ -8,7 +8,7 @@ pub(crate) fn derive_geo(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
 
-    let expanded = quote! {
+    TokenStream::from(quote! {
         impl common::geo::Geo for #name {
             fn geo(&self) -> &GeoContext {
                 &self.geo
@@ -18,7 +18,5 @@ pub(crate) fn derive_geo(input: TokenStream) -> TokenStream {
                 &mut self.geo
             }
         }
-    };
-
-    TokenStream::from(expanded)
+    })
 }
