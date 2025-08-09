@@ -7,16 +7,29 @@ use civ_server::{
 use common::{geo::GeoVec, space::D2Size, utils::Vec2d};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-fn inject_units(index: &mut Index, unit_count: usize, cities: &Vec2d<Box<City>>) {
+fn build_units(count: usize) -> Vec2d<Vec<Unit>> {
     let mut units = vec![];
 
-    for i in 0..unit_count {
+    for i in 0..count {
         let unit = build_unit(i);
         units.push(GeoVec::new(unit.geo, vec![unit]));
     }
 
-    let units = Vec2d::from(D2Size::new(unit_count, unit_count), units);
+    Vec2d::from(D2Size::new(count, count), units)
+}
 
+fn build_cities(count: usize) -> Vec2d<Box<City>> {
+    let mut cities = vec![];
+
+    for i in 0..count {
+        let city = build_city(i);
+        cities.push(city);
+    }
+
+    Vec2d::from(D2Size::new(count, count), cities)
+}
+
+fn inject_units(index: &mut Index, units: &Vec2d<Vec<Unit>>, cities: &Vec2d<Box<City>>) {
     for units_ in units.iter().flatten() {
         for unit in units_ as &Vec<Unit> {
             index.apply(
@@ -25,99 +38,69 @@ fn inject_units(index: &mut Index, unit_count: usize, cities: &Vec2d<Box<City>>)
                     UnitEffect::New(unit.clone()),
                 ))],
                 cities,
-                &units,
+                units,
             );
         }
     }
 }
 
-fn inject_cities(index: &mut Index, city_count: usize, units: &Vec2d<Vec<Unit>>) {
-    let mut cities = vec![];
-
-    for i in 0..city_count {
-        let city = build_city(i);
-        cities.push(city);
-    }
-
-    let cities: Vec2d<Box<City>> = Vec2d::from(D2Size::new(city_count, city_count), cities);
-
+fn inject_cities(index: &mut Index, cities: &Vec2d<Box<City>>, units: &Vec2d<Vec<Unit>>) {
     for city in cities.iter().flatten() {
         index.apply(
             &vec![Effect::State(StateEffect::City(
                 *city.id(),
                 CityEffect::New(*city.clone()),
             ))],
-            &cities,
+            cities,
             units,
         );
     }
 }
 
-fn index_write_unit(unit_count: usize, cities: &Vec2d<Box<City>>) {
-    let mut index = Index::default();
-    inject_units(&mut index, unit_count, cities);
-}
-
-fn index_write_city(city_count: usize, units: &Vec2d<Vec<Unit>>) {
-    let mut index = Index::default();
-    inject_cities(&mut index, city_count, units);
-}
-
-// FIXME BS NOW: unit/city builds are done during test instead of before
 pub fn bench_index_write_unit(c: &mut Criterion) {
     let mut group = c.benchmark_group("index_write");
     group.sample_size(10);
 
+    let mut index = Index::default();
+    let units = build_units(1);
+    let cities = build_cities(1);
     group.bench_function("index_write_unit 1🚹", |b| {
-        b.iter(|| {
-            index_write_unit(
-                black_box(1),
-                &Vec2d::from(D2Size::new(1, 1), Vec::<City>::new()),
-            )
-        })
+        b.iter(|| inject_units(black_box(&mut index), black_box(&units), black_box(&cities)))
     });
 
+    let mut index = Index::default();
+    let units = build_units(1_000);
+    let cities = build_cities(1_000);
     group.bench_function("index_write_unit 1k🚹", |b| {
-        b.iter(|| {
-            index_write_unit(
-                black_box(1_000),
-                &Vec2d::from(D2Size::new(1_000, 1_000), Vec::<City>::new()),
-            )
-        })
+        b.iter(|| inject_units(black_box(&mut index), black_box(&units), black_box(&cities)))
     });
 
+    let mut index = Index::default();
+    let units = build_units(10_000);
+    let cities = build_cities(10_000);
     group.bench_function("index_write_unit 10k🚹", |b| {
-        b.iter(|| {
-            index_write_unit(
-                black_box(10_000),
-                &Vec2d::from(D2Size::new(10_000, 10_000), Vec::<City>::new()),
-            )
-        })
+        b.iter(|| inject_units(black_box(&mut index), black_box(&units), black_box(&cities)))
     });
 
+    let mut index = Index::default();
+    let units = build_units(1);
+    let cities = build_cities(1);
     group.bench_function("index_write_city 1🏠", |b| {
-        b.iter(|| {
-            index_write_city(
-                black_box(1),
-                &Vec2d::from(D2Size::new(1, 1), Vec::<GeoVec<Unit>>::new()),
-            )
-        })
+        b.iter(|| inject_cities(black_box(&mut index), black_box(&cities), black_box(&units)))
     });
+
+    let mut index = Index::default();
+    let units = build_units(1);
+    let cities = build_cities(1);
     group.bench_function("index_write_city 1k🏠", |b| {
-        b.iter(|| {
-            index_write_city(
-                black_box(1_000),
-                &Vec2d::from(D2Size::new(1_000, 1_000), Vec::<GeoVec<Unit>>::new()),
-            )
-        })
+        b.iter(|| inject_cities(black_box(&mut index), black_box(&cities), black_box(&units)))
     });
+
+    let mut index = Index::default();
+    let units = build_units(1);
+    let cities = build_cities(1);
     group.bench_function("index_write_city 10k🏠", |b| {
-        b.iter(|| {
-            index_write_city(
-                black_box(10_000),
-                &Vec2d::from(D2Size::new(10_000, 10_000), Vec::<GeoVec<Unit>>::new()),
-            )
-        })
+        b.iter(|| inject_cities(black_box(&mut index), black_box(&cities), black_box(&units)))
     });
 }
 
