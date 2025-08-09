@@ -30,6 +30,7 @@ impl std::ops::Deref for Grid {
 pub struct GridHex {
     pub _imaginary: ImaginaryWorldPoint,
     pub _point: WorldPoint,
+    #[allow(unused)] // Only used in that feature for now
     pub tile: GridHexResource<CtxTile<Tile>>,
     pub city: Option<GridHexResource<ClientCity>>,
     pub units: Option<GridHexResource<Vec<ClientUnit>>>,
@@ -37,6 +38,7 @@ pub struct GridHex {
 
 #[derive(Debug, Constructor)]
 pub struct GridHexResource<T: Send + Sync> {
+    #[allow(unused)] // Only used in that feature for now
     pub entity: Entity,
     pub item: T,
 }
