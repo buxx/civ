@@ -1,3 +1,4 @@
+pub mod state;
 use bevy::prelude::*;
 use camera::spawn_camera;
 use ingame::react_server_message;
