@@ -65,6 +65,7 @@ pub fn react_server_message(
                     commands.trigger(GameWindowUpdated);
                 }
                 ClientStateMessage::SetCity(city) => {
+                    // FIXME BS NOW: must update cities_map (can be a new city!)
                     if let Some(ref mut slice) = &mut (game_slice.0) {
                         slice
                             .cities_mut()
@@ -73,13 +74,16 @@ pub fn react_server_message(
                     commands.trigger(GameSliceUpdated);
                 }
                 ClientStateMessage::RemoveCity(point, _) => {
+                    // FIXME BS NOW: must update cities_map
                     if let Some(ref mut slice) = &mut (game_slice.0) {
                         slice.cities_mut().set(point, None);
                     }
                     commands.trigger(GameSliceUpdated);
                 }
                 ClientStateMessage::SetUnit(unit) => {
+                    // FIXME BS NOW: must update units_map (can be a new unit)
                     if let Some(ref mut slice) = &mut (game_slice.0) {
+                        // FIXME BS NOW: this geo is possibly the new one if moved ! Add "previous_point" to SetUnit ?
                         if let Some(Some(units)) = slice.units_mut().get_mut(unit.geo().point()) {
                             if let Some(index) = units.iter().position(|u| u.id() == unit.id()) {
                                 units[index] = unit.clone();
@@ -89,6 +93,7 @@ pub fn react_server_message(
                     commands.trigger(GameSliceUpdated);
                 }
                 ClientStateMessage::RemoveUnit(point, unit_id) => {
+                    // FIXME BS NOW: must update units_map
                     if let Some(ref mut slice) = &mut (game_slice.0) {
                         let mut is_empty = false;
                         if let Some(Some(units)) = slice.units_mut().get_mut(point) {
