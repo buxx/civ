@@ -183,10 +183,14 @@ impl ClientCity {
 
     pub fn production_str(&self, frame: &GameFrame) -> String {
         format!(
-            "{} ({}%)",
+            "{} ({:.3}%)",
             self.production.current(),
             self.tasks.production.progress(frame)
         )
+    }
+
+    pub fn tasks(&self) -> &ClientCityTasks {
+        &self.tasks
     }
 }
 
@@ -198,6 +202,10 @@ pub struct ClientCityTasks {
 impl ClientCityTasks {
     pub fn new(production: ClientCityProductionTask) -> Self {
         Self { production }
+    }
+
+    pub fn production(&self) -> &ClientCityProductionTask {
+        &self.production
     }
 }
 

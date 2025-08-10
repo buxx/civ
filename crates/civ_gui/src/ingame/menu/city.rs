@@ -23,16 +23,12 @@ impl_ui_component_resource!(CityMenuResource, CityMenu, SetupCityMenu);
 
 #[derive(Debug)]
 pub struct CityMenu {
-    pub city_id: CityId,
-    pub city_name: String,
+    pub city: ClientCity,
 }
 
 impl From<ClientCity> for CityMenu {
     fn from(city: ClientCity) -> Self {
-        Self {
-            city_id: *city.id(),
-            city_name: city.name().to_string(),
-        }
+        Self { city }
     }
 }
 
@@ -42,18 +38,18 @@ impl DrawUiComponent for CityMenu {
         ctx: &Context,
         window: &Window,
         _commands: &mut Commands,
-        _frame: GameFrame,
+        frame: GameFrame,
     ) -> bool {
         let close = false;
 
         fixed_window()
             .ctx(ctx)
             .window(window)
-            .title(&self.city_name)
+            .title(self.city.name())
             .factor(EGUI_DISPLAY_FACTOR)
             .ui(|ui| {
                 ui.vertical_centered(|ui| {
-                    ui.label("todo");
+                    ui.label(format!("Production: {}", self.city.production_str(&frame)));
                 });
             })
             .call();
@@ -65,6 +61,6 @@ impl DrawUiComponent for CityMenu {
 // TODO: Derive on attribute
 impl WithCityId for CityMenu {
     fn city_id(&self) -> &CityId {
-        &self.city_id
+        self.city.id()
     }
 }
