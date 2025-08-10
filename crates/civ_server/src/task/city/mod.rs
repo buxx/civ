@@ -1,166 +1,13 @@
 use bon::Builder;
-use common::{
-    game::{
-        city::{CityExploitation, CityId, CityProduct, CityProduction, CityProductionTons},
-        nation::flag::Flag,
-        slice::ClientCityTasks,
-        GameFrame, FRAME_PRODUCTION_TONS_RATIO, PRODUCTION_FRAMES_PER_TONS,
-    },
-    geo::{Geo, GeoContext},
-    rules::RuleSetBox,
-};
+use common::game::slice::ClientCityTasks;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    game::{city::City, task::production::CityProductionTask},
-    runner::RunnerContext,
-    task::WithContext,
-};
+use crate::game::task::production::CityProductionTask;
 
 use super::{TaskBox, TaskContext, TaskError, TaskId};
 
-#[derive(Builder)]
-pub struct CityGenerator<'a> {
-    context: &'a RunnerContext,
-    game_frame: &'a GameFrame,
-    from: BuildCityFrom<'a>,
-}
-
-pub enum BuildCityFrom<'a> {
-    Scratch(String, Flag, GeoContext),
-    Change(&'a City, BuildCityFromChange),
-}
-
-pub enum BuildCityFromChange {
-    Production(CityProduction),
-    Exploitation(CityExploitation),
-}
-
-impl BuildCityFrom<'_> {
-    pub fn id(&self) -> Option<&CityId> {
-        match self {
-            BuildCityFrom::Scratch(_, _, _) => None,
-            BuildCityFrom::Change(city, _) => Some(city.id()),
-        }
-    }
-
-    pub fn name(&self) -> &str {
-        match self {
-            BuildCityFrom::Scratch(city_name, _, _) => city_name,
-            BuildCityFrom::Change(city, _) => city.name(),
-        }
-    }
-
-    pub fn flag(&self) -> &Flag {
-        match self {
-            BuildCityFrom::Scratch(_, flag, _) => flag,
-            BuildCityFrom::Change(city, _) => city.flag(),
-        }
-    }
-
-    pub fn geo(&self) -> &GeoContext {
-        match self {
-            BuildCityFrom::Scratch(_, _, geo) => geo,
-            BuildCityFrom::Change(city, _) => city.geo(),
-        }
-    }
-
-    pub fn production(&self) -> Option<&CityProduction> {
-        match self {
-            BuildCityFrom::Scratch(_, _, _) => None,
-            BuildCityFrom::Change(city, _) => Some(city.production()),
-        }
-    }
-}
-
-impl CityGenerator<'_> {
-    pub fn generate(&self) -> Result<City, TaskError> {
-        let default_production = self.context.default_production();
-        let city_id = self.from.id().copied().unwrap_or(CityId::default());
-        let tasks = CityTasks::new(production_task(
-            self.context.context.rules(),
-            self.game_frame,
-            &self.from,
-            &city_id,
-            default_production.current(),
-        ));
-        // TODO: tons according to exploitation (according to geo ...)
-        let exploitation = CityExploitation::new(CityProductionTons(1));
-
-        Ok(City::builder()
-            .id(city_id)
-            .name(self.from.name().to_string())
-            .flag(*self.from.flag())
-            .geo(*self.from.geo())
-            .production(
-                self.from
-                    .production()
-                    .unwrap_or(&self.context.default_production())
-                    .clone(),
-            )
-            .tasks(tasks)
-            .exploitation(exploitation)
-            .build())
-    }
-}
-
-type FromProduction<'a> = (
-    Option<(GameFrame, &'a CityProductionTons, &'a CityProduct)>,
-    (&'a CityProductionTons, &'a CityProduct),
-);
-
-fn production_task(
-    rules: &RuleSetBox,
-    game_frame: &GameFrame,
-    from: &BuildCityFrom,
-    city_id: &CityId,
-    default_product: &CityProduct,
-) -> CityProductionTask {
-    let (previous, current): FromProduction = match from {
-        BuildCityFrom::Scratch(_, _, _) => (
-            None,
-            // TODO: for "current" tons, need to determine with "new" city exploitation
-            (&CityProductionTons(1), default_product),
-        ),
-        BuildCityFrom::Change(city, BuildCityFromChange::Production(production)) => (
-            Some((
-                *game_frame - city.tasks().production.context().start(),
-                city.exploitation().production_tons(),
-                city.production().current(),
-            )),
-            (city.exploitation().production_tons(), production.current()),
-        ),
-        BuildCityFrom::Change(city, BuildCityFromChange::Exploitation(exploitation)) => (
-            Some((
-                *game_frame - city.tasks().production.context().start(),
-                city.exploitation().production_tons(),
-                city.production().current(),
-            )),
-            (exploitation.production_tons(), city.production().current()),
-        ),
-    };
-
-    let previously_produced_tons = previous
-        .map(|(f, t, _)| {
-            CityProductionTons((t.0 as f64 * f.0 as f64 * FRAME_PRODUCTION_TONS_RATIO) as u64)
-        })
-        .unwrap_or(CityProductionTons(0));
-    let current_product_left = rules.required_tons(current.1) - previously_produced_tons;
-    let required_frames = (PRODUCTION_FRAMES_PER_TONS as f32
-        * (current_product_left.0 as f32 / current.0 .0 as f32)) as u64;
-
-    CityProductionTask::builder()
-        .context(
-            TaskContext::builder()
-                .id(TaskId::default())
-                .start(*game_frame)
-                .end(*game_frame + required_frames)
-                .build(),
-        )
-        .city(*city_id)
-        .tons(*current.0)
-        .build()
-}
+pub mod generator;
+pub mod production;
 
 #[derive(Debug, Builder, Clone, Serialize, Deserialize)]
 pub struct CityTasks {
@@ -185,20 +32,6 @@ impl From<CityTasks> for ClientCityTasks {
     }
 }
 
-// impl From<CityTasks> for Vec<TaskWrapper> {
-//     fn from(value: CityTasks) -> Self {
-//         vec![TaskWrapper::City(CityTaskWrapper::Production(
-//             value.production,
-//         ))]
-//     }
-// }
-
-// impl From<CityTasks> for Vec<CityTaskWrapper> {
-//     fn from(value: CityTasks) -> Self {
-//         vec![CityTaskWrapper::Production(value.production)]
-//     }
-// }
-
 #[cfg(test)]
 mod test {
     use common::{
@@ -210,8 +43,27 @@ mod test {
         geo::{GeoContext, WorldPoint},
         rules::{RuleSet, RuleSetType},
     };
+    use common::{
+        game::{
+            city::{CityExploitation, CityId, CityProduction, CityProductionTons},
+            nation::flag::Flag,
+            GameFrame,
+        },
+        rules::RuleSetBox,
+    };
 
-    use crate::task::{Concern, Task};
+    use crate::{
+        game::{city::City, task::production::CityProductionTask},
+        task::WithContext,
+    };
+
+    use crate::task::{
+        city::{
+            generator::{BuildCityFrom, BuildCityFromChange},
+            production::production_task,
+        },
+        Concern, Task,
+    };
 
     use super::*;
 

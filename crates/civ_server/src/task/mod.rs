@@ -1,6 +1,5 @@
 pub mod snapshot;
 use bon::Builder;
-use city::{BuildCityFrom, CityGenerator};
 use common::{
     game::{
         city::CityId,
@@ -24,6 +23,7 @@ use crate::{
     },
     runner::RunnerContext,
     state::StateError,
+    task::city::generator::{BuildCityFrom, CityGenerator},
 };
 
 pub mod city;

@@ -33,7 +33,7 @@ use crate::{
     },
     state::{NoLongerExist, State, StateError},
     task::{
-        city::{BuildCityFrom, BuildCityFromChange, CityGenerator},
+        city::generator::{BuildCityFrom, BuildCityFromChange, CityGenerator},
         Concern, TaskError, TaskId,
     },
     world::reader::WorldReader,
