@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     geo::{GeoContext, ImaginaryWorldPoint, WorldPoint},
-    space::{CityVec2dIndex, UnitVec2dIndex},
+    space::{CityVec2dIndex, D2Size, UnitVec2dIndex},
     world::{slice::Slice, CtxTile, Tile},
 };
 
@@ -67,6 +67,36 @@ impl GameSlice {
             units,
             units_map,
         }
+    }
+
+    pub fn empty(original: ImaginaryWorldPoint, size: D2Size) -> Self {
+        let shape = size.width() * size.height();
+        let tiles = Slice::new(
+            original,
+            size.width() as u64,
+            size.height() as u64,
+            vec![CtxTile::Outside; shape],
+        );
+        let cities = Slice::new(
+            original,
+            size.width() as u64,
+            size.height() as u64,
+            vec![None; shape],
+        );
+        let units = Slice::new(
+            original,
+            size.width() as u64,
+            size.height() as u64,
+            vec![None; shape],
+        );
+        Self::new(
+            original,
+            size.width() as u64,
+            size.height() as u64,
+            tiles,
+            cities,
+            units,
+        )
     }
 
     pub fn try_world_point_for_center_rel(&self, pos: (isize, isize)) -> Option<WorldPoint> {

@@ -120,16 +120,17 @@ mod test {
             GameFrame,
         },
         geo::{GeoContext, WorldPoint},
+        space::D2Size,
     };
 
     use super::*;
 
-    fn build_city() -> ClientCity {
+    fn build_city(point: WorldPoint) -> ClientCity {
         ClientCity::builder()
             .id(CityId::default())
             .flag(Flag::Abkhazia)
             .name("MyCity".to_string())
-            .geo(GeoContext::new(WorldPoint::default()))
+            .geo(GeoContext::new(point))
             .production(CityProduction::new(vec![]))
             .exploitation(CityExploitation::new(CityProductionTons(0)))
             .tasks(ClientCityTasks::new(ClientCityProductionTask::new(
@@ -142,13 +143,22 @@ mod test {
     #[test]
     fn test_set_city() {
         // Given
-        let mut slice = GameSliceResource(Some(GameSlice::default()));
+        let point: WorldPoint = WorldPoint::new(0, 0);
+        let mut slice = GameSliceResource(Some(GameSlice::empty(point.into(), D2Size::new(1, 1))));
         let mut frame = GameFrameResource::default();
         let mut window = GameWindowResource::default();
-        let city = build_city();
-        let message = ClientStateMessage::SetCity(city);
+        let city = build_city(point);
+
+        let message = ClientStateMessage::SetCity(city.clone());
 
         // When
         react_state_message_(&message, &mut slice, &mut frame, &mut window);
+
+        // Then
+        // FIXME BS NOW: complete this test and add others
+        assert_eq!(
+            slice.0.map(|s| s.cities().items().to_vec()),
+            Some(vec![Some(city)])
+        );
     }
 }
