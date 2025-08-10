@@ -16,7 +16,7 @@ use super::{
     GameFrame,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
 pub struct GameSlice {
     original: ImaginaryWorldPoint,
     width: u64,

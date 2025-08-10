@@ -1,7 +1,8 @@
 use crate::geo::{ImaginaryWorldPoint, WorldPoint};
+use crate::world::{CtxTile, Tile};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct Slice<T> {
     original: ImaginaryWorldPoint,
     width: u64,
@@ -45,10 +46,14 @@ impl<T> Slice<T> {
     }
 
     pub fn get(&self, point: &WorldPoint) -> Option<&T> {
+        if self.width == 0 || self.height == 0 {
+            return None;
+        }
+
         let rel_point = self
             .original
             .relative_to((point.x as i32, point.y as i32))?;
-        let index = (rel_point.y * self.height as i64) + (rel_point.x % self.width as i64);
+        let index = rel_point.y as usize * self.width as usize + rel_point.x as usize;
 
         self.items.get(index as usize)
     }
@@ -59,11 +64,14 @@ impl<T> Slice<T> {
     ///
     /// - `Option<(usize, &mut T)>` - Couple of item index and item. If any.
     pub fn get_mut(&mut self, point: &WorldPoint) -> Option<(usize, &mut T)> {
+        if self.width == 0 || self.height == 0 {
+            return None;
+        }
+
         let rel_point = self
             .original
             .relative_to((point.x as i32, point.y as i32))?;
-        let index =
-            ((rel_point.y * self.height as i64) + (rel_point.x % self.width as i64)) as usize;
+        let index = rel_point.y as usize * self.width as usize + rel_point.x as usize;
 
         self.items.get_mut(index).map(|v| (index, v))
     }
@@ -74,15 +82,29 @@ impl<T> Slice<T> {
     ///
     /// - `Option<usize>` - Item index according to given world point if given point in this Slice.
     pub fn set(&mut self, point: &WorldPoint, value: T) -> Option<usize> {
+        if self.width == 0 || self.height == 0 {
+            return None;
+        }
+
         let rel_point = self
             .original
             .relative_to((point.x as i32, point.y as i32))?;
-        let index =
-            ((rel_point.y * self.height as i64) + (rel_point.x % self.width as i64)) as usize;
+        let index = rel_point.y as usize * self.width as usize + rel_point.x as usize;
 
         self.items[index] = value;
 
         Some(index)
+    }
+}
+
+impl Default for Slice<CtxTile<Tile>> {
+    fn default() -> Self {
+        Self {
+            original: Default::default(),
+            width: Default::default(),
+            height: Default::default(),
+            items: Default::default(),
+        }
     }
 }
 
@@ -99,15 +121,23 @@ mod test {
             ImaginaryWorldPoint::new(5, 5),
             1,
             1,
-            vec![
-                Tile::new(TerrainType::Plain),
-                Tile::new(TerrainType::GrassLand),
-            ],
+            vec![Tile::new(TerrainType::Plain)],
         );
         assert_eq!(
-            world.get(&WorldPoint::new(6, 6)),
-            Some(&Tile::new(TerrainType::GrassLand))
+            world.get(&WorldPoint::new(5, 5)),
+            Some(&Tile::new(TerrainType::Plain))
         );
+    }
+
+    #[test]
+    fn test_partial_world_get_tile_outside() {
+        let world = Slice::new(
+            ImaginaryWorldPoint::new(5, 5),
+            1,
+            1,
+            vec![Tile::new(TerrainType::Plain)],
+        );
+        assert_eq!(world.get(&WorldPoint::new(6, 6)), None);
     }
 
     fn partial_world_by_one() -> Slice<Tile> {

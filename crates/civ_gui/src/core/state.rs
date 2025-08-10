@@ -108,3 +108,47 @@ pub fn react_state_message_(
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use common::{
+        game::{
+            city::{CityExploitation, CityId, CityProduction, CityProductionTons},
+            nation::flag::Flag,
+            slice::{ClientCity, ClientCityTasks, GameSlice},
+            tasks::client::city::production::ClientCityProductionTask,
+            GameFrame,
+        },
+        geo::{GeoContext, WorldPoint},
+    };
+
+    use super::*;
+
+    fn build_city() -> ClientCity {
+        ClientCity::builder()
+            .id(CityId::default())
+            .flag(Flag::Abkhazia)
+            .name("MyCity".to_string())
+            .geo(GeoContext::new(WorldPoint::default()))
+            .production(CityProduction::new(vec![]))
+            .exploitation(CityExploitation::new(CityProductionTons(0)))
+            .tasks(ClientCityTasks::new(ClientCityProductionTask::new(
+                GameFrame(0),
+                GameFrame(0),
+            )))
+            .build()
+    }
+
+    #[test]
+    fn test_set_city() {
+        // Given
+        let mut slice = GameSliceResource(Some(GameSlice::default()));
+        let mut frame = GameFrameResource::default();
+        let mut window = GameWindowResource::default();
+        let city = build_city();
+        let message = ClientStateMessage::SetCity(city);
+
+        // When
+        react_state_message_(&message, &mut slice, &mut frame, &mut window);
+    }
+}
