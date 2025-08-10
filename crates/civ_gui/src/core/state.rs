@@ -1,0 +1,110 @@
+use bevy::prelude::*;
+use common::network::message::ClientStateMessage;
+
+use common::space::{CityVec2dIndex, UnitVec2dIndex};
+
+use crate::ingame::{GameFrameResource, GameFrameUpdated, GameSliceResource, GameWindowResource};
+
+use super::{GameSliceUpdated, GameWindowUpdated};
+
+type TriggerFn = Box<dyn FnOnce(&mut Commands) + Send + Sync + 'static>;
+
+pub fn react_state_message(
+    message: &ClientStateMessage,
+    slice: &mut GameSliceResource,
+    frame: &mut GameFrameResource,
+    window: &mut GameWindowResource,
+    commands: &mut Commands,
+) {
+    if let Some(trigger) = react_state_message_(message, slice, frame, window) {
+        trigger(commands)
+    }
+}
+
+pub fn react_state_message_(
+    message: &ClientStateMessage,
+    slice: &mut GameSliceResource,
+    frame: &mut GameFrameResource,
+    window: &mut GameWindowResource,
+) -> Option<TriggerFn> {
+    match message {
+        ClientStateMessage::SetGameFrame(frame_) => {
+            let frame__ = *frame_;
+            frame.0 = Some(frame__);
+            Some(Box::new(move |c| c.trigger(GameFrameUpdated(frame__))))
+        }
+        ClientStateMessage::SetGameSlice(game_slice_) => {
+            slice.0 = Some(game_slice_.clone());
+            Some(Box::new(|c| c.trigger(GameSliceUpdated)))
+        }
+        ClientStateMessage::SetWindow(window_) => {
+            window.0 = Some(*window_);
+            Some(Box::new(|c| c.trigger(GameWindowUpdated)))
+        }
+        ClientStateMessage::SetCity(city) => {
+            if let Some(ref mut slice) = &mut (slice.0) {
+                if let Some(index) = slice
+                    .cities_mut()
+                    .set(city.geo().point(), Some(city.clone()))
+                {
+                    slice
+                        .cities_map_mut()
+                        .insert(*city.id(), CityVec2dIndex(index));
+                }
+            }
+            Some(Box::new(|c| c.trigger(GameSliceUpdated)))
+        }
+        ClientStateMessage::RemoveCity(point, city_id) => {
+            if let Some(ref mut slice) = &mut (slice.0) {
+                slice.cities_mut().set(point, None);
+                slice.cities_map_mut().remove(city_id);
+            }
+            Some(Box::new(|c| c.trigger(GameSliceUpdated)))
+        }
+        ClientStateMessage::SetUnit(unit) => {
+            if let Some(ref mut slice) = &mut (slice.0) {
+                let mut new_index: Option<UnitVec2dIndex> = None;
+                // FIXME BS NOW: this geo is possibly the new one if moved ! Add "previous_point" to SetUnit ?
+                if let Some((index1, units)) = slice.units_mut().get_mut(unit.geo().point()) {
+                    if let Some(units) = units {
+                        if let Some(index2) = units.iter().position(|u| u.id() == unit.id()) {
+                            units[index2] = unit.clone();
+                            new_index = Some(UnitVec2dIndex(index1, index2));
+                        // Its a new unit
+                        } else {
+                            units.push(unit.clone());
+                            new_index = Some(UnitVec2dIndex(index1, 0));
+                        }
+                    // There is no vector of unit yet here
+                    } else {
+                        *units = Some(vec![unit.clone()]);
+                        new_index = Some(UnitVec2dIndex(index1, 0));
+                    }
+                    // If None, its outside of the slice
+                }
+
+                if let Some(new_index) = new_index {
+                    slice.units_map_mut().insert(*unit.id(), new_index);
+                }
+            }
+            Some(Box::new(|c| c.trigger(GameSliceUpdated)))
+        }
+        ClientStateMessage::RemoveUnit(point, unit_id) => {
+            // FIXME BS NOW: must update units_map
+            if let Some(ref mut slice) = &mut (slice.0) {
+                let mut is_empty = false;
+                if let Some((_, Some(units))) = slice.units_mut().get_mut(point) {
+                    units.retain(|u| u.id() != unit_id);
+                    is_empty = units.is_empty();
+
+                    slice.units_map_mut().remove(unit_id);
+                }
+
+                if is_empty {
+                    slice.units_mut().set(point, None);
+                }
+            }
+            Some(Box::new(|c| c.trigger(GameSliceUpdated)))
+        }
+    }
+}
