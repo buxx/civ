@@ -1,8 +1,11 @@
 use bevy::prelude::*;
 
-use common::network::message::{
-    ClientStateMessage, ServerToClientEstablishmentMessage, ServerToClientInGameMessage,
-    ServerToClientMessage,
+use common::{
+    network::message::{
+        ClientStateMessage, ServerToClientEstablishmentMessage, ServerToClientInGameMessage,
+        ServerToClientMessage,
+    },
+    space::{CityVec2dIndex, UnitVec2dIndex},
 };
 use hexx::hex;
 
@@ -65,29 +68,51 @@ pub fn react_server_message(
                     commands.trigger(GameWindowUpdated);
                 }
                 ClientStateMessage::SetCity(city) => {
-                    // FIXME BS NOW: must update cities_map (can be a new city!)
                     if let Some(ref mut slice) = &mut (game_slice.0) {
-                        slice
+                        if let Some(index) = slice
                             .cities_mut()
-                            .set(city.geo().point(), Some(city.clone()));
+                            .set(city.geo().point(), Some(city.clone()))
+                        {
+                            slice
+                                .cities_map_mut()
+                                .insert(*city.id(), CityVec2dIndex(index));
+                        }
                     }
                     commands.trigger(GameSliceUpdated);
                 }
-                ClientStateMessage::RemoveCity(point, _) => {
-                    // FIXME BS NOW: must update cities_map
+                ClientStateMessage::RemoveCity(point, city_id) => {
                     if let Some(ref mut slice) = &mut (game_slice.0) {
                         slice.cities_mut().set(point, None);
+                        slice.cities_map_mut().remove(city_id);
                     }
                     commands.trigger(GameSliceUpdated);
                 }
                 ClientStateMessage::SetUnit(unit) => {
-                    // FIXME BS NOW: must update units_map (can be a new unit)
                     if let Some(ref mut slice) = &mut (game_slice.0) {
+                        let mut new_index: Option<UnitVec2dIndex> = None;
                         // FIXME BS NOW: this geo is possibly the new one if moved ! Add "previous_point" to SetUnit ?
-                        if let Some(Some(units)) = slice.units_mut().get_mut(unit.geo().point()) {
-                            if let Some(index) = units.iter().position(|u| u.id() == unit.id()) {
-                                units[index] = unit.clone();
+                        if let Some((index1, units)) = slice.units_mut().get_mut(unit.geo().point())
+                        {
+                            if let Some(units) = units {
+                                if let Some(index2) = units.iter().position(|u| u.id() == unit.id())
+                                {
+                                    units[index2] = unit.clone();
+                                    new_index = Some(UnitVec2dIndex(index1, index2));
+                                // Its a new unit
+                                } else {
+                                    units.push(unit.clone());
+                                    new_index = Some(UnitVec2dIndex(index1, 0));
+                                }
+                            // There is no vector of unit yet here
+                            } else {
+                                *units = Some(vec![unit.clone()]);
+                                new_index = Some(UnitVec2dIndex(index1, 0));
                             }
+                            // If None, its outside of the slice
+                        }
+
+                        if let Some(new_index) = new_index {
+                            slice.units_map_mut().insert(*unit.id(), new_index);
                         }
                     }
                     commands.trigger(GameSliceUpdated);
@@ -96,9 +121,11 @@ pub fn react_server_message(
                     // FIXME BS NOW: must update units_map
                     if let Some(ref mut slice) = &mut (game_slice.0) {
                         let mut is_empty = false;
-                        if let Some(Some(units)) = slice.units_mut().get_mut(point) {
+                        if let Some((_, Some(units))) = slice.units_mut().get_mut(point) {
                             units.retain(|u| u.id() != unit_id);
                             is_empty = units.is_empty();
+
+                            slice.units_map_mut().remove(unit_id);
                         }
 
                         if is_empty {

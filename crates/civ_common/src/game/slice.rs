@@ -151,6 +151,14 @@ impl GameSlice {
                 .and_then(|units| units.get(index.1))
         })
     }
+
+    pub fn cities_map_mut(&mut self) -> &mut FxHashMap<CityId, CityVec2dIndex> {
+        &mut self.cities_map
+    }
+
+    pub fn units_map_mut(&mut self) -> &mut FxHashMap<UnitId, UnitVec2dIndex> {
+        &mut self.units_map
+    }
 }
 
 #[derive(Builder, Serialize, Deserialize, Clone, Debug, PartialEq)]

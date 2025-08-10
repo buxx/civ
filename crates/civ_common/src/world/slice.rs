@@ -53,22 +53,36 @@ impl<T> Slice<T> {
         self.items.get(index as usize)
     }
 
-    pub fn get_mut(&mut self, point: &WorldPoint) -> Option<&mut T> {
+    /// Return mutable reference of item for given world point. If any.
+    ///
+    /// # Returns
+    ///
+    /// - `Option<(usize, &mut T)>` - Couple of item index and item. If any.
+    pub fn get_mut(&mut self, point: &WorldPoint) -> Option<(usize, &mut T)> {
         let rel_point = self
             .original
             .relative_to((point.x as i32, point.y as i32))?;
-        let index = (rel_point.y * self.height as i64) + (rel_point.x % self.width as i64);
+        let index =
+            ((rel_point.y * self.height as i64) + (rel_point.x % self.width as i64)) as usize;
 
-        self.items.get_mut(index as usize)
+        self.items.get_mut(index).map(|v| (index, v))
     }
 
-    pub fn set(&mut self, point: &WorldPoint, value: T) {
-        let Some(rel_point) = self.original.relative_to((point.x as i32, point.y as i32)) else {
-            return;
-        };
-        let index = (rel_point.y * self.height as i64) + (rel_point.x % self.width as i64);
+    /// Replace items index by given value, at index according to given WorldPoint.
+    ///
+    /// # Returns
+    ///
+    /// - `Option<usize>` - Item index according to given world point if given point in this Slice.
+    pub fn set(&mut self, point: &WorldPoint, value: T) -> Option<usize> {
+        let rel_point = self
+            .original
+            .relative_to((point.x as i32, point.y as i32))?;
+        let index =
+            ((rel_point.y * self.height as i64) + (rel_point.x % self.width as i64)) as usize;
 
-        self.items[index as usize] = value;
+        self.items[index] = value;
+
+        Some(index)
     }
 }
 
