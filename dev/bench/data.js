@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1754822311390,
+  "lastUpdate": 1754831462543,
   "repoUrl": "https://github.com/buxx/civ",
   "entries": {
     "Benchmark": [
@@ -4090,6 +4090,72 @@ window.BENCHMARK_DATA = {
           {
             "name": "index_write/index_write_city 10k🏠",
             "value": 83,
+            "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "committer": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "distinct": true,
+          "id": "95a02c6bc843fb48c4162dade2f743e84a389e20",
+          "message": "fix: update slice state when update it from gui",
+          "timestamp": "2025-08-10T15:07:32+02:00",
+          "tree_id": "bc19d1775587d8a37febe25473419f73f7b94fb6",
+          "url": "https://github.com/buxx/civ/commit/95a02c6bc843fb48c4162dade2f743e84a389e20"
+        },
+        "date": 1754831462137,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "tiles_from_window",
+            "value": 568,
+            "range": "± 59",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1🚹",
+            "value": 43,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1k🚹",
+            "value": 623589,
+            "range": "± 22170",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 10k🚹",
+            "value": 108363331,
+            "range": "± 320310",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1🏠",
+            "value": 78,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1k🏠",
+            "value": 80,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 10k🏠",
+            "value": 82,
             "range": "± 1",
             "unit": "ns/iter"
           }
