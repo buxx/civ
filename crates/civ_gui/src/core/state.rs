@@ -115,8 +115,11 @@ mod test {
         game::{
             city::{CityExploitation, CityId, CityProduction, CityProductionTons},
             nation::flag::Flag,
-            slice::{ClientCity, ClientCityTasks, GameSlice},
-            tasks::client::city::production::ClientCityProductionTask,
+            slice::{ClientCity, ClientCityTasks, ClientUnit, GameSlice},
+            tasks::client::{
+                city::production::ClientCityProductionTask, ClientTask, ClientTaskType,
+            },
+            unit::{UnitId, UnitType},
             GameFrame,
         },
         geo::{GeoContext, WorldPoint},
@@ -140,8 +143,23 @@ mod test {
             .build()
     }
 
+    fn build_unit(point: WorldPoint) -> ClientUnit {
+        ClientUnit::builder()
+            .id(UnitId::default())
+            .flag(Flag::Abkhazia)
+            .type_(UnitType::Warriors)
+            .geo(GeoContext::new(point))
+            .task(ClientTask::new(
+                ClientTaskType::Idle,
+                GameFrame(0),
+                GameFrame(0),
+            ))
+            .can(vec![])
+            .build()
+    }
+
     #[test]
-    fn test_set_city() {
+    fn test_city_update() {
         // Given
         let point: WorldPoint = WorldPoint::new(0, 0);
         let mut slice = GameSliceResource(Some(GameSlice::empty(point.into(), D2Size::new(1, 1))));
@@ -172,6 +190,42 @@ mod test {
         );
         assert_eq!(
             slice.0.as_ref().map(|s| s.cities_map().get(city.id())),
+            Some(None)
+        );
+    }
+
+    #[test]
+    fn test_unit_update() {
+        // Given
+        let point: WorldPoint = WorldPoint::new(0, 0);
+        let mut slice = GameSliceResource(Some(GameSlice::empty(point.into(), D2Size::new(1, 1))));
+        let mut frame = GameFrameResource::default();
+        let mut window = GameWindowResource::default();
+        let unit = build_unit(point);
+
+        // When-Then
+        let message = ClientStateMessage::SetUnit(unit.clone());
+        react_state_message_(&message, &mut slice, &mut frame, &mut window);
+
+        assert_eq!(
+            slice.0.as_ref().map(|s| s.units().items().to_vec()),
+            Some(vec![Some(vec![unit.clone()])])
+        );
+        assert_eq!(
+            slice.0.as_ref().map(|s| s.units_map().get(unit.id())),
+            Some(Some(&UnitVec2dIndex(0, 0)))
+        );
+
+        // When-Then
+        let message = ClientStateMessage::RemoveUnit(*unit.geo().point(), *unit.id());
+        react_state_message_(&message, &mut slice, &mut frame, &mut window);
+
+        assert_eq!(
+            slice.0.as_ref().map(|s| s.units().items().to_vec()),
+            Some(vec![None])
+        );
+        assert_eq!(
+            slice.0.as_ref().map(|s| s.units_map().get(unit.id())),
             Some(None)
         );
     }
