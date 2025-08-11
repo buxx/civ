@@ -149,16 +149,30 @@ mod test {
         let mut window = GameWindowResource::default();
         let city = build_city(point);
 
+        // When-Then
         let message = ClientStateMessage::SetCity(city.clone());
-
-        // When
         react_state_message_(&message, &mut slice, &mut frame, &mut window);
 
-        // Then
-        // FIXME BS NOW: complete this test and add others
         assert_eq!(
-            slice.0.map(|s| s.cities().items().to_vec()),
-            Some(vec![Some(city)])
+            slice.0.as_ref().map(|s| s.cities().items().to_vec()),
+            Some(vec![Some(city.clone())])
+        );
+        assert_eq!(
+            slice.0.as_ref().map(|s| s.cities_map().get(city.id())),
+            Some(Some(&CityVec2dIndex(0)))
+        );
+
+        // When-Then
+        let message = ClientStateMessage::RemoveCity(*city.geo().point(), *city.id());
+        react_state_message_(&message, &mut slice, &mut frame, &mut window);
+
+        assert_eq!(
+            slice.0.as_ref().map(|s| s.cities().items().to_vec()),
+            Some(vec![None])
+        );
+        assert_eq!(
+            slice.0.as_ref().map(|s| s.cities_map().get(city.id())),
+            Some(None)
         );
     }
 }
