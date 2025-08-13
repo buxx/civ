@@ -17,9 +17,8 @@ pub struct Clients {
     states: HashMap<PlayerId, PlayerState>,
 }
 
-// FIXME BS NOW: is that in snapshot ?
 #[derive(Default)]
-struct Index {
+pub struct Index {
     client_player: HashMap<ClientId, PlayerId>,
     player_client: HashMap<PlayerId, ClientId>,
 }
@@ -109,6 +108,10 @@ impl Clients {
 
     pub fn states(&self) -> &HashMap<PlayerId, PlayerState> {
         &self.states
+    }
+
+    pub fn index(&self) -> &Index {
+        &self.index
     }
 }
 

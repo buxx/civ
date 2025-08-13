@@ -111,6 +111,7 @@ impl From<Snapshot> for State {
         Self::new(
             value.frame_i,
             Clients::new(value.client_states),
+            vec![],
             index,
             tasks,
             value.cities,

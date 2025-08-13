@@ -7,7 +7,8 @@ use async_std::channel::unbounded;
 use civ_server::{
     config::ServerConfig,
     context::Context,
-    runner::{worker::setup_workers, Runner, RunnerContext},
+    game::placer::RandomPlacer,
+    runner::{worker::setup_task_workers, Runner, RunnerContext},
     state::State,
     task::{TaskContext, TaskId},
     test::task::{fibonacci, FibonacciTask},
@@ -23,24 +24,6 @@ use common::{
     space::D2Size,
 };
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-
-fn runner(context: Context, state: Arc<RwLock<State>>) -> Runner {
-    let world = WorldReader::new(PathBuf::new(), 0, 0, vec![]);
-    let (_, from_clients_receiver) = unbounded::<(Client, ClientToServerMessage)>();
-    let (to_clients_sender, _) = unbounded::<(ClientId, ServerToClientMessage)>();
-    let runner_context = RunnerContext::new(
-        context,
-        state,
-        Arc::new(RwLock::new(world)),
-        from_clients_receiver,
-        to_clients_sender,
-    );
-
-    Runner::builder()
-        .context(runner_context)
-        .tick_base_period(1_000_000_000) // To ensure no wait before ticks
-        .build()
-}
 
 fn build_runner(tasks_count: usize, complexity: u64) -> Runner {
     let context = Context::new(Box::new(Std1RuleSet), ServerConfig::default());
@@ -66,13 +49,14 @@ fn build_runner(tasks_count: usize, complexity: u64) -> Runner {
         Arc::new(RwLock::new(world)),
         from_clients_receiver,
         to_clients_sender,
+        Box::new(RandomPlacer),
     );
 
     let mut runner = Runner::builder()
         .context(runner_context)
         .tick_base_period(1_000_000_000) // To ensure no wait before ticks
         .build();
-    runner.workers_channels = setup_workers(&runner.context);
+    runner.workers = setup_task_workers(&runner.context);
     runner
 }
 

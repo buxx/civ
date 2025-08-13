@@ -7,7 +7,8 @@ use async_std::channel::{unbounded, Sender};
 use civ_server::{
     config::ServerConfig,
     context::Context,
-    runner::{worker::setup_workers, Runner, RunnerContext},
+    game::placer::RandomPlacer,
+    runner::{worker::setup_task_workers, Runner, RunnerContext},
     state::State,
     world::reader::WorldReader,
 };
@@ -46,12 +47,13 @@ fn build_runner() -> (Runner, Sender<(Client, ClientToServerMessage)>) {
         Arc::new(RwLock::new(world)),
         from_clients_receiver,
         to_clients_sender,
+        Box::new(RandomPlacer),
     );
     let mut runner = Runner::builder()
         .context(runner_context)
         .tick_base_period(1_000_000_000) // To ensure no wait before ticks
         .build();
-    runner.workers_channels = setup_workers(&runner.context);
+    runner.workers = setup_task_workers(&runner.context);
 
     (runner, from_clients_sender)
 }

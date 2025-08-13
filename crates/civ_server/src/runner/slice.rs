@@ -1,12 +1,11 @@
 use common::{game::slice::GameSlice, space::window::Window};
 
-use crate::runner::Runner;
+use crate::runner::RunnerContext;
 
-impl Runner {
+impl RunnerContext {
     pub fn game_slice(&self, window: &Window) -> GameSlice {
-        let state = self.context.state();
+        let state = self.state();
         let world = self
-            .context
             .world
             .read()
             .expect("Consider world as always readable");

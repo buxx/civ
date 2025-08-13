@@ -1,6 +1,7 @@
 use std::sync::RwLockReadGuard;
 
 use common::{geo::WorldPoint, rules::RuleSetBox};
+use dyn_clone::DynClone;
 use rand::Rng;
 use thiserror::Error;
 
@@ -9,7 +10,7 @@ use crate::world::reader::WorldReader;
 
 pub type PlacerBox = Box<dyn for<'a> Placer<'a> + Sync + Send>;
 
-pub trait Placer<'a> {
+pub trait Placer<'a>: DynClone {
     fn startup(
         &self,
         rules: &'a RuleSetBox,
@@ -17,6 +18,7 @@ pub trait Placer<'a> {
         world: &'a RwLockReadGuard<WorldReader>,
     ) -> Result<WorldPoint, PlacerError>;
 }
+dyn_clone::clone_trait_object!(Placer<'_>);
 
 #[derive(Debug, Error)]
 pub enum PlacerError {
@@ -24,6 +26,7 @@ pub enum PlacerError {
     NoPlaceFound,
 }
 
+#[derive(Clone)]
 pub struct RandomPlacer;
 
 impl<'a> Placer<'a> for RandomPlacer {

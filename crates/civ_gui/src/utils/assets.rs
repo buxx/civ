@@ -10,7 +10,6 @@ use common::{
 };
 use derive_more::Constructor;
 use hexx::{Hex, HexLayout};
-// use dyn_clone::DynClone;
 
 use crate::{
     assets::tile::{relative_layout, TILES_ATLAS_PATH},
@@ -320,7 +319,7 @@ impl IntoBundle for ClientTaskProgress {
 
     fn bundle(&self, _ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         ClientTaskProgressBundle::new(
-            Text2d(format!("{:.2}%", self.current * 100.)),
+            Text2d(format!("{:.0}%", self.current * 100.)),
             TextColor(Color::WHITE),
             TextFont {
                 font_size: 15.0,

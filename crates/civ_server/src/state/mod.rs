@@ -9,12 +9,13 @@ use common::{
         GameFrame, PlayerId,
     },
     geo::{Geo, GeoVec},
-    network::Client,
+    network::{message::ClientToServerMessage, Client},
     rules::RuleSetBox,
     space::{window::Window, CityVec2dIndex, D2Size, UnitVec2dIndex},
     utils::Vec2d,
     world::slice::Slice,
 };
+use derive_more::Constructor;
 use index::Index;
 use log::error;
 use thiserror::Error;
@@ -30,9 +31,11 @@ pub mod clients;
 pub mod flag;
 pub mod index;
 
+#[derive(Constructor)]
 pub struct State {
     frame_i: GameFrame,
     clients: Clients,
+    pending: Vec<(Client, ClientToServerMessage)>,
     index: Index,
     tasks: Vec<TaskBox>,
     // Don't store a Vec2d<Box<City>> to not allocate useless memory
@@ -49,6 +52,7 @@ impl State {
         Self {
             frame_i: GameFrame(0),
             clients: Clients::default(),
+            pending: Default::default(),
             index: Index::default(),
             tasks: vec![],
             cities: Vec2d::from(world_size, Vec::<City>::new()),
@@ -78,6 +82,7 @@ impl State {
         Self::new(
             frame_i,
             clients,
+            vec![],
             index,
             tasks,
             cities,
@@ -87,48 +92,6 @@ impl State {
             world_size,
             0,
         )
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        frame_i: GameFrame,
-        clients: Clients,
-        index: Index,
-        tasks: Vec<TaskBox>,
-        cities: Vec2d<Box<City>>,
-        cities_count: usize,
-        units: Vec2d<Vec<Unit>>,
-        units_count: usize,
-        world_size: D2Size,
-        testing: u64,
-    ) -> Self {
-        // let units_: Vec<GeoVec<Unit>> = units
-        //     .into_iter()
-        //     .fold(
-        //         HashMap::new(),
-        //         |mut map: HashMap<GeoContext, Vec<Unit>>, unit| {
-        //             map.entry(*unit.geo()).or_default().push(unit);
-        //             map
-        //         },
-        //     )
-        //     .into_iter()
-        //     .map(GeoVec::from)
-        //     .collect();
-
-        Self {
-            frame_i,
-            clients,
-            index,
-            tasks,
-            cities,
-            cities_count,
-            units,
-            units_count,
-            // cities: Vec2d::from(world_size, cities),
-            // units: Vec2d::from(world_size, units_),
-            world_size,
-            testing,
-        }
     }
 
     pub fn frame(&self) -> &GameFrame {
@@ -418,6 +381,14 @@ impl State {
 
     pub fn units_count(&self) -> usize {
         self.units_count
+    }
+
+    pub fn pending(&self) -> &[(Client, ClientToServerMessage)] {
+        &self.pending
+    }
+
+    pub fn set_pending(&mut self, pending: Vec<(Client, ClientToServerMessage)>) {
+        self.pending = pending;
     }
 }
 

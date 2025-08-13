@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 use crate::config::ServerConfig;
 use crate::context::Context;
+use crate::game::placer::RandomPlacer;
 use crate::runner::{Runner, RunnerContext};
 use crate::snapshot::{Snapshot, SnapshotError};
 use crate::state::State;
@@ -113,6 +114,7 @@ pub fn start<B: Bridge + 'static>(
             world,
             from_clients_receiver,
             to_clients_sender,
+            Box::new(RandomPlacer),
         ))
         .build();
 

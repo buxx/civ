@@ -1,15 +1,15 @@
 use async_std::channel::{Receiver, Sender};
-use bon::{builder, Builder};
+use bon::Builder;
 use common::{
     game::{
-        city::{CityId, CityProduct, CityProduction},
-        unit::{UnitId, UnitType},
+        city::{CityProduct, CityProduction},
+        unit::UnitType,
         GameFrame, GAME_FRAMES_PER_SECOND,
     },
     network::{
         message::{
-            ClientToServerCityMessage, ClientToServerMessage, ClientToServerUnitMessage,
-            NotificationLevel, ServerToClientInGameMessage, ServerToClientMessage,
+            ClientToServerMessage, NotificationLevel, ServerToClientInGameMessage,
+            ServerToClientMessage,
         },
         Client, ClientId,
     },
@@ -25,17 +25,11 @@ use thiserror::Error;
 
 use crate::{
     context::Context,
-    effect::{self, Effect, StateEffect, TaskEffect},
-    game::{
-        placer::{PlacerBox, RandomPlacer},
-        task::settle::Settle,
-    },
-    runner::worker::setup_workers,
+    effect::{Effect, StateEffect, TaskEffect},
+    game::placer::{PlacerBox, RandomPlacer},
+    runner::{client::deal_client, worker::setup_task_workers},
     state::{NoLongerExist, State, StateError},
-    task::{
-        city::generator::{BuildCityFrom, BuildCityFromChange, CityGenerator},
-        Concern, TaskBox, TaskError, TaskId,
-    },
+    task::{TaskBox, TaskError},
     world::reader::WorldReader,
 };
 
@@ -49,6 +43,7 @@ pub struct RunnerContext {
     pub world: Arc<RwLock<WorldReader>>,
     pub from_clients_receiver: Receiver<(Client, ClientToServerMessage)>,
     pub to_client_sender: Sender<(ClientId, ServerToClientMessage)>,
+    pub placer: PlacerBox,
 }
 
 impl RunnerContext {
@@ -58,6 +53,7 @@ impl RunnerContext {
         world: Arc<RwLock<WorldReader>>,
         from_clients_receiver: Receiver<(Client, ClientToServerMessage)>,
         to_client_sender: Sender<(ClientId, ServerToClientMessage)>,
+        placer: PlacerBox,
     ) -> Self {
         Self {
             context,
@@ -65,6 +61,7 @@ impl RunnerContext {
             world,
             from_clients_receiver,
             to_client_sender,
+            placer,
         }
     }
 
@@ -86,8 +83,11 @@ impl Clone for RunnerContext {
             self.context.clone(),
             Arc::clone(&self.state),
             Arc::clone(&self.world),
+            // FIXME BS NOW; là ?!
             self.from_clients_receiver.clone(),
             self.to_client_sender.clone(),
+            // FIXME BS NOW
+            Box::new(RandomPlacer),
         )
     }
 }
@@ -107,9 +107,7 @@ pub struct Runner {
     last_stat: Instant,
     // TODO: pub for benches ...
     #[builder(default = vec![])]
-    pub workers_channels: Vec<(Sender<()>, Receiver<Vec<Effect>>)>,
-    #[builder(default = Box::new(RandomPlacer))]
-    placer: PlacerBox,
+    pub workers: Vec<(Sender<()>, Receiver<Vec<Effect>>)>,
 }
 
 #[derive(Debug, Error)]
@@ -140,7 +138,7 @@ impl Runner {
             .expect("Assume state is always accessible")
     }
 
-    pub(super) fn world(&self) -> RwLockReadGuard<WorldReader> {
+    pub(super) fn _world(&self) -> RwLockReadGuard<WorldReader> {
         self.context
             .world
             .read()
@@ -155,7 +153,7 @@ impl Runner {
     }
 
     pub fn run(&mut self) {
-        self.workers_channels = setup_workers(&self.context);
+        self.workers = setup_task_workers(&self.context);
 
         while !self.context.context.stop_is_required() {
             self.do_one_iteration();
@@ -164,72 +162,10 @@ impl Runner {
 
     pub fn do_one_iteration(&mut self) {
         let tick_start = Instant::now();
-
-        // TODO: do client requests in thread pool to not block task tick
-        // and solve all effects here by reading channel
-        let effects = self.clients();
-        self.apply_effects(effects);
-
-        let effects = self.tick();
-        self.apply_effects(effects);
-
+        self.tick();
         self.fps_target(tick_start);
         self.game_frame_increment();
         self.stats_log();
-    }
-
-    // TODO: pub for benches
-    pub fn clients(&mut self) -> Vec<Effect> {
-        let mut effects = vec![];
-
-        // TODO: parallel
-        while let Ok((client, message)) = self.context.from_clients_receiver.try_recv() {
-            match self.client(&client, message) {
-                Ok(effects_) => effects.extend(effects_),
-                Err(error) => match error {
-                    RunnerError::DealClientRequest(error) => match error {
-                        DealClientRequestError::Unfeasible(message) => {
-                            self.context
-                                .to_client_sender
-                                .send_blocking((
-                                    *client.client_id(),
-                                    ServerToClientMessage::InGame(
-                                        ServerToClientInGameMessage::Notification(
-                                            NotificationLevel::Error,
-                                            message,
-                                        ),
-                                    ),
-                                ))
-                                .unwrap();
-                        }
-                        DealClientRequestError::Unexpected(message) => {
-                            error!("Error during processing client request: {}", message)
-                        }
-                        DealClientRequestError::Unauthorized => self
-                            .context
-                            .to_client_sender
-                            .send_blocking((
-                                *client.client_id(),
-                                ServerToClientMessage::InGame(
-                                    ServerToClientInGameMessage::Notification(
-                                        NotificationLevel::Error,
-                                        "Unauthorized".to_string(),
-                                    ),
-                                ),
-                            ))
-                            .unwrap(),
-                    },
-                    RunnerError::Unexpected(message) => {
-                        error!("Error during processing client request: {}", message)
-                    }
-                    RunnerError::NoLongerExist(message) => {
-                        debug!("Process client request about obsolete matter: {}", message)
-                    }
-                },
-            };
-        }
-
-        effects
     }
 
     fn game_frame_increment(&mut self) {
@@ -282,105 +218,43 @@ impl Runner {
         thread::sleep(need_sleep - can_catch_lag);
     }
 
-    fn tick(&mut self) -> Vec<Effect> {
+    fn tick(&mut self) {
         let mut effects = vec![];
 
-        for (i, (start_sender, _)) in self.workers_channels.iter().enumerate() {
-            if start_sender.send_blocking(()).is_err() {
-                debug!("Worker {} start channel is closed", i)
-            }
-        }
+        thread::scope(|scope| {
+            let clients = scope.spawn(|| {
+                let mut effects = vec![];
+                while let Ok((client, message)) = self.context.from_clients_receiver.try_recv() {
+                    effects.extend(tick_client(&self.context, &client, &message));
+                }
+                effects
+            });
 
-        for (_, results_receiver) in &self.workers_channels {
-            effects.extend(results_receiver.recv_blocking().unwrap_or_default());
-        }
+            let tasks = scope.spawn(|| {
+                for (i, (start_sender, _)) in self.workers.iter().enumerate() {
+                    if start_sender.send_blocking(()).is_err() {
+                        debug!("Worker {} start channel is closed", i)
+                    }
+                }
 
-        effects
+                let mut effects = vec![];
+                for (_, rcx) in &self.workers {
+                    let x = rcx.recv_blocking().unwrap_or_default();
+                    effects.extend(x);
+                }
+                effects
+            });
+
+            effects.extend(clients.join().unwrap());
+            effects.extend(tasks.join().unwrap());
+        });
+
+        self.apply_effects(effects);
     }
 
     fn apply_effects(&mut self, effects: Vec<Effect>) {
         self.state_mut().apply(&effects);
         self.reflects(&effects);
-    }
-
-    // TODO: add tests here
-    fn refresh_unit_on(
-        &self,
-        unit_id: &UnitId,
-        message: ClientToServerUnitMessage,
-    ) -> Result<Vec<Effect>, RunnerError> {
-        debug!("Refresh unit on: {:?}", &message);
-
-        let state = self.state();
-        let unit = state.find_unit(unit_id).unwrap(); // TODO: unwrap -> same error management than crate_task
-        let old_task = unit.task();
-
-        let new_task = match message {
-            ClientToServerUnitMessage::Settle(city_name) => Some(Settle::new(
-                TaskId::default(),
-                self.context.context.clone(),
-                self.state(),
-                unit.clone(),
-                city_name.clone(),
-            )?),
-            ClientToServerUnitMessage::CancelCurrentTask => None,
-        };
-        let mut unit = unit.clone();
-        unit.task = None;
-
-        if let Some(new_task) = &new_task {
-            unit.set_task(Some(new_task.clone().into()));
-        }
-
-        let mut effects = vec![effect::replace_unit(unit)];
-
-        if let Some(new_task) = new_task {
-            effects.push(effect::add_task(Box::new(new_task)));
-        }
-
-        if let Some(old_task) = old_task {
-            effects.push(effect::remove_task(old_task.clone().into()));
-        }
-
-        Ok(effects)
-    }
-
-    fn refresh_city_on(
-        &self,
-        city_id: &CityId,
-        message: ClientToServerCityMessage,
-    ) -> Result<Vec<Effect>, RunnerError> {
-        let state = self.state();
-        let city = state.find_city(city_id).unwrap(); // TODO: unwrap -> same error management than crate_task
-        let from = match message {
-            ClientToServerCityMessage::SetProduction(production) => {
-                BuildCityFrom::Change(city, BuildCityFromChange::Production(production))
-            }
-            ClientToServerCityMessage::SetExploitation(exploitation) => {
-                BuildCityFrom::Change(city, BuildCityFromChange::Exploitation(exploitation))
-            }
-        };
-        let old_tasks = state
-            .index()
-            .city_tasks(city_id)
-            .iter()
-            .map(|i| (*i, Concern::City(*city_id)))
-            .collect::<Vec<(TaskId, Concern)>>();
-        let city = CityGenerator::builder()
-            .context(&self.context)
-            .game_frame(self.context.state().frame())
-            .from(from)
-            .build()
-            .generate()
-            // TODO: unwrap -> same error management than crate_task
-            .unwrap();
-        let new_tasks = city.tasks().clone().into();
-
-        Ok(vec![
-            effect::replace_city(city),
-            effect::remove_tasks(old_tasks),
-            effect::add_tasks(new_tasks),
-        ])
     }
 }
 
@@ -409,6 +283,59 @@ fn tick_task(
     }
 
     Ok(effects)
+}
+
+fn tick_client(
+    context: &RunnerContext,
+    client: &Client,
+    message: &ClientToServerMessage,
+) -> Vec<Effect> {
+    match deal_client(context, client, message) {
+        Ok(effects) => return effects,
+        Err(error) => match error {
+            RunnerError::DealClientRequest(error) => match error {
+                DealClientRequestError::Unfeasible(message) => {
+                    context
+                        .to_client_sender
+                        .send_blocking((
+                            *client.client_id(),
+                            ServerToClientMessage::InGame(
+                                ServerToClientInGameMessage::Notification(
+                                    NotificationLevel::Error,
+                                    message,
+                                ),
+                            ),
+                        ))
+                        .unwrap();
+                }
+                DealClientRequestError::Unexpected(message) => {
+                    error!("Error during processing client request: {}", message);
+                }
+                DealClientRequestError::Unauthorized => {
+                    context
+                        .to_client_sender
+                        .send_blocking((
+                            *client.client_id(),
+                            ServerToClientMessage::InGame(
+                                ServerToClientInGameMessage::Notification(
+                                    NotificationLevel::Error,
+                                    "Unauthorized".to_string(),
+                                ),
+                            ),
+                        ))
+                        .unwrap();
+                }
+            },
+            RunnerError::Unexpected(message) => {
+                error!("Error during processing client request: {}", message);
+            }
+            RunnerError::NoLongerExist(message) => {
+                debug!("Process client request about obsolete matter: {}", message);
+            }
+        },
+    }
+
+    vec![]
 }
 
 impl From<CreateTaskError> for RunnerError {
@@ -473,7 +400,7 @@ mod test {
         geo::{ImaginaryWorldPoint, WorldPoint},
         network::message::{
             ClientStateMessage, ClientToServerEstablishmentMessage, ClientToServerInGameMessage,
-            ServerToClientEstablishmentMessage,
+            ClientToServerUnitMessage, ServerToClientEstablishmentMessage,
         },
         rules::{RuleSet, RuleSetType},
         space::{
@@ -535,6 +462,7 @@ mod test {
         }
     }
 
+    #[derive(Debug, Clone)]
     struct TestPlacer;
 
     impl<'a> Placer<'a> for TestPlacer {
@@ -637,12 +565,12 @@ mod test {
                 Arc::new(RwLock::new(world)),
                 self.from_clients_receiver.clone(),
                 self.to_clients_sender.clone(),
+                Box::new(TestPlacer),
             );
 
             Runner::builder()
                 .tick_base_period(9999)
                 .context(context)
-                .placer(Box::new(TestPlacer))
                 .build()
         }
 

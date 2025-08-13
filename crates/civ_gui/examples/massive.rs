@@ -21,8 +21,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         PatternGenerator::new([TerrainType::Plain, TerrainType::GrassLand].to_vec());
 
     let mut units = vec![];
-    for x in 0..100 {
-        for y in 0..100 {
+    for x in 0..250 {
+        for y in 0..250 {
             let unit_geo = GeoContext::builder().point(WorldPoint::new(x, y)).build();
             let unit = Unit::builder()
                 .id(Uuid::new_v4().into())
@@ -46,7 +46,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client_to_server_sender_ = client_to_server_sender.clone();
 
     thread::spawn(move || {
-        // thread::sleep(Duration::from_secs(5));
         for unit_id in unit_ids {
             let message = ClientToServerInGameMessage::Unit(
                 unit_id,
@@ -55,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             client_to_server_sender_
                 .send_blocking(message.into())
                 .unwrap();
-            thread::sleep(Duration::from_millis(1));
+            thread::sleep(Duration::from_micros(100));
         }
     });
 
