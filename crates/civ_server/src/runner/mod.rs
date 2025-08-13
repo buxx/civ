@@ -1,5 +1,4 @@
-pub mod slice;
-use async_std::channel::{unbounded, Receiver, Sender};
+use async_std::channel::{Receiver, Sender};
 use bon::{builder, Builder};
 use common::{
     game::{
@@ -31,6 +30,7 @@ use crate::{
         placer::{PlacerBox, RandomPlacer},
         task::settle::Settle,
     },
+    runner::worker::setup_workers,
     state::{NoLongerExist, State, StateError},
     task::{
         city::generator::{BuildCityFrom, BuildCityFromChange, CityGenerator},
@@ -38,9 +38,11 @@ use crate::{
     },
     world::reader::WorldReader,
 };
-use crate::{task::TaskBox, utils::collection::slices};
 
 pub mod client;
+pub mod slice;
+pub mod worker;
+
 pub struct RunnerContext {
     pub context: Context,
     pub state: Arc<RwLock<State>>,
@@ -151,52 +153,10 @@ impl Runner {
     }
 
     pub fn run(&mut self) {
-        self.setup_workers();
+        self.workers_channels = setup_workers(&self.context);
 
         while !self.context.context.stop_is_required() {
             self.do_one_iteration();
-        }
-    }
-
-    pub fn setup_workers(&mut self) {
-        let workers_count = num_cpus::get();
-
-        for i in 0..workers_count {
-            let (start_work_sender, start_work_receiver) = unbounded();
-            let (results_sender, results_receiver) = unbounded();
-
-            self.workers_channels
-                .push((start_work_sender, results_receiver));
-
-            let state = Arc::clone(&self.context.state);
-            let context = self.context.clone();
-            thread::spawn(move || {
-                while start_work_receiver.recv_blocking().is_ok() {
-                    let state = state.read().expect("Assume state is always accessible");
-                    let frame = *state.frame();
-                    let tasks_count = state.tasks().len();
-                    let slices = slices(tasks_count, workers_count);
-                    let tasks = state.tasks();
-                    let (start, end) = slices[i];
-                    let mut effects = vec![];
-
-                    for task in &tasks[start..end] {
-                        match tick_task(&context, task, &frame) {
-                            Ok(effects_) => effects.extend(effects_),
-                            Err(e) => {
-                                eprintln!("Error when tasks execution: {}. Abort.", e);
-                                context.context.require_stop();
-                                return;
-                            }
-                        };
-                    }
-
-                    if results_sender.send_blocking(effects).is_err() {
-                        error!("Channel closed in tasks scope: abort");
-                        return;
-                    }
-                }
-            });
         }
     }
 
