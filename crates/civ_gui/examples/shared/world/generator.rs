@@ -2,7 +2,7 @@ use civ_world::generator::Generator;
 use common::world::{Chunk, TerrainType, Tile, World};
 use derive_more::Constructor;
 
-#[derive(Debug, Constructor)]
+#[derive(Debug, Constructor, Clone)]
 pub struct PatternGenerator {
     pattern: Vec<TerrainType>,
 }

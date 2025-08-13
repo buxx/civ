@@ -66,13 +66,13 @@ impl State {
         clients: Clients,
         cities: Vec<City>,
         units: Vec<GeoVec<Unit>>,
-        tasks: &[Box<dyn Task>],
+        tasks: &Vec<Box<dyn Task>>,
     ) -> Self {
         let cities_count = cities.len();
         let cities = Vec2d::from(world_size, cities);
         let units_count = units.len();
         let units = Vec2d::from(world_size, units);
-        let index = Index::build_from(&cities, &units, &tasks.to_vec());
+        let index = Index::build_from(&cities, &units, tasks);
         let tasks: Vec<TaskBox> = tasks.iter().map(|bx| bx.boxed()).collect();
 
         Self::new(
