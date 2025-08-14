@@ -21,20 +21,16 @@ use common::{
 };
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-fn build_waves(messages: usize, iterations: usize) -> Vec<Vec<ClientToServerMessage>> {
-    let mut waves = vec![];
+fn build_messages(count: usize) -> Vec<ClientToServerMessage> {
+    let mut messages = vec![];
 
-    for _ in 0..iterations {
-        let mut messages_ = vec![];
-        for _ in 0..messages {
-            messages_.push(ClientToServerMessage::Network(
-                ClientToServerNetworkMessage::Hello(Client::default(), Resolution::new(127, 128)),
-            ))
-        }
-        waves.push(messages_.clone());
+    for _ in 0..count {
+        messages.push(ClientToServerMessage::Network(
+            ClientToServerNetworkMessage::Hello(Client::default(), Resolution::new(127, 128)),
+        ))
     }
 
-    waves
+    messages
 }
 
 fn build_runner() -> (Runner, Sender<(Client, ClientToServerMessage)>) {
@@ -60,65 +56,51 @@ fn build_runner() -> (Runner, Sender<(Client, ClientToServerMessage)>) {
     (runner, from_clients_sender)
 }
 
-fn runner_with_client_messages(
-    runner: &mut Runner,
-    waves: Vec<Vec<ClientToServerMessage>>,
+fn send_messages(
+    messages: Vec<ClientToServerMessage>,
     sender: Sender<(Client, ClientToServerMessage)>,
 ) {
-    let client = Client::default();
-    let mut counter = 0;
-    let mut effects = vec![];
-
-    for wave in waves {
-        for message in wave {
-            counter += 1;
-            sender.send_blocking((client, message)).unwrap();
-        }
-
-        effects.extend(runner.clients());
+    for message in messages {
+        let client = match &message {
+            ClientToServerMessage::Network(ClientToServerNetworkMessage::Hello(client, _)) => {
+                *client
+            }
+            _ => unreachable!(),
+        };
+        sender.send_blocking((client, message)).unwrap();
     }
+}
 
-    assert_eq!(effects.len(), counter * 2); // Two effect per Hello expected
+fn runner_client_messages(runner: &mut Runner, expected: usize) {
+    let effects = runner.clients();
+    assert_eq!(effects.len(), expected * 2); // Two effect per Hello expected
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("index_write");
-    group.sample_size(20);
+    let mut group = c.benchmark_group("runner_client_messages");
 
-    let waves = build_waves(1, 1);
-    let (mut runner, sender) = build_runner();
-    group.bench_function("runner_client_messages 1✉️ 1➰", |b| {
-        b.iter(|| {
-            runner_with_client_messages(
-                black_box(&mut runner),
-                black_box(waves.clone()),
-                black_box(sender.clone()),
-            )
-        })
+    group.bench_function("runner_client_messages 1✉️", |b| {
+        b.iter_with_setup(
+            || {
+                let messages = build_messages(1);
+                let (runner, sender) = build_runner();
+                send_messages(messages.clone(), sender.clone());
+                runner
+            },
+            |mut runner| runner_client_messages(black_box(&mut runner), black_box(1)),
+        )
     });
 
-    let waves = build_waves(1_000, 100);
-    let (mut runner, sender) = build_runner();
-    group.bench_function("runner_client_messages 1k✉️ 100➰", |b| {
-        b.iter(|| {
-            runner_with_client_messages(
-                black_box(&mut runner),
-                black_box(waves.clone()),
-                black_box(sender.clone()),
-            )
-        })
-    });
-
-    let waves = build_waves(10_000, 100);
-    let (mut runner, sender) = build_runner();
-    group.bench_function("runner_client_messages 10k✉️ 100➰", |b| {
-        b.iter(|| {
-            runner_with_client_messages(
-                black_box(&mut runner),
-                black_box(waves.clone()),
-                black_box(sender.clone()),
-            )
-        })
+    group.bench_function("runner_client_messages 10k✉️", |b| {
+        b.iter_with_setup(
+            || {
+                let messages = build_messages(10_000);
+                let (runner, sender) = build_runner();
+                send_messages(messages.clone(), sender.clone());
+                runner
+            },
+            |mut runner| runner_client_messages(black_box(&mut runner), black_box(10_000)),
+        )
     });
 }
 
