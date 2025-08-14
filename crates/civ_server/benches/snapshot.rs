@@ -43,13 +43,13 @@ pub fn bench_dump_snapshot(c: &mut Criterion) {
     let mut group = c.benchmark_group("index_write");
     group.sample_size(100);
 
-    let state = build_snapshot(100_000, 5_000, 1_000_000);
-    group.bench_function("snapshot_state 100k🚹 5k🏠 1M🎯", |b| {
+    let state = build_snapshot(1_000, 1_000, 1_000);
+    group.bench_function("snapshot_state 1k🚹 1k🏠 1k🎯", |b| {
         b.iter(|| snapshot_state(black_box(&state)))
     });
 
     let snapshot = snapshot_state(&state);
-    group.bench_function("write_snapshot 100k🚹 5k🏠 1M🎯", |b| {
+    group.bench_function("write_snapshot 1k🚹 1k🏠 1k🎯", |b| {
         b.iter(|| dump_state(black_box(&snapshot)))
     });
 }
