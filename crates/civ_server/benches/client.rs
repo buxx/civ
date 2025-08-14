@@ -7,7 +7,7 @@ use async_std::channel::{unbounded, Sender};
 use civ_server::{
     config::ServerConfig,
     context::Context,
-    runner::{Runner, RunnerContext},
+    runner::{worker::setup_workers, Runner, RunnerContext},
     state::State,
     world::reader::WorldReader,
 };
@@ -52,14 +52,13 @@ fn build_runner() -> (Runner, Sender<(Client, ClientToServerMessage)>) {
         from_clients_receiver,
         to_clients_sender,
     );
+    let mut runner = Runner::builder()
+        .context(runner_context)
+        .tick_base_period(1_000_000_000) // To ensure no wait before ticks
+        .build();
+    runner.workers_channels = setup_workers(&runner.context);
 
-    (
-        Runner::builder()
-            .context(runner_context)
-            .tick_base_period(1_000_000_000) // To ensure no wait before ticks
-            .build(),
-        from_clients_sender,
-    )
+    (runner, from_clients_sender)
 }
 
 fn runner_with_client_messages(
