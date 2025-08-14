@@ -3,5 +3,5 @@ description: 'Install project OS dependencies (according using Ubuntu)'
 runs:
   using: "composite"
   steps:
-    - run: echo no deps for now
+    - run: sudo apt install libasound2-dev
       shell: bash
