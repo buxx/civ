@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755172709948,
+  "lastUpdate": 1755173035274,
   "repoUrl": "https://github.com/buxx/civ",
   "entries": {
     "Benchmark": [
@@ -4774,6 +4774,84 @@ window.BENCHMARK_DATA = {
           {
             "name": "index_write/index_write_city 10k🏠",
             "value": 115,
+            "range": "± 1",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "committer": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "distinct": true,
+          "id": "3d528b95e2708ebbccfc03c03102ed7b9038a48c",
+          "message": "ci: dep",
+          "timestamp": "2025-08-14T14:00:00+02:00",
+          "tree_id": "0d5f1d021107dc986712848762307231b441fcb7",
+          "url": "https://github.com/buxx/civ/commit/3d528b95e2708ebbccfc03c03102ed7b9038a48c"
+        },
+        "date": 1755173034686,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "tiles_from_window",
+            "value": 575,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_client_messages/runner_client_messages 1✉️",
+            "value": 65167,
+            "range": "± 4650",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "runner_client_messages/runner_client_messages 10k✉️",
+            "value": 5333961,
+            "range": "± 141641",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1🚹",
+            "value": 47,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 1k🚹",
+            "value": 1146076,
+            "range": "± 97063",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_unit 10k🚹",
+            "value": 133622854,
+            "range": "± 2387352",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1🏠",
+            "value": 91,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 1k🏠",
+            "value": 91,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "index_write/index_write_city 10k🏠",
+            "value": 113,
             "range": "± 1",
             "unit": "ns/iter"
           }
