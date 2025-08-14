@@ -50,5 +50,9 @@ harness = false
 name = "snapshot"
 harness = false
 
+[[bench]]
+name = "client"
+harness = false
+
 [profile.bench]
 lto = true

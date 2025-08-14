@@ -7,7 +7,7 @@ use async_std::channel::unbounded;
 use civ_server::{
     config::ServerConfig,
     context::Context,
-    runner::{Runner, RunnerContext},
+    runner::{worker::setup_workers, Runner, RunnerContext},
     state::State,
     task::{TaskContext, TaskId},
     test::task::{fibonacci, FibonacciTask},
@@ -58,7 +58,7 @@ fn runner_with_fibonacci_tasks(tasks_count: usize, complexity: u64, iterations: 
 
     let state = Arc::new(RwLock::new(state));
     let mut runner = runner(context.clone(), Arc::clone(&state));
-    runner.setup_workers();
+    runner.workers_channels = setup_workers(&runner.context);
 
     for _ in 0..iterations {
         runner.do_one_iteration();

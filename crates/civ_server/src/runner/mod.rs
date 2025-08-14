@@ -34,7 +34,7 @@ use crate::{
     state::{NoLongerExist, State, StateError},
     task::{
         city::generator::{BuildCityFrom, BuildCityFromChange, CityGenerator},
-        Concern, TaskError, TaskId,
+        Concern, TaskBox, TaskError, TaskId,
     },
     world::reader::WorldReader,
 };
@@ -94,7 +94,8 @@ impl Clone for RunnerContext {
 
 #[derive(Builder)]
 pub struct Runner {
-    pub(super) context: RunnerContext,
+    // TODO: pub for ?
+    pub context: RunnerContext,
     tick_base_period: u64,
     #[builder(default = Duration::ZERO)]
     lag: Duration,
@@ -104,8 +105,9 @@ pub struct Runner {
     ticks_since_last_stats: u64,
     #[builder(default = Instant::now())]
     last_stat: Instant,
+    // TODO: pub for benches ...
     #[builder(default = vec![])]
-    workers_channels: Vec<(Sender<()>, Receiver<Vec<Effect>>)>,
+    pub workers_channels: Vec<(Sender<()>, Receiver<Vec<Effect>>)>,
     #[builder(default = Box::new(RandomPlacer))]
     placer: PlacerBox,
 }
@@ -176,7 +178,8 @@ impl Runner {
         self.stats_log();
     }
 
-    fn clients(&mut self) -> Vec<Effect> {
+    // TODO: pub for benches
+    pub fn clients(&mut self) -> Vec<Effect> {
         let mut effects = vec![];
 
         // TODO: parallel
@@ -456,6 +459,7 @@ impl From<StateError> for CreateTaskError {
 mod test {
     use std::{collections::HashMap, path::PathBuf};
 
+    use async_std::channel::unbounded;
     use common::{
         game::{
             city::CityProductionTons,
