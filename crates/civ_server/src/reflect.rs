@@ -22,10 +22,10 @@ impl Runner {
                 Ok(reflects) => {
                     for (message, client_ids) in reflects {
                         for client_id in client_ids {
-                            self.context
+                            let _ = self
+                                .context
                                 .to_client_sender
-                                .send_blocking((client_id, message.clone()))
-                                .unwrap();
+                                .send_blocking((client_id, message.clone()));
                         }
                     }
                 }

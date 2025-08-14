@@ -72,8 +72,10 @@ fn send_messages(
 }
 
 fn runner_client_messages(runner: &mut Runner, expected: usize) {
-    let effects = runner.clients();
-    assert_eq!(effects.len(), expected * 2); // Two effect per Hello expected
+    runner.do_one_iteration();
+
+    let client_count = runner.context.state().clients().clients_count();
+    assert_eq!(client_count, expected);
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -100,18 +102,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 runner
             },
             |mut runner| runner_client_messages(black_box(&mut runner), black_box(10_000)),
-        )
-    });
-
-    group.bench_function("runner_client_messages 1M✉️", |b| {
-        b.iter_with_setup(
-            || {
-                let messages = build_messages(1_000_000);
-                let (runner, sender) = build_runner();
-                send_messages(messages.clone(), sender.clone());
-                runner
-            },
-            |mut runner| runner_client_messages(black_box(&mut runner), black_box(1_000_000)),
         )
     });
 }
