@@ -1908,6 +1908,7 @@ dependencies = [
  "uuid",
  "wasm-bindgen",
  "wasm-cookies",
+ "wayland-sys",
  "web-sys",
 ]
 
