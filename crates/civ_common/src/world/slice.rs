@@ -55,7 +55,7 @@ impl<T> Slice<T> {
             .relative_to((point.x as i32, point.y as i32))?;
         let index = rel_point.y as usize * self.width as usize + rel_point.x as usize;
 
-        self.items.get(index as usize)
+        self.items.get(index)
     }
 
     /// Return mutable reference of item for given world point. If any.

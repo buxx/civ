@@ -35,8 +35,8 @@ impl<'a> Placer<'a> for RandomPlacer {
     ) -> Result<WorldPoint, PlacerError> {
         // TODO: something more smart than this
         for _ in 0..1000 {
-            let x = rand::thread_rng().gen_range(0..world.width());
-            let y = rand::thread_rng().gen_range(0..world.height());
+            let x = rand::rng().random_range(0..world.width());
+            let y = rand::rng().random_range(0..world.height());
             let point = WorldPoint::new(x, y);
 
             if let Some(tile) = world.tile(x, y) {
