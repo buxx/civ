@@ -82,9 +82,12 @@ fn runner_with_client_messages(
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("index_write");
+    group.sample_size(20);
+
     let waves = build_waves(1, 1);
     let (mut runner, sender) = build_runner();
-    c.bench_function("runner_client_messages 1✉️ 1➰", |b| {
+    group.bench_function("runner_client_messages 1✉️ 1➰", |b| {
         b.iter(|| {
             runner_with_client_messages(
                 black_box(&mut runner),
@@ -94,9 +97,21 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
-    let waves = build_waves(1_000, 1_000);
+    let waves = build_waves(1_000, 100);
     let (mut runner, sender) = build_runner();
-    c.bench_function("runner_client_messages 1k✉️ 1k➰", |b| {
+    group.bench_function("runner_client_messages 1k✉️ 100➰", |b| {
+        b.iter(|| {
+            runner_with_client_messages(
+                black_box(&mut runner),
+                black_box(waves.clone()),
+                black_box(sender.clone()),
+            )
+        })
+    });
+
+    let waves = build_waves(10_000, 100);
+    let (mut runner, sender) = build_runner();
+    group.bench_function("runner_client_messages 10k✉️ 100➰", |b| {
         b.iter(|| {
             runner_with_client_messages(
                 black_box(&mut runner),
