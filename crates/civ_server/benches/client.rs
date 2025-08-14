@@ -102,6 +102,18 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             |mut runner| runner_client_messages(black_box(&mut runner), black_box(10_000)),
         )
     });
+
+    group.bench_function("runner_client_messages 1M✉️", |b| {
+        b.iter_with_setup(
+            || {
+                let messages = build_messages(1_000_000);
+                let (runner, sender) = build_runner();
+                send_messages(messages.clone(), sender.clone());
+                runner
+            },
+            |mut runner| runner_client_messages(black_box(&mut runner), black_box(1_000_000)),
+        )
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);
