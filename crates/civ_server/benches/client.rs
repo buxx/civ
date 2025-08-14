@@ -22,16 +22,15 @@ use common::{
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn build_waves(messages: usize, iterations: usize) -> Vec<Vec<ClientToServerMessage>> {
-    let mut messages_ = vec![];
     let mut waves = vec![];
 
-    for _ in 0..messages {
-        messages_.push(ClientToServerMessage::Network(
-            ClientToServerNetworkMessage::Hello(Client::default(), Resolution::new(127, 128)),
-        ))
-    }
-
     for _ in 0..iterations {
+        let mut messages_ = vec![];
+        for _ in 0..messages {
+            messages_.push(ClientToServerMessage::Network(
+                ClientToServerNetworkMessage::Hello(Client::default(), Resolution::new(127, 128)),
+            ))
+        }
         waves.push(messages_.clone());
     }
 
@@ -67,13 +66,19 @@ fn runner_with_client_messages(
     sender: Sender<(Client, ClientToServerMessage)>,
 ) {
     let client = Client::default();
+    let mut counter = 0;
+    let mut effects = vec![];
+
     for wave in waves {
         for message in wave {
+            counter += 1;
             sender.send_blocking((client, message)).unwrap();
         }
 
-        runner.clients();
+        effects.extend(runner.clients());
     }
+
+    assert_eq!(effects.len(), counter * 2); // Two effect per Hello expected
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
