@@ -4,7 +4,7 @@ use derive_more::Constructor;
 use hexx::Hex;
 
 use crate::{
-    assets::tile::TILES_ATLAS_PATH,
+    assets::{atlas, tile::TILES_ATLAS_PATH},
     core::GameSlicePropagated,
     ingame::GameFrameResource,
     map::{AtlasIndex, AtlasesResource},
@@ -45,7 +45,7 @@ impl IntoBundle for Select {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
-        let atlas_index = AtlasIndex(7);
+        let atlas_index = atlas::ITEM_SELECTED;
 
         SelectBundle::new(
             *self,

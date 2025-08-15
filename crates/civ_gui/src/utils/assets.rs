@@ -12,7 +12,10 @@ use derive_more::Constructor;
 use hexx::{Hex, HexLayout};
 
 use crate::{
-    assets::tile::{relative_layout, TILES_ATLAS_PATH},
+    assets::{
+        atlas,
+        tile::{relative_layout, TILES_ATLAS_PATH},
+    },
     ingame::{HexCity, HexTile, HexUnit},
     map::{AtlasIndex, AtlasesResource},
 };
@@ -23,8 +26,8 @@ pub const UNIT_Z: f32 = 2.0;
 
 fn terrain_type_index(terrain: &TerrainType) -> AtlasIndex {
     match terrain {
-        TerrainType::GrassLand => AtlasIndex(0),
-        TerrainType::Plain => AtlasIndex(1),
+        TerrainType::GrassLand => atlas::TILE_GRASSLAND,
+        TerrainType::Plain => atlas::TILE_PLAIN,
     }
 }
 
@@ -134,7 +137,7 @@ impl IntoBundle for CtxTile<Tile> {
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
         let atlas_index = match self {
-            CtxTile::Outside => AtlasIndex(4),
+            CtxTile::Outside => atlas::TILE_BLACK,
             CtxTile::Visible(tile) => terrain_type_index(&tile.type_()),
         };
 
@@ -196,7 +199,7 @@ impl IntoBundle for Vec<ClientUnit> {
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
-        let atlas_index = AtlasIndex(5);
+        let atlas_index = atlas::UNIT_SETTLER;
 
         // FIXME: Must be computed from list (first, for example)
         HexUnitBundle::new(
@@ -244,7 +247,7 @@ impl IntoBundle for ClientCity {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
-        let atlas_index = AtlasIndex(6);
+        let atlas_index = atlas::CITY_JUNGLE;
 
         // FIXME: Must be computed from list (first, for example)
         HexUnitBundle::new(
@@ -281,8 +284,7 @@ impl IntoBundle for ClientTask {
 
         let atlas_index = match self.type_() {
             ClientTaskType::Idle => todo!(),
-            // TODO: Type specific of this atlas
-            ClientTaskType::Settle(_) => AtlasIndex(8),
+            ClientTaskType::Settle(_) => atlas::ACTION_SETTLE,
         };
 
         ClientTaskBundle::new(

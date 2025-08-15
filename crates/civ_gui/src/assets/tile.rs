@@ -3,10 +3,10 @@ use common::geo::ImaginaryWorldPoint;
 use glam::{uvec2, UVec2, Vec2};
 use hexx::{hex, HexLayout, HexOrientation};
 
-pub const TILE_SIZE: UVec2 = uvec2(120, 140);
+pub const TILE_SIZE: UVec2 = uvec2(105, 120);
 pub const TILES_ATLAS_PATH: &str = "img/tiles.png";
-pub const TILES_ATLAS_COLUMNS: u32 = 9;
-pub const TILES_ATLAS_ROWS: u32 = 5;
+pub const TILES_ATLAS_COLUMNS: u32 = 10;
+pub const TILES_ATLAS_ROWS: u32 = 1;
 pub const TILES_ATLAS_PADDING: Option<UVec2> = None;
 pub const TILES_ATLAS_OFFSET: Option<UVec2> = None;
 
