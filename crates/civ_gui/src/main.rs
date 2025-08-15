@@ -49,7 +49,10 @@ fn entrypoint() -> Result<(), JsValue> {
 
     #[cfg(feature = "debug")]
     {
+        use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
+
         app.add_plugins(DebugPlugin);
+        app.add_plugins(FrameTimeDiagnosticsPlugin);
     }
 
     app.run();

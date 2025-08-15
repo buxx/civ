@@ -7,7 +7,7 @@ use crate::{
     assets::{atlas, tile::TILES_ATLAS_PATH},
     core::GameSlicePropagated,
     ingame::GameFrameResource,
-    map::{AtlasIndex, AtlasesResource},
+    map::AtlasesResource,
     utils::assets::{DrawContext, DrawHexContext, IntoBundle, Spawn, TILE_Z},
 };
 

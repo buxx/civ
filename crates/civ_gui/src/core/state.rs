@@ -3,6 +3,7 @@ use common::network::message::ClientStateMessage;
 
 use common::space::{CityVec2dIndex, UnitVec2dIndex};
 
+use crate::core::{CityRemoved, CityUpdated, UnitRemoved, UnitUpdated};
 use crate::ingame::{GameFrameResource, GameFrameUpdated, GameSliceResource, GameWindowResource};
 
 use super::{GameSliceUpdated, GameWindowUpdated};
@@ -52,14 +53,18 @@ pub fn react_state_message_(
                         .insert(*city.id(), CityVec2dIndex(index));
                 }
             }
-            Some(Box::new(|c| c.trigger(GameSliceUpdated)))
+
+            let city = city.clone();
+            Some(Box::new(move |c| c.trigger(CityUpdated(city))))
         }
         ClientStateMessage::RemoveCity(point, city_id) => {
             if let Some(ref mut slice) = &mut (slice.0) {
                 slice.cities_mut().set(point, None);
                 slice.cities_map_mut().remove(city_id);
             }
-            Some(Box::new(|c| c.trigger(GameSliceUpdated)))
+
+            let city_id = *city_id;
+            Some(Box::new(move |c| c.trigger(CityRemoved(city_id))))
         }
         ClientStateMessage::SetUnit(unit) => {
             if let Some(ref mut slice) = &mut (slice.0) {
@@ -87,7 +92,9 @@ pub fn react_state_message_(
                     slice.units_map_mut().insert(*unit.id(), new_index);
                 }
             }
-            Some(Box::new(|c| c.trigger(GameSliceUpdated)))
+
+            let unit = unit.clone();
+            Some(Box::new(move |c| c.trigger(UnitUpdated(unit))))
         }
         ClientStateMessage::RemoveUnit(point, unit_id) => {
             // FIXME BS NOW: must update units_map
@@ -104,7 +111,9 @@ pub fn react_state_message_(
                     slice.units_mut().set(point, None);
                 }
             }
-            Some(Box::new(|c| c.trigger(GameSliceUpdated)))
+
+            let unit_id = *unit_id;
+            Some(Box::new(move |c| c.trigger(UnitRemoved(unit_id))))
         }
     }
 }

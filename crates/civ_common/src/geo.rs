@@ -62,6 +62,15 @@ impl From<WorldPoint> for U64Vec2 {
     }
 }
 
+impl From<WorldPoint> for Vec2 {
+    fn from(value: WorldPoint) -> Self {
+        Self {
+            x: value.x as f32,
+            y: value.y as f32,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Default)]
 pub struct ImaginaryWorldPoint {
     pub x: i64,
