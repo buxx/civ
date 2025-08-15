@@ -10,7 +10,7 @@ use derive_more::Constructor;
 
 use crate::{
     assets::tile::{absolute_layout, relative_layout, TILE_SIZE},
-    core::GameSlicePropagated,
+    core::{CityRemoved, CityUpdated, GameSlicePropagated, UnitRemoved, UnitUpdated},
     ingame::{GameFrameResource, GameSliceResource, HexTile},
     map::{grid::Grid, WaitingForGameSlice},
     to_server,
@@ -240,6 +240,22 @@ pub fn react_game_slice_updated(
         center.0 = Some(slice.center());
         commands.trigger(GameSlicePropagated);
     }
+}
+
+pub fn react_city_updated(_trigger: Trigger<CityUpdated>) {
+    todo!()
+}
+
+pub fn react_city_removed(_trigger: Trigger<CityRemoved>) {
+    todo!()
+}
+
+pub fn react_unit_updated(_trigger: Trigger<UnitUpdated>) {
+    todo!()
+}
+
+pub fn react_unit_removed(_trigger: Trigger<UnitRemoved>) {
+    todo!()
 }
 
 #[cfg(test)]

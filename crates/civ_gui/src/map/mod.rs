@@ -11,7 +11,11 @@ use std::ops::Deref;
 use zoom::map_zoom;
 
 use crate::{
-    assets::tile::tiles_texture_atlas_layout, ingame::input::update_last_known_cursor_position,
+    assets::tile::tiles_texture_atlas_layout,
+    ingame::input::update_last_known_cursor_position,
+    map::refresh::{
+        react_city_removed, react_city_updated, react_unit_removed, react_unit_updated,
+    },
     state::AppState,
 };
 
@@ -30,6 +34,10 @@ impl Plugin for MapPlugin {
             .init_resource::<DraggingMap>()
             .init_resource::<WaitingForGameSlice>()
             .add_observer(react_game_slice_updated)
+            .add_observer(react_city_updated)
+            .add_observer(react_city_removed)
+            .add_observer(react_unit_updated)
+            .add_observer(react_unit_removed)
             .add_observer(react_center_camera_on_grid)
             // TODO: move into atlases
             .add_systems(Startup, init_atlases)
