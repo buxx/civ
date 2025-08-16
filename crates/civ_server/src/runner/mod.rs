@@ -234,8 +234,13 @@ impl Runner {
         let mut effects: Vec<Effect> = self
             .client_workers
             .iter()
-            .filter_map(|w| w.try_recv().ok())
-            .flatten()
+            .flat_map(|worker| {
+                let mut messages = vec![];
+                while let Ok(message) = worker.try_recv() {
+                    messages.extend(message);
+                }
+                messages
+            })
             .collect();
 
         for (_, rcx) in &self.task_workers {
