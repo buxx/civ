@@ -27,7 +27,10 @@ use crate::{
     context::Context,
     effect::{Effect, StateEffect, TaskEffect},
     game::placer::{PlacerBox, RandomPlacer},
-    runner::{client::deal_client, worker::setup_task_workers},
+    runner::{
+        client::deal_client,
+        worker::{setup_client_workers, setup_task_workers},
+    },
     state::{NoLongerExist, State, StateError},
     task::{TaskBox, TaskError},
     world::reader::WorldReader,
@@ -107,7 +110,9 @@ pub struct Runner {
     last_stat: Instant,
     // TODO: pub for benches ...
     #[builder(default = vec![])]
-    pub workers: Vec<(Sender<()>, Receiver<Vec<Effect>>)>,
+    pub task_workers: Vec<(Sender<()>, Receiver<Vec<Effect>>)>,
+    #[builder(default = vec![])]
+    client_workers: Vec<Receiver<Vec<Effect>>>,
 }
 
 #[derive(Debug, Error)]
@@ -153,7 +158,8 @@ impl Runner {
     }
 
     pub fn run(&mut self) {
-        self.workers = setup_task_workers(&self.context);
+        self.task_workers = setup_task_workers(&self.context);
+        self.client_workers = setup_client_workers(&self.context);
 
         while !self.context.context.stop_is_required() {
             self.do_one_iteration();
@@ -219,35 +225,23 @@ impl Runner {
     }
 
     fn tick(&mut self) {
-        let mut effects = vec![];
+        for (i, (start_sender, _)) in self.task_workers.iter().enumerate() {
+            if start_sender.send_blocking(()).is_err() {
+                debug!("Worker {} start channel is closed", i)
+            }
+        }
 
-        thread::scope(|scope| {
-            let clients = scope.spawn(|| {
-                let mut effects = vec![];
-                while let Ok((client, message)) = self.context.from_clients_receiver.try_recv() {
-                    effects.extend(tick_client(&self.context, &client, &message));
-                }
-                effects
-            });
+        let mut effects: Vec<Effect> = self
+            .client_workers
+            .iter()
+            .filter_map(|w| w.try_recv().ok())
+            .flatten()
+            .collect();
 
-            let tasks = scope.spawn(|| {
-                for (i, (start_sender, _)) in self.workers.iter().enumerate() {
-                    if start_sender.send_blocking(()).is_err() {
-                        debug!("Worker {} start channel is closed", i)
-                    }
-                }
-
-                let mut effects = vec![];
-                for (_, rcx) in &self.workers {
-                    let x = rcx.recv_blocking().unwrap_or_default();
-                    effects.extend(x);
-                }
-                effects
-            });
-
-            effects.extend(clients.join().unwrap());
-            effects.extend(tasks.join().unwrap());
-        });
+        for (_, rcx) in &self.task_workers {
+            let x = rcx.recv_blocking().unwrap_or_default();
+            effects.extend(x);
+        }
 
         self.apply_effects(effects);
     }

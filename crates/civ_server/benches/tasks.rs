@@ -56,7 +56,7 @@ fn build_runner(tasks_count: usize, complexity: u64) -> Runner {
         .context(runner_context)
         .tick_base_period(1_000_000_000) // To ensure no wait before ticks
         .build();
-    runner.workers = setup_task_workers(&runner.context);
+    runner.task_workers = setup_task_workers(&runner.context);
     runner
 }
 

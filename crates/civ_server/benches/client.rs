@@ -53,7 +53,7 @@ fn build_runner() -> (Runner, Sender<(Client, ClientToServerMessage)>) {
         .context(runner_context)
         .tick_base_period(1_000_000_000) // To ensure no wait before ticks
         .build();
-    runner.workers = setup_task_workers(&runner.context);
+    runner.task_workers = setup_task_workers(&runner.context);
 
     (runner, from_clients_sender)
 }
