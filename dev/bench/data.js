@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755291209977,
+  "lastUpdate": 1755343014971,
   "repoUrl": "https://github.com/buxx/civ",
   "entries": {
     "Benchmark": [
@@ -5339,6 +5339,36 @@ window.BENCHMARK_DATA = {
             "name": "runner_with_fibonacci_tasks 10k🎯 1G🧠 1k➰",
             "value": 486513602,
             "range": "± 12481917",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "committer": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "distinct": true,
+          "id": "afe73e8d10a7a8191649d456f5e2fcd4d02fec97",
+          "message": "feat: compute client request in parrallel",
+          "timestamp": "2025-08-16T13:14:32+02:00",
+          "tree_id": "0b78e9d3aa87bef1fa80b3db2f2475e4d5262493",
+          "url": "https://github.com/buxx/civ/commit/afe73e8d10a7a8191649d456f5e2fcd4d02fec97"
+        },
+        "date": 1755343013958,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "tiles_from_window",
+            "value": 664,
+            "range": "± 7",
             "unit": "ns/iter"
           }
         ]
