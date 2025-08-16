@@ -1,6 +1,6 @@
 use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use common::{
-    game::slice::ClientCity,
+    game::{city::CityId, slice::ClientCity, unit::UnitId},
     geo::ImaginaryWorldPoint,
     network::message::ClientToServerInGameMessage,
     space::window::Resolution,
@@ -242,20 +242,126 @@ pub fn react_game_slice_updated(
     }
 }
 
-pub fn react_city_updated(_trigger: Trigger<CityUpdated>) {
-    todo!()
+fn despawn_city(city_id: &CityId, grid: &mut GridResource, commands: &mut Commands) {
+    if let Some(grid) = &grid.0 {
+        if let Some(city_hex) = grid.city_index(city_id) {
+            if let Some(grid) = grid.get(city_hex) {
+                if let Some(resource) = &grid.city {
+                    // TODO: modify GridResource too ?
+                    commands.entity(resource.entity).despawn_recursive();
+                }
+            }
+        }
+    }
 }
 
-pub fn react_city_removed(_trigger: Trigger<CityRemoved>) {
-    todo!()
+// FIXME BS NOW: must only one source code (cf. GridUpdater)
+fn spawn_city(
+    city: &ClientCity,
+    grid: &mut GridResource,
+    ctx: DrawContext,
+    commands: &mut Commands,
+) {
+    if let Some(grid) = &grid.0 {
+        // FIXME BS NOW: only work on city replacement ... Should generalize from GridUpdater
+        if let Some(hex) = grid.city_index(city.id()) {
+            let ctx = DrawHexContext::from_ctx(&ctx, *hex);
+            city.spawn(commands, &ctx, CITY_Z);
+            // TODO: update GridResource ?
+        }
+    }
 }
 
-pub fn react_unit_updated(_trigger: Trigger<UnitUpdated>) {
-    todo!()
+fn despawn_unit(unit_id: &UnitId, grid: &mut GridResource, commands: &mut Commands) -> bool {
+    if let Some(grid) = &grid.0 {
+        if let Some(unit_hex) = grid.unit_index(unit_id) {
+            if let Some(grid) = grid.get(unit_hex) {
+                if let Some(resource) = &grid.units {
+                    // FIXME BS NOW: weak method to determine if this is the same unit which is displayed
+                    if resource.item.first().map(|u| u.id()) == Some(unit_id) {
+                        // TODO: modify GridResource too ?
+                        commands.entity(resource.entity).despawn_recursive();
+
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    false
 }
 
-pub fn react_unit_removed(_trigger: Trigger<UnitRemoved>) {
-    todo!()
+// FIXME BS NOW: must only one source code (cf. GridUpdater)
+fn spawn_unit(
+    unit: &ClientUnit,
+    grid: &mut GridResource,
+    ctx: DrawContext,
+    commands: &mut Commands,
+) {
+    if let Some(grid) = &grid.0 {
+        // FIXME BS NOW: only work on city replacement ... Should generalize from GridUpdater
+        if let Some(hex) = grid.unit_index(unit.id()) {
+            let ctx = DrawHexContext::from_ctx(&ctx, *hex);
+            vec![unit.clone()].spawn(commands, &ctx, CITY_Z);
+            // TODO: update GridResource ?
+        }
+    }
+}
+
+pub fn react_city_updated(
+    trigger: Trigger<CityUpdated>,
+    slice: Res<GameSliceResource>,
+    atlases: Res<AtlasesResource>,
+    assets: Res<AssetServer>,
+    frame: Res<GameFrameResource>,
+    mut grid: ResMut<GridResource>,
+    mut commands: Commands,
+) {
+    let city = &trigger.event().0;
+    let city_id = city.id();
+    despawn_city(city_id, &mut grid, &mut commands);
+    if let (Some(slice), Some(frame)) = (&slice.0, frame.0) {
+        let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
+        spawn_city(city, &mut grid, ctx, &mut commands);
+    }
+}
+
+pub fn react_city_removed(
+    trigger: Trigger<CityRemoved>,
+    mut grid: ResMut<GridResource>,
+    mut commands: Commands,
+) {
+    let city_id = &trigger.event().0;
+    despawn_city(city_id, &mut grid, &mut commands);
+}
+
+pub fn react_unit_updated(
+    trigger: Trigger<UnitUpdated>,
+    slice: Res<GameSliceResource>,
+    atlases: Res<AtlasesResource>,
+    assets: Res<AssetServer>,
+    frame: Res<GameFrameResource>,
+    mut grid: ResMut<GridResource>,
+    mut commands: Commands,
+) {
+    let unit = &trigger.event().0;
+    let unit_id = unit.id();
+    if despawn_unit(unit_id, &mut grid, &mut commands) {
+        if let (Some(slice), Some(frame)) = (&slice.0, frame.0) {
+            let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
+            spawn_unit(unit, &mut grid, ctx, &mut commands);
+        }
+    }
+}
+
+pub fn react_unit_removed(
+    trigger: Trigger<UnitRemoved>,
+    mut grid: ResMut<GridResource>,
+    mut commands: Commands,
+) {
+    let unit_id = &trigger.event().0;
+    despawn_unit(unit_id, &mut grid, &mut commands);
 }
 
 #[cfg(test)]

@@ -1,4 +1,5 @@
 use async_std::channel::{unbounded, Receiver, Sender};
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::prelude::*;
 use bon::Builder;
 #[cfg(feature = "debug")]
@@ -170,6 +171,7 @@ impl<W: Generator> Setup<W> {
             CorePlugin,
             InGamePlugin::builder().build(),
             MapPlugin,
+            FrameTimeDiagnosticsPlugin,
         ))
         .add_systems(Startup, init);
 

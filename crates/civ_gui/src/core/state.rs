@@ -54,8 +54,8 @@ pub fn react_state_message_(
                 }
             }
 
-            let city_id = *city.id();
-            Some(Box::new(move |c| c.trigger(CityUpdated(city_id))))
+            let city = city.clone();
+            Some(Box::new(move |c| c.trigger(CityUpdated(city))))
         }
         ClientStateMessage::RemoveCity(point, city_id) => {
             if let Some(ref mut slice) = &mut (slice.0) {
@@ -93,8 +93,8 @@ pub fn react_state_message_(
                 }
             }
 
-            let unit_id = *unit.id();
-            Some(Box::new(move |c| c.trigger(UnitUpdated(unit_id))))
+            let unit = unit.clone();
+            Some(Box::new(move |c| c.trigger(UnitUpdated(unit))))
         }
         ClientStateMessage::RemoveUnit(point, unit_id) => {
             // FIXME BS NOW: must update units_map
