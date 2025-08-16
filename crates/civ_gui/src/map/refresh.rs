@@ -85,13 +85,18 @@ pub fn refresh_grid(
 struct GridUpdater<'a> {
     window: &'a Window,
     transform: &'a GlobalTransform,
+    // TODO: To free-up usage of these objects, set them only for recreate method ?
     tiles: &'a Query<'a, 'a, Entity, With<HexTile>>,
     cities: &'a Query<'a, 'a, Entity, With<HexCity>>,
     units: &'a Query<'a, 'a, Entity, With<HexUnit>>,
 }
 
 impl<'a> GridUpdater<'a> {
-    fn grid(&mut self, commands: &mut Commands, ctx: &'a DrawContext<'a>) -> HashMap<Hex, GridHex> {
+    fn build_grid(
+        &mut self,
+        commands: &mut Commands,
+        ctx: &'a DrawContext<'a>,
+    ) -> HashMap<Hex, GridHex> {
         let window_width = self.window.width() * self.transform.scale().x;
         let window_height = self.window.height() * self.transform.scale().y;
         let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as i32;
@@ -118,9 +123,9 @@ impl<'a> GridUpdater<'a> {
 
             let ctx = DrawHexContext::from_ctx(ctx, hex);
 
-            let tile = self.tile(commands, &ctx);
-            let city = self.city(commands, &ctx);
-            let units = self.units(commands, &ctx);
+            let tile = self.spawn_tile(commands, &ctx);
+            let city = self.spawn_city(commands, &ctx);
+            let units = self.spawn_units(commands, &ctx);
 
             grid.insert(hex, GridHex::new(imaginary, point, tile, city, units));
         }
@@ -128,7 +133,7 @@ impl<'a> GridUpdater<'a> {
         grid
     }
 
-    fn tile(
+    fn spawn_tile(
         &self,
         commands: &mut Commands,
         ctx: &DrawHexContext,
@@ -145,7 +150,7 @@ impl<'a> GridUpdater<'a> {
         GridHexResource::new(entity, tile)
     }
 
-    fn city(
+    fn spawn_city(
         &self,
         commands: &mut Commands,
         ctx: &DrawHexContext,
@@ -158,13 +163,21 @@ impl<'a> GridUpdater<'a> {
         })
     }
 
-    fn units(
+    fn spawn_units(
         &self,
         commands: &mut Commands,
         ctx: &DrawHexContext,
     ) -> Option<GridHexResource<Vec<ClientUnit>>> {
         let point = ctx.point().expect("Units called only on world point");
         let units = ctx.slice.units().get(&point).cloned().flatten();
+
+        #[cfg(feature = "debug")]
+        {
+            if let Some(units) = &units {
+                debug!("Found {} unit to spawn at {:?}", units.len(), ctx.point());
+            }
+        }
+
         let entity = units
             .clone()
             .map(|units| units.spawn(commands, ctx, UNIT_Z));
@@ -174,7 +187,7 @@ impl<'a> GridUpdater<'a> {
     }
 
     // TODO: despawn/spawn only really out/in in screen
-    fn update(&mut self, commands: &mut Commands, ctx: &'a DrawContext<'a>) {
+    fn create(&mut self, commands: &mut Commands, ctx: &'a DrawContext<'a>) {
         let center = ctx.slice.imaginary_world_point_for_center_rel((0, 0));
         let absolute_layout = absolute_layout();
         let relative_layout = relative_layout(&center);
@@ -195,13 +208,88 @@ impl<'a> GridUpdater<'a> {
         }
 
         let grid = GridResource::new(Some(Grid::new(
-            self.grid(commands, ctx),
+            self.build_grid(commands, ctx),
             center,
             relative_layout,
             absolute_layout,
         )));
         commands.insert_resource(grid);
     }
+
+    fn update(
+        &self,
+        commands: &mut Commands,
+        ctx: &'a DrawContext<'a>,
+        grid: &mut Grid,
+        action: Action,
+    ) {
+        //
+        let center = ctx.slice.imaginary_world_point_for_center_rel((0, 0));
+        let relative_layout = relative_layout(&center);
+
+        match &action {
+            Action::SetCity(city) => {
+                let city_position = city.geo().point();
+                let hex = relative_layout.world_pos_to_hex((*city_position).into());
+                self.remove_city(grid, &hex, commands);
+
+                let ctx = DrawHexContext::from_ctx(ctx, hex);
+                let city = self.spawn_city(commands, &ctx);
+
+                if let Some(grid_hex) = grid.get_mut(&hex) {
+                    grid_hex.city = city;
+                }
+            }
+            Action::RemoveCity(city_id) => {
+                if let Some(hex) = grid.city_index(city_id).cloned() {
+                    self.remove_city(grid, &hex, commands);
+                }
+            }
+            Action::SetUnit(unit) => {
+                let unit_position = unit.geo().point();
+                let hex = relative_layout.world_pos_to_hex((*unit_position).into());
+                self.remove_units(grid, &hex, commands);
+
+                let ctx = DrawHexContext::from_ctx(ctx, hex);
+                let units = self.spawn_units(commands, &ctx);
+
+                if let Some(grid_hex) = grid.get_mut(&hex) {
+                    debug!("Update grid hex with unit: {}", unit.id());
+                    grid_hex.units = units;
+                }
+            }
+            Action::RemoveUnit(unit_id) => {
+                if let Some(hex) = grid.unit_index(unit_id).cloned() {
+                    self.remove_units(grid, &hex, commands);
+                }
+            }
+        }
+    }
+
+    fn remove_city(&self, grid: &mut Grid, hex: &Hex, commands: &mut Commands) {
+        if let Some(grid) = grid.get(hex) {
+            if let Some(resource) = &grid.city {
+                // TODO: modify GridResource too ?
+                commands.entity(resource.entity).despawn_recursive();
+            }
+        }
+    }
+
+    fn remove_units(&self, grid: &mut Grid, hex: &Hex, commands: &mut Commands) {
+        if let Some(grid) = grid.get(hex) {
+            if let Some(resource) = &grid.units {
+                // TODO: modify GridResource too ?
+                commands.entity(resource.entity).despawn_recursive();
+            }
+        }
+    }
+}
+
+pub enum Action {
+    SetUnit(ClientUnit),
+    RemoveUnit(UnitId),
+    SetCity(ClientCity),
+    RemoveCity(CityId),
 }
 
 // FIXME Optimizations :
@@ -235,133 +323,153 @@ pub fn react_game_slice_updated(
         let (_, transform) = cameras.single();
 
         let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
-        GridUpdater::new(window, transform, &tiles, &cities, &units).update(&mut commands, &ctx);
+        GridUpdater::new(window, transform, &tiles, &cities, &units).create(&mut commands, &ctx);
 
         center.0 = Some(slice.center());
         commands.trigger(GameSlicePropagated);
     }
 }
 
-fn despawn_city(city_id: &CityId, grid: &mut GridResource, commands: &mut Commands) {
-    if let Some(grid) = &grid.0 {
-        if let Some(city_hex) = grid.city_index(city_id) {
-            if let Some(grid) = grid.get(city_hex) {
-                if let Some(resource) = &grid.city {
-                    // TODO: modify GridResource too ?
-                    commands.entity(resource.entity).despawn_recursive();
-                }
-            }
-        }
-    }
-}
-
-// FIXME BS NOW: must only one source code (cf. GridUpdater)
-fn spawn_city(
-    city: &ClientCity,
-    grid: &mut GridResource,
-    ctx: DrawContext,
-    commands: &mut Commands,
-) {
-    if let Some(grid) = &grid.0 {
-        // FIXME BS NOW: only work on city replacement ... Should generalize from GridUpdater
-        if let Some(hex) = grid.city_index(city.id()) {
-            let ctx = DrawHexContext::from_ctx(&ctx, *hex);
-            city.spawn(commands, &ctx, CITY_Z);
-            // TODO: update GridResource ?
-        }
-    }
-}
-
-fn despawn_unit(unit_id: &UnitId, grid: &mut GridResource, commands: &mut Commands) -> bool {
-    if let Some(grid) = &grid.0 {
-        if let Some(unit_hex) = grid.unit_index(unit_id) {
-            if let Some(grid) = grid.get(unit_hex) {
-                if let Some(resource) = &grid.units {
-                    // FIXME BS NOW: weak method to determine if this is the same unit which is displayed
-                    if resource.item.first().map(|u| u.id()) == Some(unit_id) {
-                        // TODO: modify GridResource too ?
-                        commands.entity(resource.entity).despawn_recursive();
-
-                        return true;
-                    }
-                }
-            }
-        }
-    }
-
-    false
-}
-
-// FIXME BS NOW: must only one source code (cf. GridUpdater)
-fn spawn_unit(
-    unit: &ClientUnit,
-    grid: &mut GridResource,
-    ctx: DrawContext,
-    commands: &mut Commands,
-) {
-    if let Some(grid) = &grid.0 {
-        // FIXME BS NOW: only work on city replacement ... Should generalize from GridUpdater
-        if let Some(hex) = grid.unit_index(unit.id()) {
-            let ctx = DrawHexContext::from_ctx(&ctx, *hex);
-            vec![unit.clone()].spawn(commands, &ctx, CITY_Z);
-            // TODO: update GridResource ?
-        }
-    }
-}
-
+#[allow(clippy::complexity)]
 pub fn react_city_updated(
     trigger: Trigger<CityUpdated>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<(&Camera, &GlobalTransform)>,
     slice: Res<GameSliceResource>,
     atlases: Res<AtlasesResource>,
     assets: Res<AssetServer>,
+    tiles: Query<Entity, With<HexTile>>,
+    cities: Query<Entity, With<HexCity>>,
+    units: Query<Entity, With<HexUnit>>,
     frame: Res<GameFrameResource>,
     mut grid: ResMut<GridResource>,
     mut commands: Commands,
 ) {
     let city = &trigger.event().0;
     let city_id = city.id();
-    despawn_city(city_id, &mut grid, &mut commands);
-    if let (Some(slice), Some(frame)) = (&slice.0, frame.0) {
+
+    if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
+        debug!("Set city: {city_id}");
+
+        let window = windows.single();
+        let (_, transform) = cameras.single();
+
         let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
-        spawn_city(city, &mut grid, ctx, &mut commands);
+        GridUpdater::new(window, transform, &tiles, &cities, &units).update(
+            &mut commands,
+            &ctx,
+            grid,
+            Action::SetCity(city.clone()),
+        );
+
+        commands.trigger(GameSlicePropagated);
     }
 }
 
+#[allow(clippy::complexity)]
 pub fn react_city_removed(
     trigger: Trigger<CityRemoved>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<(&Camera, &GlobalTransform)>,
+    slice: Res<GameSliceResource>,
+    atlases: Res<AtlasesResource>,
+    assets: Res<AssetServer>,
+    tiles: Query<Entity, With<HexTile>>,
+    cities: Query<Entity, With<HexCity>>,
+    units: Query<Entity, With<HexUnit>>,
+    frame: Res<GameFrameResource>,
     mut grid: ResMut<GridResource>,
     mut commands: Commands,
 ) {
     let city_id = &trigger.event().0;
-    despawn_city(city_id, &mut grid, &mut commands);
+
+    if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
+        debug!("Remove city: {city_id}");
+
+        let window = windows.single();
+        let (_, transform) = cameras.single();
+
+        let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
+        GridUpdater::new(window, transform, &tiles, &cities, &units).update(
+            &mut commands,
+            &ctx,
+            grid,
+            Action::RemoveCity(*city_id),
+        );
+
+        commands.trigger(GameSlicePropagated);
+    }
 }
 
+#[allow(clippy::complexity)]
 pub fn react_unit_updated(
     trigger: Trigger<UnitUpdated>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<(&Camera, &GlobalTransform)>,
     slice: Res<GameSliceResource>,
     atlases: Res<AtlasesResource>,
     assets: Res<AssetServer>,
+    tiles: Query<Entity, With<HexTile>>,
+    cities: Query<Entity, With<HexCity>>,
+    units: Query<Entity, With<HexUnit>>,
     frame: Res<GameFrameResource>,
     mut grid: ResMut<GridResource>,
     mut commands: Commands,
 ) {
     let unit = &trigger.event().0;
     let unit_id = unit.id();
-    if despawn_unit(unit_id, &mut grid, &mut commands) {
-        if let (Some(slice), Some(frame)) = (&slice.0, frame.0) {
-            let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
-            spawn_unit(unit, &mut grid, ctx, &mut commands);
-        }
+
+    if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
+        debug!("Set unit: {unit_id}");
+
+        let window = windows.single();
+        let (_, transform) = cameras.single();
+
+        let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
+        GridUpdater::new(window, transform, &tiles, &cities, &units).update(
+            &mut commands,
+            &ctx,
+            grid,
+            Action::SetUnit(unit.clone()),
+        );
+
+        commands.trigger(GameSlicePropagated);
     }
 }
 
+#[allow(clippy::complexity)]
 pub fn react_unit_removed(
     trigger: Trigger<UnitRemoved>,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    cameras: Query<(&Camera, &GlobalTransform)>,
+    slice: Res<GameSliceResource>,
+    atlases: Res<AtlasesResource>,
+    assets: Res<AssetServer>,
+    tiles: Query<Entity, With<HexTile>>,
+    cities: Query<Entity, With<HexCity>>,
+    units: Query<Entity, With<HexUnit>>,
+    frame: Res<GameFrameResource>,
     mut grid: ResMut<GridResource>,
     mut commands: Commands,
 ) {
     let unit_id = &trigger.event().0;
-    despawn_unit(unit_id, &mut grid, &mut commands);
+
+    if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
+        debug!("Remove unit: {unit_id}");
+
+        let window = windows.single();
+        let (_, transform) = cameras.single();
+
+        let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
+        GridUpdater::new(window, transform, &tiles, &cities, &units).update(
+            &mut commands,
+            &ctx,
+            grid,
+            Action::RemoveUnit(*unit_id),
+        );
+
+        commands.trigger(GameSlicePropagated);
+    }
 }
 
 #[cfg(test)]

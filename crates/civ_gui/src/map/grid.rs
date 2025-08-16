@@ -33,6 +33,12 @@ impl std::ops::Deref for Grid {
     }
 }
 
+impl std::ops::DerefMut for Grid {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.grid
+    }
+}
+
 impl Grid {
     pub fn new(
         grid: HashMap<Hex, GridHex>,
