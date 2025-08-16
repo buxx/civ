@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755343014971,
+  "lastUpdate": 1755345212261,
   "repoUrl": "https://github.com/buxx/civ",
   "entries": {
     "Benchmark": [
@@ -5369,6 +5369,36 @@ window.BENCHMARK_DATA = {
             "name": "tiles_from_window",
             "value": 664,
             "range": "± 7",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "committer": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "distinct": true,
+          "id": "3734c698fa26c28f258575d3d4a6f447e59a7999",
+          "message": "fix: receive all client message possible on tick",
+          "timestamp": "2025-08-16T13:51:05+02:00",
+          "tree_id": "270b1e86eda3b9fe5a5cfe65bf0be405bb22f646",
+          "url": "https://github.com/buxx/civ/commit/3734c698fa26c28f258575d3d4a6f447e59a7999"
+        },
+        "date": 1755345211882,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "tiles_from_window",
+            "value": 664,
+            "range": "± 12",
             "unit": "ns/iter"
           }
         ]
