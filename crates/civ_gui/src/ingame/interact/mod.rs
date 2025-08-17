@@ -1,9 +1,13 @@
 use bevy::prelude::*;
 use bevy_egui::{EguiContextSettings, EguiContexts};
-use common::game::{
-    city::CityId,
-    slice::{ClientCity, ClientUnit},
-    unit::UnitId,
+use common::{
+    game::{
+        city::CityId,
+        slice::{ClientCity, ClientUnit},
+        unit::UnitId,
+    },
+    geo::{Geo, GeoContext},
+    world::{CtxTile, Tile},
 };
 
 use crate::{
@@ -31,6 +35,7 @@ macro_rules! add_city_component {
                     <$resource as $crate::ingame::interact::UiComponentResource>::Resource,
                 >,
             )
+            // FIXME: also on SetCity/RemoveCity
             .add_observer(
                 $crate::ingame::interact::rebuild_city_resource_on_slice_propagated::<
                     $resource,
@@ -56,8 +61,34 @@ macro_rules! add_unit_component {
                     <$resource as $crate::ingame::interact::UiComponentResource>::Resource,
                 >,
             )
+            // FIXME: also on SetUnit/RemoveUnit
             .add_observer(
                 $crate::ingame::interact::rebuild_unit_resource_on_slice_propagated::<
+                    $resource,
+                    <$resource as $crate::ingame::interact::UiComponentResource>::Resource,
+                >,
+            )
+    };
+}
+
+#[macro_export]
+macro_rules! add_tile_component {
+    ($app:expr, $resource:ty) => {
+        $app.init_resource::<$resource>()
+            .add_systems(
+                Update,
+                ($crate::ingame::interact::draw_component::<$resource>,)
+                    .run_if(in_state(AppState::InGame)),
+            )
+            .add_observer(
+                $crate::ingame::interact::tile_resource_on_event::<
+                    <$resource as $crate::ingame::interact::UiComponentResource>::OnEvent,
+                    $resource,
+                    <$resource as $crate::ingame::interact::UiComponentResource>::Resource,
+                >,
+            )
+            .add_observer(
+                $crate::ingame::interact::rebuild_tile_resource_on_slice_propagated::<
                     $resource,
                     <$resource as $crate::ingame::interact::UiComponentResource>::Resource,
                 >,
@@ -177,6 +208,23 @@ pub fn unit_resource_on_event<
     }
 }
 
+pub fn tile_resource_on_event<
+    E: Event + Geo,
+    R: Resource + Set<Option<T>>,
+    T: for<'a> TryFrom<(GeoContext, &'a CtxTile<Tile>)>,
+>(
+    trigger: Trigger<E>,
+    slice: Res<GameSliceResource>,
+    mut resource: ResMut<R>,
+) {
+    if let Some(slice) = &slice.0 {
+        let geo = *trigger.event().geo();
+        if let Some(tile) = slice.tiles().get(geo.point()) {
+            resource.set(T::try_from((geo, tile)).ok());
+        }
+    }
+}
+
 /// Implement a trigger on `GameSlicePropagated` event to rebuild
 /// automatically the given resource.
 pub fn rebuild_unit_resource_on_slice_propagated<
@@ -209,6 +257,26 @@ pub fn rebuild_city_resource_on_slice_propagated<
     if let (Some(slice), Some(resource_)) = (&slice.0, &resource.get()) {
         if let Some(city) = slice.city(resource_.city_id()) {
             resource.set(Some(T::from(city.clone())));
+        } else {
+            resource.set(None);
+        }
+    }
+}
+
+/// Implement a trigger on `GameSlicePropagated` event to rebuild
+/// automatically the given resource.
+pub fn rebuild_tile_resource_on_slice_propagated<
+    R: Resource + Get<Option<T>> + Set<Option<T>>,
+    T: for<'a> TryFrom<(GeoContext, &'a CtxTile<Tile>)> + Geo,
+>(
+    _trigger: Trigger<GameSlicePropagated>,
+    slice: Res<GameSliceResource>,
+    mut resource: ResMut<R>,
+) {
+    if let (Some(slice), Some(resource_)) = (&slice.0, &resource.get()) {
+        let geo = *resource_.geo();
+        if let Some(tile) = slice.tiles().get(geo.point()) {
+            resource.set(T::try_from((geo, tile)).ok());
         } else {
             resource.set(None);
         }

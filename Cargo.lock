@@ -1883,6 +1883,7 @@ dependencies = [
  "bincode",
  "bon",
  "civ_common",
+ "civ_derive",
  "civ_server",
  "civ_world",
  "clap",

@@ -1,9 +1,10 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::map::grid::GridResource;
+use crate::{ingame::TryTileInfo, map::grid::GridResource};
 
 use super::{LastKnownCursorPositionResource, TryMenu, TrySelect};
 
+pub mod info;
 pub mod menu;
 pub mod select;
 
@@ -34,7 +35,7 @@ pub fn on_click(
         match click.event().button {
             PointerButton::Primary => commands.trigger(TrySelect(hex)),
             PointerButton::Secondary => commands.trigger(TryMenu(hex)),
-            PointerButton::Middle => {}
+            PointerButton::Middle => commands.trigger(TryTileInfo(hex)),
         };
     }
 }

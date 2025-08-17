@@ -11,14 +11,16 @@ use input::{on_click, update_last_known_cursor_position};
 use interact::unit::settle::on_setup_settle;
 use selected::{on_select_updated, SelectedResource};
 
+use crate::ingame::input::info::on_try_tile_info;
 use crate::ingame::interact::unit::info::UnitInfoResource;
 use crate::ingame::interact::unit::settle::SettleCityNameResource;
 use crate::ingame::menu::city::CityMenuResource;
+use crate::ingame::menu::info::TileInfoMenuResource;
 use crate::ingame::menu::unit::UnitMenuResource;
 use crate::ingame::selected::select_on_game_slice_propagated;
 use crate::state::AppState;
 use crate::utils::assets::Progress;
-use crate::{add_city_component, add_unit_component};
+use crate::{add_city_component, add_tile_component, add_unit_component};
 
 pub mod input;
 pub mod interact;
@@ -55,6 +57,7 @@ impl Plugin for InGamePlugin {
             .add_observer(on_click)
             .add_observer(on_try_select)
             .add_observer(on_try_menu)
+            .add_observer(on_try_tile_info)
             .add_observer(on_setup_settle)
             .add_observer(on_select_updated)
             .add_observer(update_progresses)
@@ -62,6 +65,7 @@ impl Plugin for InGamePlugin {
 
         add_city_component!(app, CityMenuResource);
         add_unit_component!(app, UnitMenuResource);
+        add_tile_component!(app, TileInfoMenuResource);
         add_unit_component!(app, SettleCityNameResource);
         add_unit_component!(app, UnitInfoResource);
     }
@@ -96,6 +100,9 @@ pub struct Point(pub WorldPoint);
 
 #[derive(Debug, Event)]
 pub struct TrySelect(Hex);
+
+#[derive(Debug, Event)]
+pub struct TryTileInfo(Hex);
 
 #[derive(Debug, Event)]
 pub struct TryMenu(Hex);
