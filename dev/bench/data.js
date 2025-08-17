@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1755345212261,
+  "lastUpdate": 1755463358358,
   "repoUrl": "https://github.com/buxx/civ",
   "entries": {
     "Benchmark": [
@@ -5399,6 +5399,36 @@ window.BENCHMARK_DATA = {
             "name": "tiles_from_window",
             "value": 664,
             "range": "± 12",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "committer": {
+            "email": "contact@bux.fr",
+            "name": "Bastien Sevajol",
+            "username": "buxx"
+          },
+          "distinct": false,
+          "id": "9a881762f74e8797e1dfd3a97b11701792b38426",
+          "message": "feat: despawn from point index",
+          "timestamp": "2025-08-17T22:40:03+02:00",
+          "tree_id": "e2e7ef3cf9011fb923faa1347bed0c2a2c6e454a",
+          "url": "https://github.com/buxx/civ/commit/9a881762f74e8797e1dfd3a97b11701792b38426"
+        },
+        "date": 1755463357808,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "tiles_from_window",
+            "value": 663,
+            "range": "± 18",
             "unit": "ns/iter"
           }
         ]
