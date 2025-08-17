@@ -1,4 +1,5 @@
 use bon::Builder;
+use glam::IVec2;
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 
@@ -188,6 +189,13 @@ impl GameSlice {
 
     pub fn units_map_mut(&mut self) -> &mut FxHashMap<UnitId, UnitVec2dIndex> {
         &mut self.units_map
+    }
+
+    pub fn relative_for_world_point(&self, point: &WorldPoint) -> IVec2 {
+        IVec2::new(
+            self.original.x as i32 - point.x as i32,
+            self.original.y as i32 - point.y as i32,
+        )
     }
 }
 

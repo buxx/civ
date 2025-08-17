@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .id(Uuid::new_v4().into())
         .type_(UnitType::Settlers)
         .flag(Flag::Abkhazia)
-        .geo(GeoContext::builder().point(WorldPoint::new(2, 2)).build())
+        .geo(GeoContext::builder().point(WorldPoint::new(0, 0)).build())
         .can(UnitCanBuilder::new().build())
         .build();
 
@@ -25,7 +25,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .id(Uuid::new_v4().into())
         .type_(UnitType::Settlers)
         .flag(Flag::Abkhazia)
-        .geo(GeoContext::builder().point(WorldPoint::new(5, 5)).build())
+        .geo(GeoContext::builder().point(WorldPoint::new(1, 1)).build())
+        .can(UnitCanBuilder::new().build())
+        .build();
+
+    let settler3 = Unit::builder()
+        .id(Uuid::new_v4().into())
+        .type_(UnitType::Settlers)
+        .flag(Flag::Abkhazia)
+        .geo(GeoContext::builder().point(WorldPoint::new(2, 2)).build())
         .can(UnitCanBuilder::new().build())
         .build();
 
@@ -33,6 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let units = vec![
         GeoVec::new(settler1.geo, vec![settler1]),
         GeoVec::new(settler2.geo, vec![settler2]),
+        GeoVec::new(settler3.geo, vec![settler3]),
     ];
 
     Setup::builder()
@@ -40,7 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .world_height(1000)
         .chunk_size(100)
         .world_generator(world_generator)
-        .window_start(ImaginaryWorldPoint::new(5, 5))
+        .window_start(ImaginaryWorldPoint::new(0, 0))
         .window_end(ImaginaryWorldPoint::new(10, 10))
         .units(units)
         .cities(cities)

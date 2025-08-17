@@ -1,6 +1,10 @@
 use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use common::{
-    game::{city::CityId, slice::ClientCity, unit::UnitId},
+    game::{
+        city::CityId,
+        slice::{ClientCity, GameSlice},
+        unit::UnitId,
+    },
     geo::ImaginaryWorldPoint,
     network::message::ClientToServerInGameMessage,
     space::window::Resolution,
@@ -10,7 +14,7 @@ use derive_more::Constructor;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    assets::tile::{absolute_layout, relative_layout, TILE_SIZE},
+    assets::tile::{absolute_layout, relative_layout, zero_layout, TILE_SIZE},
     core::{CityRemoved, CityUpdated, GameSlicePropagated, UnitRemoved, UnitUpdated},
     ingame::{GameFrameResource, GameSliceResource, HexTile},
     map::{grid::Grid, WaitingForGameSlice},
@@ -226,17 +230,16 @@ impl<'a> GridUpdater<'a> {
     ) {
         match &action {
             Action::SetCity(city) => {
-                let city_position = city.geo().point();
-                let hex = grid
-                    .relative_layout
-                    .world_pos_to_hex((*city_position).into());
-                self.remove_city(grid, &hex, commands);
+                if let Some(hex) = grid.city_index(city.id()).cloned() {
+                    self.remove_city(grid, &hex, commands);
+                }
 
-                let ctx = DrawHexContext::from_ctx(ctx, hex);
-                let city = self.spawn_city(commands, &ctx);
-
-                if let Some(grid_hex) = grid.get_mut(&hex) {
-                    grid_hex.city = city;
+                if let Some(hex) = grid.point_index(city.geo().point()).cloned() {
+                    if let Some(grid_hex) = grid.get_mut(&hex) {
+                        let ctx = DrawHexContext::from_ctx(ctx, hex);
+                        let city = self.spawn_city(commands, &ctx);
+                        grid_hex.city = city;
+                    }
                 }
             }
             Action::RemoveCity(city_id) => {
@@ -245,20 +248,16 @@ impl<'a> GridUpdater<'a> {
                 }
             }
             Action::SetUnit(unit) => {
-                let unit_position = unit.geo().point();
-                // FIXME BS NOW: world point c'est pas ce qu'attend world_pos_to_hex.
-                // world_pos_to_hex attends un coordoné XY d'écran "world". On doit faire cette conversion qqpart non ?
-                let x: Vec2 = (*unit_position).into();
-                let hex = grid.relative_layout.world_pos_to_hex(x);
-                dbg!((&x, &hex));
-                self.remove_units(grid, &hex, commands);
+                if let Some(hex) = grid.unit_index(unit.id()).cloned() {
+                    self.remove_units(grid, &hex, commands);
+                }
 
-                let ctx = DrawHexContext::from_ctx(ctx, hex);
-                let units = self.spawn_units(commands, &ctx);
-
-                if let Some(grid_hex) = grid.get_mut(&hex) {
-                    debug!("Update grid hex with unit: {}", unit.id());
-                    grid_hex.units = units;
+                if let Some(hex) = grid.point_index(unit.geo().point()).cloned() {
+                    if let Some(grid_hex) = grid.get_mut(&hex) {
+                        let ctx = DrawHexContext::from_ctx(ctx, hex);
+                        let units = self.spawn_units(commands, &ctx);
+                        grid_hex.units = units;
+                    }
                 }
             }
             Action::RemoveUnit(unit_id) => {
@@ -272,18 +271,16 @@ impl<'a> GridUpdater<'a> {
     fn remove_city(&self, grid: &mut Grid, hex: &Hex, commands: &mut Commands) {
         if let Some(grid) = grid.get(hex) {
             if let Some(resource) = &grid.city {
-                // TODO: modify GridResource too ?
+                // TODO: modify GridResource too ? (see refresh.rs, already done here)
                 commands.entity(resource.entity).despawn_recursive();
             }
         }
     }
 
     fn remove_units(&self, grid: &mut Grid, hex: &Hex, commands: &mut Commands) {
-        debug!("TRY REMOVE {:?}", hex);
         if let Some(grid) = grid.get(hex) {
-            debug!("TRY REMOVE IN");
             if let Some(resource) = &grid.units {
-                // TODO: modify GridResource too ?
+                // TODO: modify GridResource too ? (see refresh.rs, already done here)
                 commands.entity(resource.entity).despawn_recursive();
             }
         }

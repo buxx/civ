@@ -52,11 +52,12 @@ pub fn color_tile_on_hover(
 
     let window = windows.single();
     let (camera, cam_transform) = cameras.single();
-    if let Some(world_point) = window
+    if let Some(cursor) = window
         .cursor_position()
         .and_then(|p| camera.viewport_to_world_2d(cam_transform, p).ok())
     {
-        let hex_pos = grid.relative_layout.world_pos_to_hex(world_point);
+        // dbg!(cursor);
+        let hex_pos = grid.relative_layout.world_pos_to_hex(cursor);
         if Some(hex_pos) == current_hex.0 {
             return;
         }
@@ -71,8 +72,7 @@ pub fn color_tile_on_hover(
             };
 
             if let Some(new_atlas) = new_sprite.texture_atlas.as_mut() {
-                // Find an other way than store atlas index
-                // new_atlas.index = 2;
+                new_atlas.index = 2;
             }
         }
 
@@ -86,7 +86,6 @@ pub fn color_tile_on_hover(
             };
 
             if let Some(old_atlas) = old_sprite.texture_atlas.as_mut() {
-                // Find an other way than store atlas index
                 // old_atlas.index = *old_entity.atlas;
             }
         }

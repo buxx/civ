@@ -23,6 +23,7 @@ pub struct Grid {
     pub absolute_layout: HexLayout,
     pub cities_index: FxHashMap<CityId, Hex>,
     pub units_index: FxHashMap<UnitId, Hex>,
+    pub points_index: FxHashMap<WorldPoint, Hex>,
 }
 
 impl std::ops::Deref for Grid {
@@ -48,6 +49,7 @@ impl Grid {
     ) -> Self {
         let mut cities_index = FxHashMap::default();
         let mut units_index = FxHashMap::default();
+        let mut points_index = FxHashMap::default();
 
         for (hex, grid) in &grid {
             if let Some(city) = &grid.city {
@@ -58,6 +60,7 @@ impl Grid {
                     units_index.insert(*unit.id(), *hex);
                 }
             }
+            points_index.insert(grid.point, *hex);
         }
 
         Self {
@@ -67,6 +70,7 @@ impl Grid {
             absolute_layout,
             cities_index,
             units_index,
+            points_index,
         }
     }
 
@@ -77,12 +81,16 @@ impl Grid {
     pub fn unit_index(&self, unit_id: &UnitId) -> Option<&Hex> {
         self.units_index.get(unit_id)
     }
+
+    pub fn point_index(&self, point: &WorldPoint) -> Option<&Hex> {
+        self.points_index.get(point)
+    }
 }
 
 #[derive(Debug, Constructor)]
 pub struct GridHex {
     pub _imaginary: ImaginaryWorldPoint,
-    pub _point: WorldPoint,
+    pub point: WorldPoint,
     #[allow(unused)] // Only used in that feature for now
     pub tile: GridHexResource<CtxTile<Tile>>,
     pub city: Option<GridHexResource<ClientCity>>,
