@@ -1,4 +1,5 @@
 pub mod snapshot;
+use async_std::sync::RwLockReadGuard;
 use bon::Builder;
 use common::{
     game::{
@@ -22,8 +23,9 @@ use crate::{
         unit::Unit,
     },
     runner::RunnerContext,
-    state::StateError,
+    state::{State, StateError},
     task::city::generator::{BuildCityFrom, CityGenerator},
+    world::reader::WorldReader,
 };
 
 pub mod city;

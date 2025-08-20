@@ -21,8 +21,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         PatternGenerator::new([TerrainType::Plain, TerrainType::GrassLand].to_vec());
 
     let mut units = vec![];
-    for x in 0..200 {
-        for y in 0..200 {
+    for x in 0..300 {
+        for y in 0..300 {
             let unit_geo = GeoContext::builder().point(WorldPoint::new(x, y)).build();
             let unit = Unit::builder()
                 .id(Uuid::new_v4().into())

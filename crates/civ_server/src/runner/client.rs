@@ -297,6 +297,7 @@ pub fn refresh_unit_on(
         effects.push(effect::remove_task(old_task.clone().into()));
     }
 
+    debug!("Refresh unit on X: End");
     Ok(effects)
 }
 

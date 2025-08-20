@@ -13,6 +13,7 @@ impl RunnerContext {
         let tiles = world.slice(window);
         let cities = state.client_cities_slice(window);
         let units = state.client_units_slice(window);
+        drop(state);
 
         GameSlice::new(
             *window.start(),

@@ -42,6 +42,7 @@ pub mod worker;
 
 pub struct RunnerContext {
     pub context: Context,
+    pub lock: RwLock<()>,
     pub state: Arc<RwLock<State>>,
     pub world: Arc<RwLock<WorldReader>>,
     pub from_clients_receiver: Receiver<(Client, ClientToServerMessage)>,
@@ -59,6 +60,7 @@ impl RunnerContext {
         placer: PlacerBox,
     ) -> Self {
         Self {
+            lock: RwLock::new(()),
             context,
             state,
             world,
@@ -151,6 +153,7 @@ impl Runner {
     }
 
     pub fn state_mut(&self) -> RwLockWriteGuard<State> {
+        log::error!("WRITE STATE");
         self.context
             .state
             .write()
@@ -168,10 +171,12 @@ impl Runner {
 
     pub fn do_one_iteration(&mut self) {
         let tick_start = Instant::now();
+        debug!("Tick start");
         self.tick();
         self.fps_target(tick_start);
         self.game_frame_increment();
         self.stats_log();
+        debug!("Tick end ({}us)", tick_start.elapsed().as_micros());
     }
 
     fn game_frame_increment(&mut self) {
@@ -225,12 +230,14 @@ impl Runner {
     }
 
     fn tick(&mut self) {
+        debug!("Trigger task workers");
         for (i, (start_sender, _)) in self.task_workers.iter().enumerate() {
             if start_sender.send_blocking(()).is_err() {
                 debug!("Worker {} start channel is closed", i)
             }
         }
 
+        debug!("Collect client workers effects");
         let mut effects: Vec<Effect> = self
             .client_workers
             .iter()
@@ -243,6 +250,7 @@ impl Runner {
             })
             .collect();
 
+        debug!("Collect task workers effects");
         for (_, rcx) in &self.task_workers {
             let x = rcx.recv_blocking().unwrap_or_default();
             effects.extend(x);
@@ -251,9 +259,15 @@ impl Runner {
         self.apply_effects(effects);
     }
 
-    fn apply_effects(&mut self, effects: Vec<Effect>) {
+    fn apply_effects(&self, effects: Vec<Effect>) {
+        debug!("Apply effects");
+        let locked = self.context.lock.write().unwrap();
         self.state_mut().apply(&effects);
+        drop(locked);
+        debug!("Apply effects: Done");
+        debug!("Apply reflects");
         self.reflects(&effects);
+        debug!("Apply reflects: Done");
     }
 }
 

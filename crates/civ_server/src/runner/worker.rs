@@ -22,18 +22,20 @@ pub fn setup_task_workers(context: &RunnerContext) -> Vec<(Sender<()>, Receiver<
         thread::spawn(move || {
             let results_sender_ = results_sender.clone();
             while start_work_receiver.recv_blocking().is_ok() {
-                let state = context.state();
-                let frame = *state.frame();
-                let tasks = state.tasks();
-                deal(
-                    &context,
-                    workers_count,
-                    tasks,
-                    tick_task,
-                    frame,
-                    i,
-                    &results_sender_,
-                );
+                let lock = context.lock.read().unwrap();
+                // let state = context.state();
+                // let frame = *state.frame();
+                // let tasks = state.tasks();
+                // deal(
+                //     &context,
+                //     workers_count,
+                //     tasks,
+                //     tick_task,
+                //     frame,
+                //     i,
+                //     &results_sender_,
+                // );
+                drop(lock);
             }
         });
 

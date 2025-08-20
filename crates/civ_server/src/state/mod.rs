@@ -1,3 +1,4 @@
+use async_std::sync::RwLock;
 use clients::Clients;
 use common::{
     game::{
@@ -17,7 +18,7 @@ use common::{
 };
 use derive_more::Constructor;
 use index::Index;
-use log::error;
+use log::{debug, error};
 use thiserror::Error;
 
 use crate::{
@@ -119,9 +120,11 @@ impl State {
     }
 
     pub fn apply(&mut self, effects: &Vec<Effect>) {
+        debug!("Applying effects");
         let mut remove_tasks = vec![];
 
         for effect in effects {
+            debug!("Applying effect {:?}", effect);
             match effect {
                 Effect::State(effect) => match effect {
                     StateEffect::IncrementGameFrame => {
@@ -190,16 +193,22 @@ impl State {
                 },
                 Effect::Shines(_) => {}
             }
+            debug!("Applying effect X: Done");
         }
+        debug!("Applying effects: Done");
 
         if !remove_tasks.is_empty() {
+            debug!("Remove {} tasks", remove_tasks.len());
             // TODO: this is not a good performance way (idea: transport tasks index in tick)
             self.tasks
                 .retain(|task| !remove_tasks.contains(&task.context().id()));
+            debug!("Remove {} tasks: Done", remove_tasks.len());
         }
 
         // Update index must be after because based on &self.cities and &self.units
+        debug!("Update index");
         self.index.apply(effects, &self.cities, &self.units);
+        debug!("Update index: Done");
     }
 
     pub fn cities(&self) -> &Vec2d<Box<City>> {

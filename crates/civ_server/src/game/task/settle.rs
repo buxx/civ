@@ -6,6 +6,7 @@ use common::{
     game::{
         tasks::client::{settle::ClientSettle, ClientTaskType},
         unit::{TaskType, UnitTaskType},
+        GameFrame,
     },
     geo::{Geo, GeoContext},
     task::{CantSettleReason, CreateTaskError, GamePlayReason},
