@@ -14,9 +14,17 @@ use crate::task::{Concern, TaskBox, TaskId};
 pub enum Effect {
     /// Effect which will modify the state
     State(StateEffect),
+    /// Effect which will modify the state
+    Runner(RunnerEffect),
     // FIXME BS NOW: not simply "SendToClients" ?
     /// Effect which only product reflects
     Shines(Vec<(ServerToClientMessage, Vec<ClientId>)>),
+}
+
+#[derive(Debug, Clone)]
+pub enum RunnerEffect {
+    Tasks(TasksEffect),
+    Task(TaskId, TaskEffect),
 }
 
 #[derive(Debug, Clone)]
@@ -24,8 +32,6 @@ pub enum StateEffect {
     IncrementGameFrame,
     Clients(ClientsEffect),
     Client(Client, ClientEffect),
-    Tasks(TasksEffect),
-    Task(TaskId, TaskEffect),
     City(CityId, CityEffect),
     Unit(UnitId, UnitEffect),
     Testing,
@@ -76,8 +82,8 @@ pub enum UnitEffect {
     Remove(Unit),
 }
 
-pub fn new_unit(unit: Unit) -> Effect {
-    Effect::State(StateEffect::Unit(*unit.id(), UnitEffect::New(unit)))
+pub fn new_unit(unit: Unit) -> StateEffect {
+    StateEffect::Unit(*unit.id(), UnitEffect::New(unit))
 }
 
 pub fn replace_unit(unit: Unit) -> Effect {

@@ -7,7 +7,7 @@ use common::{
 use rustc_hash::FxHashMap;
 
 use crate::{
-    effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
+    effect::{CityEffect, Effect, RunnerEffect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
     game::{city::City, unit::Unit},
     snapshot::Snapshot,
     task::{Concern, Task, TaskBox, TaskId},
@@ -71,11 +71,8 @@ impl Index {
 
         for effect in effects {
             match effect {
-                Effect::State(effect) => match effect {
-                    StateEffect::IncrementGameFrame => {}
-                    StateEffect::Clients(_) => {}
-                    StateEffect::Client(_, _) => {}
-                    StateEffect::Tasks(effect) => match effect {
+                Effect::Runner(effect) => match effect {
+                    RunnerEffect::Tasks(effect) => match effect {
                         TasksEffect::Remove(tasks) => {
                             for (task_id, concern) in tasks {
                                 self.apply_remove_task(task_id, concern)
@@ -87,7 +84,7 @@ impl Index {
                             }
                         }
                     },
-                    StateEffect::Task(_, effect) => match effect {
+                    RunnerEffect::Task(_, effect) => match effect {
                         TaskEffect::Push(task) => {
                             self.apply_new_task(task);
                         }
@@ -98,6 +95,11 @@ impl Index {
                             self.apply_remove_task(uuid, concern);
                         }
                     },
+                },
+                Effect::State(effect) => match effect {
+                    StateEffect::IncrementGameFrame => {}
+                    StateEffect::Clients(_) => {}
+                    StateEffect::Client(_, _) => {}
                     StateEffect::City(_, effect) => match effect {
                         CityEffect::New(city) => {
                             self.apply_new_city(city, cities);

@@ -248,9 +248,11 @@ impl<'a> GridUpdater<'a> {
                 }
             }
             Action::SetUnit(unit) => {
-                if let Some(hex) = grid.unit_index(unit.id()).cloned() {
-                    self.remove_units(grid, &hex, commands);
-                }
+                let unit_position = unit.geo().point();
+                // FIXME BS NOW
+                let x: Vec2 = (*unit_position).into();
+                let hex = grid.relative_layout.world_pos_to_hex(x);
+                self.remove_units(grid, &hex, commands);
 
                 if let Some(hex) = grid.point_index(unit.geo().point()).cloned() {
                     if let Some(grid_hex) = grid.get_mut(&hex) {

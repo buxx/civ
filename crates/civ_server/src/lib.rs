@@ -11,13 +11,12 @@ use crate::runner::{Runner, RunnerContext};
 use crate::snapshot::{Snapshot, SnapshotError};
 use crate::state::State;
 use crate::task::snapshot::SnapshotTask;
-use crate::task::{TaskContext, TaskId};
+use crate::task::{Boxed, TaskContext, TaskId};
 use crate::world::reader::{WorldReader, WorldReaderError};
 use async_std::channel::Sender;
 use bon::{builder, Builder};
 use bridge::{Bridge, BridgeBuilder};
 use clap::Parser;
-use common::game::unit::{SystemTaskType, TaskType};
 use common::game::GameFrame;
 use common::rules::std1::Std1RuleSet;
 use common::space::D2Size;
@@ -106,6 +105,21 @@ pub fn start<B: Bridge + 'static>(
         .build(context.clone(), Arc::clone(&state), &config)
         .map_err(|e| Error::PrepareBridge(e.to_string()))?;
 
+    let tasks = config
+        .snapshot()
+        .map(|p| {
+            vec![SnapshotTask::new(
+                TaskContext::builder()
+                    .id(TaskId::default())
+                    .start(GameFrame(0))
+                    .end(*config.snapshot_interval())
+                    .build(),
+                p.clone(),
+            )
+            .boxed()]
+        })
+        .unwrap_or_default();
+
     let mut runner = Runner::builder()
         .tick_base_period(TICK_BASE_PERIOD)
         .context(RunnerContext::new(
@@ -116,6 +130,7 @@ pub fn start<B: Bridge + 'static>(
             to_clients_sender,
             Box::new(RandomPlacer),
         ))
+        .tasks(Arc::new(RwLock::new(tasks)))
         .build();
 
     let network = thread::spawn(move || bridge.run());
@@ -149,7 +164,6 @@ fn build_state(config: &ServerConfig, world_size: D2Size) -> Result<State, Error
                     return Err(Error::from(error));
                 }
             }
-            .with_replaced_task_type(TaskType::System(SystemTaskType::Snapshot), snapshot_task)
         }
         None => State::empty(world_size),
     };

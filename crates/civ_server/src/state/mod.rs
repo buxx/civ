@@ -1,4 +1,3 @@
-use async_std::sync::RwLock;
 use clients::Clients;
 use common::{
     game::{
@@ -6,7 +5,7 @@ use common::{
         nation::flag::Flag,
         server::ServerResume,
         slice::{ClientCity, ClientUnit},
-        unit::{TaskType, UnitId},
+        unit::UnitId,
         GameFrame, PlayerId,
     },
     geo::{Geo, GeoVec},
@@ -22,10 +21,10 @@ use log::{debug, error};
 use thiserror::Error;
 
 use crate::{
-    effect::{CityEffect, Effect, StateEffect, TaskEffect, TasksEffect, UnitEffect},
+    effect::{CityEffect, Effect, StateEffect, UnitEffect},
     game::{city::City, unit::Unit, IntoClientModel},
     snapshot::Snapshot,
-    task::{Task, TaskBox, TaskId},
+    task::Task,
 };
 
 pub mod clients;
@@ -37,8 +36,7 @@ pub struct State {
     frame_i: GameFrame,
     clients: Clients,
     pending: Vec<(Client, ClientToServerMessage)>,
-    index: Index,
-    tasks: Vec<TaskBox>,
+    pub(crate) index: Index,
     // Don't store a Vec2d<Box<City>> to not allocate useless memory
     cities: Vec2d<Box<City>>,
     cities_count: usize,
@@ -55,7 +53,6 @@ impl State {
             clients: Clients::default(),
             pending: Default::default(),
             index: Index::default(),
-            tasks: vec![],
             cities: Vec2d::from(world_size, Vec::<City>::new()),
             cities_count: 0,
             units: Vec2d::from(world_size, Vec::<GeoVec<Unit>>::new()),
@@ -78,14 +75,12 @@ impl State {
         let units_count = units.len();
         let units = Vec2d::from(world_size, units);
         let index = Index::build_from(&cities, &units, tasks);
-        let tasks: Vec<TaskBox> = tasks.iter().map(|bx| bx.boxed()).collect();
 
         Self::new(
             frame_i,
             clients,
             vec![],
             index,
-            tasks,
             cities,
             cities_count,
             units,
@@ -97,14 +92,6 @@ impl State {
 
     pub fn frame(&self) -> &GameFrame {
         &self.frame_i
-    }
-
-    pub fn tasks(&self) -> &Vec<TaskBox> {
-        &self.tasks
-    }
-
-    pub fn tasks_mut(&mut self) -> &mut Vec<TaskBox> {
-        &mut self.tasks
     }
 
     pub fn clients(&self) -> &Clients {
@@ -119,96 +106,65 @@ impl State {
         self.frame_i += GameFrame(1);
     }
 
-    pub fn apply(&mut self, effects: &Vec<Effect>) {
-        debug!("Applying effects");
-        let mut remove_tasks = vec![];
-
-        for effect in effects {
-            debug!("Applying effect {:?}", effect);
-            match effect {
-                Effect::State(effect) => match effect {
-                    StateEffect::IncrementGameFrame => {
-                        self.increment_frame();
-                    }
-                    StateEffect::Clients(effect) => {
-                        self.clients.apply(effect).unwrap();
-                    }
-                    StateEffect::Client(client, effect) => {
-                        self.clients.apply_client(client, effect).unwrap();
-                    }
-                    StateEffect::Task(uuid, effect) => match effect {
-                        TaskEffect::Push(task) => self.tasks.push(task.clone()),
-                        TaskEffect::Finished(_) => remove_tasks.push(uuid),
-                        TaskEffect::Remove(_, _) => remove_tasks.push(uuid),
-                    },
-                    StateEffect::Tasks(effect) => match effect {
-                        TasksEffect::Remove(tasks) => {
-                            remove_tasks
-                                .extend(tasks.iter().map(|(i, _)| i).collect::<Vec<&TaskId>>());
-                        }
-                        TasksEffect::Add(tasks) => self.tasks.extend(tasks.clone()),
-                    },
-                    StateEffect::City(_, effect) => match effect {
-                        CityEffect::New(city) => {
-                            *self.cities.get_by_point_mut(*city.geo().point()) =
-                                Some(Box::new(city.clone()));
-                            self.cities_count += 1;
-                        }
-                        CityEffect::Replace(city) => {
-                            *self.find_city_mut(city.id()).unwrap() = city.clone();
-                        }
-                        CityEffect::Remove(city) => {
-                            *self.cities.get_by_point_mut(*city.geo().point()) = None;
-                            self.cities_count -= 1;
-                        }
-                    },
-                    StateEffect::Unit(unit_id, effect) => match effect {
-                        UnitEffect::New(unit) => {
-                            self.units_count += 1;
-
-                            if let Some(units) = self.units.get_by_point_mut(*unit.geo().point()) {
-                                units.push(unit.clone());
-                            } else {
-                                *self.units.get_by_point_mut(*unit.geo().point()) =
-                                    Some(vec![unit.clone()]);
-                            }
-                        }
-                        UnitEffect::Remove(unit) => {
-                            self.units_count -= 1;
-
-                            if let Some(units) = self.units.get_by_point_mut(*unit.geo().point()) {
-                                units.retain(|u| u.id() != unit.id());
-                                if units.is_empty() {
-                                    *self.units.get_by_point_mut(*unit.geo().point()) = None;
-                                }
-                            }
-                        }
-                        UnitEffect::Replace(unit) => {
-                            *self.find_unit_mut(unit_id).unwrap() = unit.clone();
-                        }
-                    },
-                    StateEffect::Testing => {
-                        self.testing += 1;
-                    }
-                },
-                Effect::Shines(_) => {}
+    pub fn apply(&mut self, effect: &StateEffect) {
+        match effect {
+            StateEffect::IncrementGameFrame => {
+                self.increment_frame();
             }
-            debug!("Applying effect X: Done");
-        }
-        debug!("Applying effects: Done");
+            StateEffect::Clients(effect) => {
+                self.clients.apply(effect).unwrap();
+            }
+            StateEffect::Client(client, effect) => {
+                self.clients.apply_client(client, effect).unwrap();
+            }
+            StateEffect::City(_, effect) => match effect {
+                CityEffect::New(city) => {
+                    *self.cities.get_by_point_mut(*city.geo().point()) =
+                        Some(Box::new(city.clone()));
+                    self.cities_count += 1;
+                }
+                CityEffect::Replace(city) => {
+                    *self.find_city_mut(city.id()).unwrap() = city.clone();
+                }
+                CityEffect::Remove(city) => {
+                    *self.cities.get_by_point_mut(*city.geo().point()) = None;
+                    self.cities_count -= 1;
+                }
+            },
+            StateEffect::Unit(unit_id, effect) => match effect {
+                UnitEffect::New(unit) => {
+                    self.units_count += 1;
 
-        if !remove_tasks.is_empty() {
-            debug!("Remove {} tasks", remove_tasks.len());
-            // TODO: this is not a good performance way (idea: transport tasks index in tick)
-            self.tasks
-                .retain(|task| !remove_tasks.contains(&task.context().id()));
-            debug!("Remove {} tasks: Done", remove_tasks.len());
-        }
+                    if let Some(units) = self.units.get_by_point_mut(*unit.geo().point()) {
+                        units.push(unit.clone());
+                    } else {
+                        *self.units.get_by_point_mut(*unit.geo().point()) =
+                            Some(vec![unit.clone()]);
+                    }
+                }
+                UnitEffect::Remove(unit) => {
+                    self.units_count -= 1;
 
-        // Update index must be after because based on &self.cities and &self.units
-        debug!("Update index");
+                    if let Some(units) = self.units.get_by_point_mut(*unit.geo().point()) {
+                        units.retain(|u| u.id() != unit.id());
+                        if units.is_empty() {
+                            *self.units.get_by_point_mut(*unit.geo().point()) = None;
+                        }
+                    }
+                }
+                UnitEffect::Replace(unit) => {
+                    *self.find_unit_mut(unit_id).unwrap() = unit.clone();
+                }
+            },
+            StateEffect::Testing => {
+                self.testing += 1;
+            }
+        }
+        debug!("Applying effect X: Done");
+    }
+
+    pub fn update_index(&mut self, effects: &Vec<Effect>) {
         self.index.apply(effects, &self.cities, &self.units);
-        debug!("Update index: Done");
     }
 
     pub fn cities(&self) -> &Vec2d<Box<City>> {
@@ -371,13 +327,6 @@ impl State {
 
     pub fn snapshot(&self) -> Snapshot {
         Snapshot::from(self)
-    }
-
-    /// Replace found task by given considering its type as differentiators.
-    pub fn with_replaced_task_type(mut self, type_: TaskType, task: TaskBox) -> State {
-        self.tasks.retain(|t| t.type_() != type_);
-        self.tasks.push(task);
-        self
     }
 
     pub fn world_size(&self) -> D2Size {

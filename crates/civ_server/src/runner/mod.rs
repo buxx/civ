@@ -3,7 +3,7 @@ use bon::Builder;
 use common::{
     game::{
         city::{CityProduct, CityProduction},
-        unit::UnitType,
+        unit::{TaskType, UnitType},
         GameFrame, GAME_FRAMES_PER_SECOND,
     },
     network::{
@@ -25,14 +25,14 @@ use thiserror::Error;
 
 use crate::{
     context::Context,
-    effect::{Effect, StateEffect, TaskEffect},
+    effect::{Effect, RunnerEffect, StateEffect, TaskEffect, TasksEffect},
     game::placer::{PlacerBox, RandomPlacer},
     runner::{
         client::deal_client,
         worker::{setup_client_workers, setup_task_workers},
     },
     state::{NoLongerExist, State, StateError},
-    task::{TaskBox, TaskError},
+    task::{TaskBox, TaskError, TaskId},
     world::reader::WorldReader,
 };
 
@@ -101,6 +101,7 @@ impl Clone for RunnerContext {
 pub struct Runner {
     // TODO: pub for ?
     pub context: RunnerContext,
+    tasks: Arc<RwLock<Vec<TaskBox>>>,
     tick_base_period: u64,
     #[builder(default = Duration::ZERO)]
     lag: Duration,
@@ -160,6 +161,14 @@ impl Runner {
             .expect("Assume state is always accessible")
     }
 
+    // pub fn tasks(&self) -> &Vec<TaskBox> {
+    //     &self.tasks
+    // }
+
+    // pub fn tasks_mut(&mut self) -> &mut Vec<TaskBox> {
+    //     &mut self.tasks
+    // }
+
     pub fn run(&mut self) {
         self.task_workers = setup_task_workers(&self.context);
         self.client_workers = setup_client_workers(&self.context);
@@ -190,7 +199,7 @@ impl Runner {
 
     fn stats_log(&mut self) {
         let state = self.state();
-        let tasks_length = state.tasks().len();
+        let tasks_length = self.tasks.read().unwrap().len();
         let clients_count = state.clients().clients_count();
         let players_count = state.clients().players_count();
         let cities_count = state.cities_count();
@@ -259,15 +268,55 @@ impl Runner {
         self.apply_effects(effects);
     }
 
-    fn apply_effects(&self, effects: Vec<Effect>) {
-        debug!("Apply effects");
-        let locked = self.context.lock.write().unwrap();
-        self.state_mut().apply(&effects);
-        drop(locked);
-        debug!("Apply effects: Done");
-        debug!("Apply reflects");
+    fn apply_effects(&mut self, effects: Vec<Effect>) {
+        let mut remove_tasks = vec![];
+        let mut state = self.context.state.write().unwrap();
+        let mut tasks = self.tasks.write().unwrap();
+
+        for effect in &effects {
+            match effect {
+                Effect::State(effect) => state.apply(effect),
+                Effect::Runner(effect) => self.apply(effect, &mut tasks, &mut remove_tasks),
+                Effect::Shines(_) => {}
+            }
+        }
+
+        // Update index must be after because based on &self.cities and &self.units
+        // Done from runner because must apply specific code on effect (previous for loop)
+        // and apply all effects in one time on index.
+        state.update_index(&effects);
+
+        if !remove_tasks.is_empty() {
+            // TODO: this is not a good performance way (idea: transport tasks index ? PErformance benefit or not ?)
+            tasks.retain(|task| !remove_tasks.contains(&task.context().id()));
+        }
+
+        drop(state);
+        drop(tasks);
+
         self.reflects(&effects);
         debug!("Apply reflects: Done");
+    }
+
+    fn apply(
+        &self,
+        effect: &RunnerEffect,
+        tasks: &mut Vec<TaskBox>,
+        remove_tasks: &mut Vec<TaskId>,
+    ) {
+        match effect {
+            RunnerEffect::Task(uuid, effect) => match effect {
+                TaskEffect::Push(task) => tasks.push(task.clone()),
+                TaskEffect::Finished(_) => remove_tasks.push(*uuid),
+                TaskEffect::Remove(_, _) => remove_tasks.push(*uuid),
+            },
+            RunnerEffect::Tasks(effect) => match effect {
+                TasksEffect::Remove(tasks) => {
+                    remove_tasks.extend(tasks.iter().map(|(i, _)| i).collect::<Vec<&TaskId>>());
+                }
+                TasksEffect::Add(new_tasks) => tasks.extend(new_tasks.clone()),
+            },
+        }
     }
 }
 
@@ -279,7 +328,7 @@ fn tick_task(
     let mut effects = task.tick(*frame);
 
     if task.context().is_finished(*frame) {
-        effects.push(Effect::State(StateEffect::Task(
+        effects.push(Effect::Runner(RunnerEffect::Task(
             *task.context().id(),
             TaskEffect::Finished(task.clone()),
         )));
@@ -288,7 +337,7 @@ fn tick_task(
         effects.extend(then_effects);
 
         for task in then_tasks {
-            effects.push(Effect::State(StateEffect::Task(
+            effects.push(Effect::Runner(RunnerEffect::Task(
                 *task.context().id(),
                 TaskEffect::Push(task),
             )));
@@ -554,7 +603,7 @@ mod test {
             );
 
             while let Some(unit) = self.units.pop() {
-                state.apply(&vec![effect::new_unit(unit)]);
+                state.apply(&effect::new_unit(unit));
             }
 
             let mut clients = HashMap::new();
@@ -584,6 +633,7 @@ mod test {
             Runner::builder()
                 .tick_base_period(9999)
                 .context(context)
+                .tasks(Arc::new(RwLock::new(vec![])))
                 .build()
         }
 
