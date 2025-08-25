@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
 use super::{Concern, Task, TaskBox, TaskContext, TaskError, TaskId, Then};
-use crate::{effect::Effect, impl_boxed, impl_with_context, runner::RunnerContext};
+use crate::{
+    effect::Effect, impl_boxed, impl_with_context, runner::RunnerContext, snapshot::Snapshot,
+};
 use bon::Builder;
 use common::game::unit::{SystemTaskType, TaskType};
 use log::info;
@@ -42,7 +44,7 @@ impl Then for SnapshotTask {
         let frame = state.frame();
 
         info!("Snapshot to {}", self.snapshot_to.display());
-        state.snapshot().dump(&self.snapshot_to).unwrap();
+        Snapshot::from(context).dump(&self.snapshot_to).unwrap();
 
         let each = self.context.end() - self.context.start();
         Ok((

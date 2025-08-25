@@ -3,7 +3,7 @@ use bon::Builder;
 use common::{
     game::{
         city::{CityProduct, CityProduction},
-        unit::{TaskType, UnitType},
+        unit::UnitType,
         GameFrame, GAME_FRAMES_PER_SECOND,
     },
     network::{
@@ -31,6 +31,7 @@ use crate::{
         client::deal_client,
         worker::{setup_client_workers, setup_task_workers},
     },
+    snapshot::Snapshot,
     state::{NoLongerExist, State, StateError},
     task::{TaskBox, TaskError, TaskId},
     world::reader::WorldReader,
@@ -42,9 +43,9 @@ pub mod worker;
 
 pub struct RunnerContext {
     pub context: Context,
-    pub lock: RwLock<()>,
-    pub state: Arc<RwLock<State>>,
     pub world: Arc<RwLock<WorldReader>>,
+    pub tasks: Arc<RwLock<Vec<TaskBox>>>,
+    pub state: Arc<RwLock<State>>,
     pub from_clients_receiver: Receiver<(Client, ClientToServerMessage)>,
     pub to_client_sender: Sender<(ClientId, ServerToClientMessage)>,
     pub placer: PlacerBox,
@@ -53,17 +54,45 @@ pub struct RunnerContext {
 impl RunnerContext {
     pub fn new(
         context: Context,
-        state: Arc<RwLock<State>>,
         world: Arc<RwLock<WorldReader>>,
+        tasks: Arc<RwLock<Vec<TaskBox>>>,
+        state: Arc<RwLock<State>>,
         from_clients_receiver: Receiver<(Client, ClientToServerMessage)>,
         to_client_sender: Sender<(ClientId, ServerToClientMessage)>,
         placer: PlacerBox,
     ) -> Self {
         Self {
-            lock: RwLock::new(()),
             context,
-            state,
             world,
+            tasks,
+            state,
+            from_clients_receiver,
+            to_client_sender,
+            placer,
+        }
+    }
+
+    pub fn from_snapshot(
+        context: Context,
+        snapshot: Snapshot,
+        // TODO: There is a strange things; when snapshot restored; can be corrupted according to world
+        world: Arc<RwLock<WorldReader>>,
+        from_clients_receiver: Receiver<(Client, ClientToServerMessage)>,
+        to_client_sender: Sender<(ClientId, ServerToClientMessage)>,
+        placer: PlacerBox,
+    ) -> Self {
+        let tasks: Vec<TaskBox> = snapshot
+            .tasks
+            .clone()
+            .into_iter()
+            .map(|bx| bx.boxed())
+            .collect();
+        let state: State = snapshot.into();
+        Self {
+            context,
+            world,
+            tasks: Arc::new(RwLock::new(tasks)),
+            state: Arc::new(RwLock::new(state)),
             from_clients_receiver,
             to_client_sender,
             placer,
@@ -86,8 +115,9 @@ impl Clone for RunnerContext {
     fn clone(&self) -> Self {
         Self::new(
             self.context.clone(),
-            Arc::clone(&self.state),
             Arc::clone(&self.world),
+            Arc::clone(&self.tasks),
+            Arc::clone(&self.state),
             // FIXME BS NOW; là ?!
             self.from_clients_receiver.clone(),
             self.to_client_sender.clone(),
@@ -101,7 +131,6 @@ impl Clone for RunnerContext {
 pub struct Runner {
     // TODO: pub for ?
     pub context: RunnerContext,
-    tasks: Arc<RwLock<Vec<TaskBox>>>,
     tick_base_period: u64,
     #[builder(default = Duration::ZERO)]
     lag: Duration,
@@ -199,7 +228,7 @@ impl Runner {
 
     fn stats_log(&mut self) {
         let state = self.state();
-        let tasks_length = self.tasks.read().unwrap().len();
+        let tasks_length = self.context.tasks.read().unwrap().len();
         let clients_count = state.clients().clients_count();
         let players_count = state.clients().players_count();
         let cities_count = state.cities_count();
@@ -271,7 +300,7 @@ impl Runner {
     fn apply_effects(&mut self, effects: Vec<Effect>) {
         let mut remove_tasks = vec![];
         let mut state = self.context.state.write().unwrap();
-        let mut tasks = self.tasks.write().unwrap();
+        let mut tasks = self.context.tasks.write().unwrap();
 
         for effect in &effects {
             match effect {
@@ -623,8 +652,9 @@ mod test {
 
             let context = RunnerContext::new(
                 context,
-                state,
                 Arc::new(RwLock::new(world)),
+                Arc::new(RwLock::new(vec![])),
+                state,
                 self.from_clients_receiver.clone(),
                 self.to_clients_sender.clone(),
                 Box::new(TestPlacer),
@@ -633,7 +663,6 @@ mod test {
             Runner::builder()
                 .tick_base_period(9999)
                 .context(context)
-                .tasks(Arc::new(RwLock::new(vec![])))
                 .build()
         }
 

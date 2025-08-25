@@ -325,10 +325,6 @@ impl State {
         ServerResume::new(rules.clone().into(), flags)
     }
 
-    pub fn snapshot(&self) -> Snapshot {
-        Snapshot::from(self)
-    }
-
     pub fn world_size(&self) -> D2Size {
         self.world_size
     }

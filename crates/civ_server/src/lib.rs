@@ -124,13 +124,13 @@ pub fn start<B: Bridge + 'static>(
         .tick_base_period(TICK_BASE_PERIOD)
         .context(RunnerContext::new(
             context.clone(),
-            Arc::clone(&state),
             world,
+            Arc::new(RwLock::new(tasks)),
+            Arc::clone(&state),
             from_clients_receiver,
             to_clients_sender,
             Box::new(RandomPlacer),
         ))
-        .tasks(Arc::new(RwLock::new(tasks)))
         .build();
 
     let network = thread::spawn(move || bridge.run());
@@ -144,27 +144,16 @@ pub fn start<B: Bridge + 'static>(
 
 fn build_state(config: &ServerConfig, world_size: D2Size) -> Result<State, Error> {
     let state = match config.snapshot() {
-        Some(snapshot_path) => {
-            let snapshot_task = Box::new(SnapshotTask::new(
-                TaskContext::builder()
-                    .id(TaskId::default())
-                    .start(GameFrame(0))
-                    .end(*config.snapshot_interval())
-                    .build(),
-                snapshot_path.clone(),
-            ));
-
-            match Snapshot::try_from(snapshot_path) {
-                Ok(snapshot) => State::from(snapshot),
-                Err(SnapshotError::Io(io::ErrorKind::NotFound)) => {
-                    warn!("No snapshot found, create from scratch");
-                    State::empty(world_size)
-                }
-                Err(error) => {
-                    return Err(Error::from(error));
-                }
+        Some(snapshot_path) => match Snapshot::try_from(snapshot_path) {
+            Ok(snapshot) => State::from(snapshot),
+            Err(SnapshotError::Io(io::ErrorKind::NotFound)) => {
+                warn!("No snapshot found, create from scratch");
+                State::empty(world_size)
             }
-        }
+            Err(error) => {
+                return Err(Error::from(error));
+            }
+        },
         None => State::empty(world_size),
     };
     Ok(state)

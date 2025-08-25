@@ -10,6 +10,7 @@ use thiserror::Error;
 
 use crate::{
     game::{city::City, unit::Unit},
+    runner::RunnerContext,
     state::{
         clients::{Clients, PlayerState},
         index::Index,
@@ -22,7 +23,7 @@ use crate::{
 pub struct Snapshot {
     frame_i: GameFrame,
     world_size: D2Size,
-    tasks: Vec<Box<dyn Task>>,
+    pub tasks: Vec<Box<dyn Task>>,
     cities: Vec2d<Box<City>>,
     cities_count: usize,
     units: Vec2d<Vec<Unit>>,
@@ -69,23 +70,25 @@ impl Snapshot {
     }
 }
 
-impl From<&State> for Snapshot {
-    fn from(value: &State) -> Self {
+impl From<&RunnerContext> for Snapshot {
+    fn from(value: &RunnerContext) -> Self {
         let tasks = value
-            .tasks()
-            .clone()
+            .tasks
+            .read()
             .into_iter()
-            .map(|bx| bx as _)
+            .map(|t| t.clone())
+            .map(|t| t as _)
             .collect();
+        let state = value.state.read().unwrap();
         Self {
-            frame_i: *value.frame(),
-            world_size: value.world_size(),
+            frame_i: *state.frame(),
+            world_size: state.world_size(),
             tasks,
-            cities: value.cities().clone(),
-            cities_count: value.cities_count(),
-            units: value.units().clone(),
-            units_count: value.units_count(),
-            client_states: value.clients().states().clone(),
+            cities: state.cities().clone(),
+            cities_count: state.cities_count(),
+            units: state.units().clone(),
+            units_count: state.units_count(),
+            client_states: state.clients().states().clone(),
         }
     }
 }
@@ -102,18 +105,11 @@ impl TryFrom<&PathBuf> for Snapshot {
 impl From<Snapshot> for State {
     fn from(value: Snapshot) -> Self {
         let index = Index::from(&value);
-        let tasks: Vec<TaskBox> = value
-            .tasks
-            .clone()
-            .into_iter()
-            .map(|bx| bx.boxed())
-            .collect();
         Self::new(
             value.frame_i,
             Clients::new(value.client_states),
             vec![],
             index,
-            tasks,
             value.cities,
             value.cities_count,
             value.units,
