@@ -1,4 +1,4 @@
-use std::thread;
+use std::{sync::RwLockReadGuard, thread};
 
 use async_std::channel::{unbounded, Receiver, Sender};
 use common::game::GameFrame;
@@ -22,20 +22,19 @@ pub fn setup_task_workers(context: &RunnerContext) -> Vec<(Sender<()>, Receiver<
         thread::spawn(move || {
             let results_sender_ = results_sender.clone();
             while start_work_receiver.recv_blocking().is_ok() {
-                let lock = context.lock.read().unwrap();
                 let state = context.state();
                 let frame = *state.frame();
-                let tasks = state.tasks();
+                drop(state);
+                let tasks = context.tasks.read().unwrap();
                 deal(
                     &context,
                     workers_count,
-                    tasks,
+                    &tasks,
                     tick_task,
                     frame,
                     i,
                     &results_sender_,
                 );
-                drop(lock);
             }
         });
 
@@ -48,7 +47,7 @@ pub fn setup_task_workers(context: &RunnerContext) -> Vec<(Sender<()>, Receiver<
 fn deal<T, F, E: std::error::Error>(
     context: &RunnerContext,
     workers_count: usize,
-    items: &[T],
+    items: &RwLockReadGuard<Vec<T>>,
     executor: F,
     frame: GameFrame,
     worker_index: usize,
@@ -73,9 +72,12 @@ fn deal<T, F, E: std::error::Error>(
         };
     }
 
+    ///////////////////////////////////////////
+    error!("XXXXXXXXXXXXX: {}", effects.len());
     if sender.send_blocking(effects).is_err() {
         error!("Channel closed in tasks scope: abort")
     }
+    error!("YYYYYYYYYYYYY");
 }
 
 pub fn setup_client_workers(context: &RunnerContext) -> Vec<Receiver<Vec<Effect>>> {

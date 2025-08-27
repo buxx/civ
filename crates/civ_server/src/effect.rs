@@ -103,22 +103,22 @@ pub fn replace_city(city: City) -> Effect {
 }
 
 pub fn add_tasks(tasks: Vec<TaskBox>) -> Effect {
-    Effect::State(StateEffect::Tasks(TasksEffect::Add(tasks)))
+    Effect::Runner(RunnerEffect::Tasks(TasksEffect::Add(tasks)))
 }
 
 pub fn add_task(task: TaskBox) -> Effect {
-    Effect::State(StateEffect::Task(
+    Effect::Runner(RunnerEffect::Task(
         *task.context().id(),
         TaskEffect::Push(task),
     ))
 }
 
 pub fn remove_tasks(tasks: Vec<(TaskId, Concern)>) -> Effect {
-    Effect::State(StateEffect::Tasks(TasksEffect::Remove(tasks)))
+    Effect::Runner(RunnerEffect::Tasks(TasksEffect::Remove(tasks)))
 }
 
 pub fn remove_task(task: TaskBox) -> Effect {
-    Effect::State(StateEffect::Task(
+    Effect::Runner(RunnerEffect::Task(
         *task.context().id(),
         TaskEffect::Remove(*task.context().id(), task.concern()),
     ))

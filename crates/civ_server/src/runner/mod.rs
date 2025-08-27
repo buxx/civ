@@ -289,10 +289,12 @@ impl Runner {
             .collect();
 
         debug!("Collect task workers effects");
+        let x = effects.len();
         for (_, rcx) in &self.task_workers {
             let x = rcx.recv_blocking().unwrap_or_default();
             effects.extend(x);
         }
+        debug!("Collect task workers effects: found {}", effects.len() - x);
 
         self.apply_effects(effects);
     }
@@ -354,6 +356,7 @@ fn tick_task(
     task: &TaskBox,
     frame: &GameFrame,
 ) -> Result<Vec<Effect>, TaskError> {
+    dbg!(&task);
     let mut effects = task.tick(*frame);
 
     if task.context().is_finished(*frame) {

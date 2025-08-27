@@ -9,7 +9,7 @@ use log::error;
 use thiserror::Error;
 
 use crate::{
-    effect::{CityEffect, Effect, StateEffect, UnitEffect},
+    effect::{CityEffect, Effect, RunnerEffect, StateEffect, UnitEffect},
     game::{city::City, unit::Unit, IntoClientModel},
     runner::Runner,
     state::StateError,
@@ -42,20 +42,22 @@ impl Runner {
     ) -> Result<Vec<(ServerToClientMessage, Vec<ClientId>)>, ReflectError> {
         match effect {
             Effect::Shines(reflects) => Ok(reflects.clone()),
+            Effect::Runner(effect) => match effect {
+                RunnerEffect::Task(_, _) => {
+                    // Task are reflected into City & Unit in server side,
+                    // then City & Units are entirely send to client
+                    Ok(vec![])
+                }
+                RunnerEffect::Tasks(_) => {
+                    // Task are reflected into City & Unit in server side,
+                    // then City & Units are entirely send to client
+                    Ok(vec![])
+                }
+            },
             Effect::State(effect) => match effect {
                 StateEffect::Testing => Ok(vec![]),
                 StateEffect::Clients(_) => Ok(vec![]),
                 StateEffect::Client(_, _) => Ok(vec![]),
-                StateEffect::Task(_, _) => {
-                    // Task are reflected into City & Unit in server side,
-                    // then City & Units are entirely send to client
-                    Ok(vec![])
-                }
-                StateEffect::Tasks(_) => {
-                    // Task are reflected into City & Unit in server side,
-                    // then City & Units are entirely send to client
-                    Ok(vec![])
-                }
                 StateEffect::City(_, effect) => match effect {
                     CityEffect::New(city) => self.set_city_reflects(city),
                     CityEffect::Replace(city) => self.set_city_reflects(city),

@@ -16,7 +16,7 @@ use crate::{
         index::Index,
         State,
     },
-    task::{Task, TaskBox},
+    task::Task,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -75,9 +75,10 @@ impl From<&RunnerContext> for Snapshot {
         let tasks = value
             .tasks
             .read()
+            .unwrap()
+            .clone()
             .into_iter()
-            .map(|t| t.clone())
-            .map(|t| t as _)
+            .map(|bx| bx as _)
             .collect();
         let state = value.state.read().unwrap();
         Self {
