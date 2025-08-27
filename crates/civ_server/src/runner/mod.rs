@@ -27,10 +27,7 @@ use crate::{
     context::Context,
     effect::{Effect, StateEffect, TaskEffect},
     game::placer::{PlacerBox, RandomPlacer},
-    runner::{
-        client::deal_client,
-        worker::{setup_client_workers, setup_task_workers},
-    },
+    runner::{client::deal_client, worker::setup_task_workers},
     state::{NoLongerExist, State, StateError},
     task::{TaskBox, TaskError},
     world::reader::WorldReader,
@@ -111,8 +108,6 @@ pub struct Runner {
     // TODO: pub for benches ...
     #[builder(default = vec![])]
     pub task_workers: Vec<(Sender<()>, Receiver<Vec<Effect>>)>,
-    #[builder(default = vec![])]
-    client_workers: Vec<Receiver<Vec<Effect>>>,
 }
 
 #[derive(Debug, Error)]
@@ -159,7 +154,6 @@ impl Runner {
 
     pub fn run(&mut self) {
         self.task_workers = setup_task_workers(&self.context);
-        self.client_workers = setup_client_workers(&self.context);
 
         while !self.context.context.stop_is_required() {
             self.do_one_iteration();
@@ -225,23 +219,17 @@ impl Runner {
     }
 
     fn tick(&mut self) {
+        let mut effects = vec![];
+
         for (i, (start_sender, _)) in self.task_workers.iter().enumerate() {
             if start_sender.send_blocking(()).is_err() {
                 debug!("Worker {} start channel is closed", i)
             }
         }
 
-        let mut effects: Vec<Effect> = self
-            .client_workers
-            .iter()
-            .flat_map(|worker| {
-                let mut messages = vec![];
-                while let Ok(message) = worker.try_recv() {
-                    messages.extend(message);
-                }
-                messages
-            })
-            .collect();
+        while let Ok((client, message)) = self.context.from_clients_receiver.try_recv() {
+            effects.extend(tick_client(&self.context, &client, &message));
+        }
 
         for (_, rcx) in &self.task_workers {
             let x = rcx.recv_blocking().unwrap_or_default();

@@ -6,7 +6,7 @@ use log::error;
 
 use crate::{
     effect::Effect,
-    runner::{tick_client, tick_task, RunnerContext},
+    runner::{tick_task, RunnerContext},
     utils::collection::slices,
 };
 
@@ -74,27 +74,4 @@ fn deal<T, F, E: std::error::Error>(
     if sender.send_blocking(effects).is_err() {
         error!("Channel closed in tasks scope: abort")
     }
-}
-
-pub fn setup_client_workers(context: &RunnerContext) -> Vec<Receiver<Vec<Effect>>> {
-    let workers_count = num_cpus::get();
-    let mut channels = vec![];
-
-    for _ in 0..workers_count {
-        let context = context.clone();
-        let (results_sender, results_receiver) = unbounded();
-
-        thread::spawn(move || {
-            while let Ok((client, message)) = context.from_clients_receiver.recv_blocking() {
-                let effects = tick_client(&context, &client, &message);
-                if results_sender.send_blocking(effects).is_err() {
-                    return;
-                }
-            }
-        });
-
-        channels.push(results_receiver);
-    }
-
-    channels
 }
