@@ -9,15 +9,15 @@ use common::{
     world::{CtxTile, TerrainType, Tile},
 };
 use derive_more::Constructor;
-use hexx::{Hex, HexLayout};
 
 use crate::{
     assets::{
         atlas,
-        tile::{relative_layout, TILES_ATLAS_PATH},
+        tile::{TILES_ATLAS_PATH, TILE_SIZE},
     },
     ingame::{HexCity, HexTile, HexUnit},
     map::{AtlasIndex, AtlasesResource},
+    utils::screen::Isometric,
 };
 
 pub const TILE_Z: f32 = 0.0;
@@ -76,15 +76,15 @@ pub struct DrawContext<'a> {
 }
 
 impl DrawContext<'_> {
-    pub fn with(&self, hex: Hex) -> DrawHexContext {
-        DrawHexContext::from_ctx(self, hex)
+    pub fn with(&self, point: WorldPoint) -> DrawHexContext {
+        DrawHexContext::from_ctx(self, point)
     }
 }
 
 #[derive(Constructor)]
 pub struct DrawHexContext<'a> {
     pub ctx: &'a DrawContext<'a>,
-    pub hex: Hex,
+    pub point: WorldPoint,
 }
 
 impl<'a> std::ops::Deref for DrawHexContext<'a> {
@@ -96,17 +96,12 @@ impl<'a> std::ops::Deref for DrawHexContext<'a> {
 }
 
 impl<'a> DrawHexContext<'a> {
-    pub fn from_ctx(ctx: &'a DrawContext<'a>, hex: Hex) -> Self {
-        Self { ctx, hex }
+    pub fn from_ctx(ctx: &'a DrawContext<'a>, point: WorldPoint) -> Self {
+        Self { ctx, point }
     }
 
-    pub fn relative_layout(&self) -> HexLayout {
-        relative_layout(&self.slice.center())
-    }
-
-    pub fn point(&self) -> Option<WorldPoint> {
-        self.slice
-            .try_world_point_for_center_rel((self.hex.x as isize, self.hex.y as isize))
+    pub fn point(&self) -> &WorldPoint {
+        &self.point
     }
 }
 
@@ -135,7 +130,7 @@ impl IntoBundle for CtxTile<Tile> {
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> HexTileBundle {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
-        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
+        let point = ctx.point().iso(TILE_SIZE);
         let atlas_index = match self {
             CtxTile::Outside => atlas::TILE_BLACK,
             CtxTile::Visible(tile) => terrain_type_index(&tile.type_()),
@@ -157,18 +152,8 @@ impl IntoBundle for CtxTile<Tile> {
 
     #[cfg(feature = "debug_tiles")]
     fn debug_bundle(&self, ctx: &DrawHexContext, z: f32) -> Option<Self::DebugBundleType> {
-        use crate::assets::tile::TILE_SIZE;
-
-        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
-        let debug_info = format!(
-            "{}.{}/{}.{}", // ({}.{})",
-            ctx.hex.x,
-            ctx.hex.y,
-            point.x as i32 / TILE_SIZE.x as i32,
-            point.y as i32 / TILE_SIZE.y as i32,
-            // point.x as i32,
-            // point.y as i32
-        );
+        let point = ctx.point();
+        let debug_info = format!("{}.{}", point.x, point.y,);
         Some(DebugHexTileBundle::new(
             Text2d(debug_info),
             TextColor(Color::BLACK),
@@ -198,7 +183,7 @@ impl IntoBundle for Vec<ClientUnit> {
 
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
-        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
+        let point = ctx.point().iso(TILE_SIZE);
         let atlas_index = atlas::UNIT_SETTLER;
 
         // FIXME: Must be computed from list (first, for example)
@@ -246,7 +231,7 @@ impl IntoBundle for ClientCity {
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
-        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
+        let point = ctx.point().iso(TILE_SIZE);
         let atlas_index = atlas::CITY_JUNGLE;
 
         // FIXME: Must be computed from list (first, for example)

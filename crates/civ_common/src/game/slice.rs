@@ -100,6 +100,22 @@ impl GameSlice {
         )
     }
 
+    pub fn world_point(&self, point: &ImaginaryWorldPoint) -> Option<WorldPoint> {
+        if point.x < 0 || point.y < 0 {
+            return None;
+        }
+
+        if point.x < self.original.x
+            || point.x > (self.original.x + self.width as i64)
+            || point.y < self.original.y
+            || point.y > (self.original.y + self.height as i64)
+        {
+            return None;
+        }
+
+        Some(WorldPoint::new(point.x as u64, point.y as u64))
+    }
+
     pub fn try_world_point_for_center_rel(&self, pos: (isize, isize)) -> Option<WorldPoint> {
         let original_x = self.original.x as isize;
         let original_y = self.original.y as isize;
@@ -196,6 +212,21 @@ impl GameSlice {
             self.original.x as i32 - point.x as i32,
             self.original.y as i32 - point.y as i32,
         )
+    }
+
+    pub fn points(&self) -> Vec<ImaginaryWorldPoint> {
+        let mut points = Vec::with_capacity((self.width * self.height) as usize);
+
+        for y in 0..self.height {
+            for x in 0..self.width {
+                points.push(ImaginaryWorldPoint::new(
+                    self.original.x + x as i64,
+                    self.original.y + y as i64,
+                ));
+            }
+        }
+
+        points
     }
 }
 

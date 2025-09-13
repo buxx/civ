@@ -1,10 +1,13 @@
 pub mod state;
 use bevy::prelude::*;
 use camera::spawn_camera;
-use common::game::{
-    city::CityId,
-    slice::{ClientCity, ClientUnit},
-    unit::UnitId,
+use common::{
+    game::{
+        city::CityId,
+        slice::{ClientCity, ClientUnit},
+        unit::UnitId,
+    },
+    geo::WorldPoint,
 };
 use ingame::react_server_message;
 use preferences::PreferencesResource;
@@ -50,7 +53,7 @@ pub struct UnitUpdated(pub ClientUnit);
 // TODO: move
 #[derive(Event)]
 #[allow(unused)]
-pub struct UnitRemoved(pub UnitId);
+pub struct UnitRemoved(pub UnitId, pub WorldPoint);
 // TODO: move
 #[derive(Event)]
 #[allow(unused)]
@@ -58,7 +61,7 @@ pub struct CityUpdated(pub ClientCity);
 // TODO: move
 #[derive(Event)]
 #[allow(unused)]
-pub struct CityRemoved(pub CityId);
+pub struct CityRemoved(pub CityId, pub WorldPoint);
 // TODO: move
 #[derive(Event)]
 pub struct GameSlicePropagated;

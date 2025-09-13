@@ -1,3 +1,4 @@
+pub mod screen;
 use std::path::PathBuf;
 
 #[cfg(not(target_arch = "wasm32"))]
