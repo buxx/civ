@@ -1,21 +1,26 @@
 use bevy::prelude::*;
-use common::game::{city::CityId, unit::UnitId};
+use common::{
+    game::{city::CityId, unit::UnitId},
+    geo::WorldPoint,
+};
 use derive_more::Constructor;
-use hexx::Hex;
 
 use crate::{
-    assets::{atlas, tile::TILES_ATLAS_PATH},
+    assets::select::{SELECT_ATLAS_PATH, SELECT_SIZE},
     core::GameSlicePropagated,
-    ingame::GameFrameResource,
+    ingame::{animation::SpriteSheetAnimation, GameFrameResource},
     map::AtlasesResource,
-    utils::assets::{DrawContext, DrawHexContext, IntoBundle, Spawn, TILE_Z},
+    utils::{
+        assets::{DrawContext, DrawHexContext, IntoBundle, Spawn, TILE_Z},
+        screen::Isometric,
+    },
 };
 
-use super::{FadeAnimation, GameSliceResource};
+use super::GameSliceResource;
 
 #[derive(Debug, Event, Constructor)]
 pub struct SelectUpdated {
-    pub hex: Hex,
+    pub hex: WorldPoint,
     pub selected: Option<Selected>,
 }
 
@@ -42,23 +47,22 @@ impl IntoBundle for Select {
     type DebugBundleType = ();
 
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
-        // FIXME: should not do this once (at startup ?)
-        let texture = ctx.assets.load(TILES_ATLAS_PATH);
-        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
-        let atlas_index = atlas::ITEM_SELECTED;
+        let point = ctx.point().iso(SELECT_SIZE);
+        // FIXME: from constant in assets::select
+        let animation = SpriteSheetAnimation::new(0, 3, 5);
 
         SelectBundle::new(
             *self,
             Sprite {
-                image: texture.clone(),
+                image: ctx.atlases.select_texture.clone(),
                 texture_atlas: Some(TextureAtlas {
-                    index: *atlas_index,
-                    layout: ctx.atlases.tiles.clone(),
+                    index: animation.first_sprite_index,
+                    layout: ctx.atlases.select_atlas.clone(),
                 }),
                 ..default()
             },
             Transform::from_xyz(point.x, point.y, z),
-            FadeAnimation::default(),
+            animation,
         )
     }
 }
@@ -71,7 +75,7 @@ pub struct SelectBundle {
     pub marker: Select,
     pub sprite: Sprite,
     pub transform: Transform,
-    pub fade: FadeAnimation,
+    pub animation: SpriteSheetAnimation,
 }
 
 pub fn on_select_updated(

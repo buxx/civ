@@ -4,15 +4,15 @@ use common::network::message::{
     ClientStateMessage, ServerToClientEstablishmentMessage, ServerToClientInGameMessage,
     ServerToClientMessage,
 };
-use hexx::hex;
 
 use crate::{
-    assets::tile::absolute_layout,
+    assets::tile::TILE_SIZE,
     bridge::MessageReceivedFromServerEvent,
     core::{establishment::react_server_resume_message, state::react_state_message},
     ingame::{GameFrameResource, GameSliceResource, GameWindowResource},
     menu::state::MenuStateResource,
     state::AppState,
+    utils::screen::Isometric,
 };
 
 use super::GameWindowUpdated;
@@ -68,7 +68,7 @@ pub fn on_game_window_updated(
 ) {
     if let Some(window) = &window.0 {
         let center = window.center();
-        let position = absolute_layout().hex_to_world_pos(hex(center.x as i32, center.y as i32));
+        let position = center.iso(TILE_SIZE);
         camera.single_mut().translation = Vec3::new(position.x, position.y, 0.);
     }
 }

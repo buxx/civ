@@ -1,11 +1,7 @@
-use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
+use bevy::{prelude::*, window::PrimaryWindow};
 use common::{
-    game::{
-        city::CityId,
-        slice::{ClientCity, GameSlice},
-        unit::UnitId,
-    },
-    geo::ImaginaryWorldPoint,
+    game::{city::CityId, slice::ClientCity, unit::UnitId},
+    geo::{ImaginaryWorldPoint, WorldPoint},
     network::message::ClientToServerInGameMessage,
     space::window::Resolution,
     world::{CtxTile, Tile},
@@ -14,7 +10,7 @@ use derive_more::Constructor;
 use rustc_hash::FxHashMap;
 
 use crate::{
-    assets::tile::{absolute_layout, relative_layout, zero_layout, TILE_SIZE},
+    assets::tile::TILE_SIZE,
     core::{CityRemoved, CityUpdated, GameSlicePropagated, UnitRemoved, UnitUpdated},
     ingame::{GameFrameResource, GameSliceResource, HexTile},
     map::{grid::Grid, WaitingForGameSlice},
@@ -26,7 +22,6 @@ use crate::{
     ingame::{HexCity, HexUnit},
 };
 use common::game::slice::ClientUnit;
-use hexx::{shapes, *};
 
 use super::{
     grid::{GridHex, GridHexResource, GridResource},
@@ -39,7 +34,6 @@ pub fn refresh_grid(
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     grid: Res<GridResource>,
-    // current: Res<CurrentGridCenterResource>,
     mut waiting: ResMut<WaitingForGameSlice>,
 ) {
     if waiting.0 {
@@ -50,40 +44,53 @@ pub fn refresh_grid(
     let window = windows.single();
     let screen_center_point = Vec2::new(window.width() / 2.0, window.height() / 2.0);
     let (camera, cam_transform) = cameras.single();
+
     if let Ok(screen_center_world2d) =
         camera.viewport_to_world_2d(cam_transform, screen_center_point)
     {
-        let screen_center_hex = grid.absolute_layout.world_pos_to_hex(screen_center_world2d);
-        let grid_center_hex = hex(grid.center.x as i32, grid.center.y as i32);
-        let distance = grid_center_hex.distance_to(screen_center_hex);
+        if need_refresh(window, cam_transform, grid, &screen_center_world2d) {
+            let center = ImaginaryWorldPoint::from_iso(&TILE_SIZE, &screen_center_world2d);
+            let (tiles_size_width, tiles_size_height) = window_tiles_size(window, cam_transform);
 
-        let window_contains_tiles_x =
-            window.width() / 2.0 / (TILE_SIZE.x as f32 / cam_transform.scale().x);
-        let window_contains_tiles_y =
-            window.height() / 2.0 / (TILE_SIZE.y as f32 / cam_transform.scale().y);
-        let min_diff = window_contains_tiles_x
-            .min(window_contains_tiles_y)
-            .min(5.0);
+            let resolution = Resolution::new(tiles_size_width, tiles_size_height);
+            let window = common::space::window::Window::from_around(&center, &resolution);
 
-        if distance as f32 > min_diff {
-            let window_width = window.width() * cam_transform.scale().x;
-            let window_height = window.height() * cam_transform.scale().y;
-            let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as u64;
-            let tiles_in_height = (window_height / (TILE_SIZE.y as f32)) as u64;
-            let tiles_size = tiles_in_height.max(tiles_in_width);
-            let tiles_size = tiles_size * 2;
-
-            let new_center =
-                ImaginaryWorldPoint::new(screen_center_hex.x as i64, screen_center_hex.y as i64);
-            let window = common::space::window::Window::from_around(
-                &new_center,
-                &Resolution::new(tiles_size, tiles_size),
-            );
             waiting.0 = true;
-
             to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
         }
     }
+}
+
+fn need_refresh(
+    window: &Window,
+    cam_transform: &GlobalTransform,
+    grid: &Grid,
+    screen_center_world2d: &Vec2,
+) -> bool {
+    let screen_center_world_point =
+        ImaginaryWorldPoint::from_iso(&TILE_SIZE, screen_center_world2d);
+    let window_contains_tiles_x =
+        window.width() / 2.0 / (TILE_SIZE.x as f32 / cam_transform.scale().x);
+    let window_contains_tiles_y =
+        window.height() / 2.0 / (TILE_SIZE.y as f32 / cam_transform.scale().y);
+    let min_diff = window_contains_tiles_x.min(window_contains_tiles_y);
+
+    let distance = (screen_center_world_point.x - grid.center.x)
+        .abs()
+        .max((screen_center_world_point.y - grid.center.y).abs());
+
+    distance as f32 > min_diff
+}
+
+fn window_tiles_size(window: &Window, cam_transform: &GlobalTransform) -> (u64, u64) {
+    let window_width = window.width() * cam_transform.scale().x;
+    let window_height = window.height() * cam_transform.scale().y;
+    let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as u64;
+    let tiles_in_height = (window_height / (TILE_SIZE.y as f32)) as u64;
+    let tiles_size = tiles_in_height.max(tiles_in_width);
+    let tiles_size = tiles_size * 2;
+
+    (tiles_size, tiles_size)
 }
 
 #[derive(Constructor)]
@@ -101,38 +108,18 @@ impl<'a> GridUpdater<'a> {
         &mut self,
         commands: &mut Commands,
         ctx: &'a DrawContext<'a>,
-    ) -> FxHashMap<Hex, GridHex> {
-        let window_width = self.window.width() * self.transform.scale().x;
-        let window_height = self.window.height() * self.transform.scale().y;
-        let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as i32;
-        let tiles_in_height = (window_height / (TILE_SIZE.y as f32)) as i32;
-        let tiles_size = tiles_in_height.max(tiles_in_width);
-        let tiles_size = tiles_size * 2;
-
-        let shape = shapes::parallelogram(
-            hex(-(tiles_size / 2), -(tiles_size / 2)),
-            hex(tiles_size / 2, tiles_size / 2),
-        );
+    ) -> FxHashMap<WorldPoint, GridHex> {
         let mut grid = FxHashMap::default();
 
-        for hex in shape {
-            let imaginary = ctx
-                .slice
-                .imaginary_world_point_for_center_rel((hex.x as isize, hex.y as isize));
-            let Some(point) = ctx
-                .slice
-                .try_world_point_for_center_rel((hex.x as isize, hex.y as isize))
-            else {
-                continue;
-            };
+        for point in ctx.slice.points() {
+            if let Some(point) = ctx.slice.world_point(&point) {
+                let ctx = DrawHexContext::from_ctx(ctx, point);
+                let tile = self.spawn_tile(commands, &ctx);
+                let city = self.spawn_city(commands, &ctx);
+                let units = self.spawn_units(commands, &ctx);
 
-            let ctx = DrawHexContext::from_ctx(ctx, hex);
-
-            let tile = self.spawn_tile(commands, &ctx);
-            let city = self.spawn_city(commands, &ctx);
-            let units = self.spawn_units(commands, &ctx);
-
-            grid.insert(hex, GridHex::new(imaginary, point, tile, city, units));
+                grid.insert(point, GridHex::new(point, tile, city, units));
+            }
         }
 
         grid
@@ -143,7 +130,7 @@ impl<'a> GridUpdater<'a> {
         commands: &mut Commands,
         ctx: &DrawHexContext,
     ) -> GridHexResource<CtxTile<Tile>> {
-        let point = ctx.point().expect("Tile called only on world point");
+        let point = ctx.point();
         let tile = ctx
             .slice
             .tiles()
@@ -160,7 +147,7 @@ impl<'a> GridUpdater<'a> {
         commands: &mut Commands,
         ctx: &DrawHexContext,
     ) -> Option<GridHexResource<ClientCity>> {
-        let point = ctx.point().expect("City called only on world point");
+        let point = ctx.point();
         let city = ctx.slice.cities().get(&point).cloned().flatten();
         let entity = city.clone().map(|city| city.spawn(commands, ctx, CITY_Z));
         entity.map(|entity| {
@@ -173,7 +160,7 @@ impl<'a> GridUpdater<'a> {
         commands: &mut Commands,
         ctx: &DrawHexContext,
     ) -> Option<GridHexResource<Vec<ClientUnit>>> {
-        let point = ctx.point().expect("Units called only on world point");
+        let point = ctx.point();
         let units = ctx.slice.units().get(&point).cloned().flatten();
 
         #[cfg(feature = "debug")]
@@ -193,10 +180,6 @@ impl<'a> GridUpdater<'a> {
 
     // TODO: despawn/spawn only really out/in in screen
     fn create(&mut self, commands: &mut Commands, ctx: &'a DrawContext<'a>) {
-        let center = ctx.slice.imaginary_world_point_for_center_rel((0, 0));
-        let absolute_layout = absolute_layout();
-        let relative_layout = relative_layout(&center);
-
         // Tiles
         for entity in self.tiles.iter() {
             commands.entity(entity).despawn_recursive();
@@ -212,13 +195,10 @@ impl<'a> GridUpdater<'a> {
             commands.entity(entity).despawn_recursive();
         }
 
-        let grid = GridResource::new(Some(Grid::new(
-            self.build_grid(commands, ctx),
-            center,
-            relative_layout,
-            absolute_layout,
-        )));
-        commands.insert_resource(grid);
+        let grid_ = self.build_grid(commands, ctx);
+        let center = ctx.slice.center();
+        let resource = GridResource::new(Some(Grid::new(grid_, center)));
+        commands.insert_resource(resource);
     }
 
     fn update(
@@ -230,46 +210,39 @@ impl<'a> GridUpdater<'a> {
     ) {
         match &action {
             Action::SetCity(city) => {
-                if let Some(hex) = grid.city_index(city.id()).cloned() {
-                    self.remove_city(grid, &hex, commands);
-                }
+                let point = city.geo().point();
+                self.despawn_city(grid, point, commands);
 
-                if let Some(hex) = grid.point_index(city.geo().point()).cloned() {
-                    if let Some(grid_hex) = grid.get_mut(&hex) {
-                        let ctx = DrawHexContext::from_ctx(ctx, hex);
-                        let city = self.spawn_city(commands, &ctx);
-                        grid_hex.city = city;
-                    }
+                // FIXME BS NOW: When city has been added ?
+                if let Some(grid_hex) = grid.get_mut(point) {
+                    let ctx = DrawHexContext::from_ctx(ctx, *point);
+                    let city = self.spawn_city(commands, &ctx);
+                    grid_hex.city = city;
                 }
             }
-            Action::RemoveCity(city_id) => {
-                if let Some(hex) = grid.city_index(city_id).cloned() {
-                    self.remove_city(grid, &hex, commands);
-                }
+            Action::RemoveCity(_, point) => {
+                self.despawn_city(grid, point, commands);
             }
             Action::SetUnit(unit) => {
-                if let Some(hex) = grid.unit_index(unit.id()).cloned() {
-                    self.remove_units(grid, &hex, commands);
-                }
+                let point = unit.geo().point();
+                self.despawn_units(grid, point, commands);
 
-                if let Some(hex) = grid.point_index(unit.geo().point()).cloned() {
-                    if let Some(grid_hex) = grid.get_mut(&hex) {
-                        let ctx = DrawHexContext::from_ctx(ctx, hex);
-                        let units = self.spawn_units(commands, &ctx);
-                        grid_hex.units = units;
-                    }
+                // FIXME BS NOW: When unit has been added ?
+                if let Some(grid_hex) = grid.get_mut(point) {
+                    let ctx = DrawHexContext::from_ctx(ctx, *point);
+                    let units = self.spawn_units(commands, &ctx);
+                    grid_hex.units = units;
                 }
             }
-            Action::RemoveUnit(unit_id) => {
-                if let Some(hex) = grid.unit_index(unit_id).cloned() {
-                    self.remove_units(grid, &hex, commands);
-                }
+            Action::RemoveUnit(_, point) => {
+                self.despawn_units(grid, point, commands);
+                // FIXME BS NOW: respawn (removed unit was maybe not alone)
             }
         }
     }
 
-    fn remove_city(&self, grid: &mut Grid, hex: &Hex, commands: &mut Commands) {
-        if let Some(grid) = grid.get(hex) {
+    fn despawn_city(&self, grid: &mut Grid, point: &WorldPoint, commands: &mut Commands) {
+        if let Some(grid) = grid.get(point) {
             if let Some(resource) = &grid.city {
                 // TODO: modify GridResource too ? (see refresh.rs, already done here)
                 commands.entity(resource.entity).despawn_recursive();
@@ -277,8 +250,8 @@ impl<'a> GridUpdater<'a> {
         }
     }
 
-    fn remove_units(&self, grid: &mut Grid, hex: &Hex, commands: &mut Commands) {
-        if let Some(grid) = grid.get(hex) {
+    fn despawn_units(&self, grid: &mut Grid, point: &WorldPoint, commands: &mut Commands) {
+        if let Some(grid) = grid.get(point) {
             if let Some(resource) = &grid.units {
                 // TODO: modify GridResource too ? (see refresh.rs, already done here)
                 commands.entity(resource.entity).despawn_recursive();
@@ -289,9 +262,9 @@ impl<'a> GridUpdater<'a> {
 
 pub enum Action {
     SetUnit(ClientUnit),
-    RemoveUnit(UnitId),
+    RemoveUnit(UnitId, WorldPoint),
     SetCity(ClientCity),
-    RemoveCity(CityId),
+    RemoveCity(CityId, WorldPoint),
 }
 
 // FIXME Optimizations :
@@ -383,7 +356,7 @@ pub fn react_city_removed(
     mut grid: ResMut<GridResource>,
     mut commands: Commands,
 ) {
-    let city_id = &trigger.event().0;
+    let (city_id, point) = (trigger.event().0, trigger.event().1);
 
     if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
         debug!("Remove city: {city_id}");
@@ -396,7 +369,7 @@ pub fn react_city_removed(
             &mut commands,
             &ctx,
             grid,
-            Action::RemoveCity(*city_id),
+            Action::RemoveCity(city_id, point),
         );
 
         commands.trigger(GameSlicePropagated);
@@ -454,7 +427,7 @@ pub fn react_unit_removed(
     mut grid: ResMut<GridResource>,
     mut commands: Commands,
 ) {
-    let unit_id = &trigger.event().0;
+    let (unit_id, point) = (trigger.event().0, trigger.event().1);
 
     if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
         debug!("Remove unit: {unit_id}");
@@ -467,7 +440,7 @@ pub fn react_unit_removed(
             &mut commands,
             &ctx,
             grid,
-            Action::RemoveUnit(*unit_id),
+            Action::RemoveUnit(unit_id, point),
         );
 
         commands.trigger(GameSlicePropagated);

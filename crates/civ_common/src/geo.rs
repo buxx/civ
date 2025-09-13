@@ -1,6 +1,6 @@
 use bon::Builder;
 use derive_more::Constructor;
-use glam::{U64Vec2, Vec2};
+use glam::{U64Vec2, UVec2, Vec2};
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -14,6 +14,23 @@ pub struct WorldPoint {
 impl WorldPoint {
     pub fn new(x: u64, y: u64) -> Self {
         Self { x, y }
+    }
+
+    pub fn from_iso(size: UVec2, point: Vec2) -> Self {
+        // let sx = (point.x - point.y) * (size.x as f32 * 0.5);
+        // let sy = (point.x + point.y) * (size.y as f32 * 0.5);
+
+        let (x, y) = (
+            (point.x / size.x as f32 + point.y / size.y as f32),
+            (point.y / size.y as f32 - point.x / size.x as f32),
+        );
+
+        dbg!(x, y);
+
+        Self {
+            x: x as u64,
+            y: y as u64,
+        }
     }
 
     pub fn apply(&self, pos: (i32, i32)) -> Self {
@@ -82,6 +99,22 @@ impl ImaginaryWorldPoint {
         Self { x, y }
     }
 
+    pub fn from_iso(size: &UVec2, point: &Vec2) -> Self {
+        // Shift the point up by half the sprite's height
+        // because sprite is displayed by using center anchor.
+        let point = Vec2::new(point.x, point.y + size.y as f32 / 2.0);
+
+        let (x, y) = (
+            (point.x / size.x as f32 + point.y / size.y as f32),
+            (point.y / size.y as f32 - point.x / size.x as f32),
+        );
+
+        Self {
+            x: x as i64,
+            y: y as i64,
+        }
+    }
+
     pub fn relative_to(&self, pos: (i32, i32)) -> Option<Self> {
         let x = self.x as isize;
         let y = self.y as isize;
@@ -117,6 +150,16 @@ impl From<ImaginaryWorldPoint> for Vec2 {
             x: value.x as f32,
             y: value.y as f32,
         }
+    }
+}
+
+impl From<ImaginaryWorldPoint> for Option<WorldPoint> {
+    fn from(value: ImaginaryWorldPoint) -> Self {
+        if value.x < 0 || value.y < 0 {
+            return None;
+        }
+
+        Some(WorldPoint::new(value.x as u64, value.y as u64))
     }
 }
 

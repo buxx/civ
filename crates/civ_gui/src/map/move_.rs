@@ -3,8 +3,6 @@ use common::geo::ImaginaryWorldPoint;
 
 use crate::ingame::LastKnownCursorPositionResource;
 
-use super::{grid::GridResource, CenterCameraOnGrid};
-
 #[derive(Resource, Deref, DerefMut, Default)]
 pub struct CurrentGridCenterResource(pub Option<ImaginaryWorldPoint>);
 
@@ -80,16 +78,4 @@ pub fn map_dragging_teardown(
     if buttons.just_released(MouseButton::Left) {
         dragging.0 = false;
     }
-}
-
-pub fn react_center_camera_on_grid(
-    _trigger: Trigger<CenterCameraOnGrid>,
-    mut camera: Query<&mut Transform, With<Camera2d>>,
-    grid: Res<GridResource>,
-) {
-    let Some(grid) = &grid.0 else { return };
-    let origin = grid.relative_layout.origin;
-    let translation = camera.single().translation;
-    let new_translation = Vec3::new(origin.x, origin.y, translation.z);
-    camera.single_mut().translation = new_translation;
 }

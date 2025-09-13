@@ -1,6 +1,7 @@
 use bevy::{prelude::*, window::PrimaryWindow};
+use common::geo::{ImaginaryWorldPoint, WorldPoint};
 
-use crate::{ingame::TryTileInfo, map::grid::GridResource};
+use crate::{assets::tile::TILE_SIZE, ingame::TryTileInfo};
 
 use super::{LastKnownCursorPositionResource, TryMenu, TrySelect};
 
@@ -22,20 +23,18 @@ pub fn on_click(
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
-    grid: Res<GridResource>,
 ) {
-    let Some(grid) = &grid.0 else { return };
     let window = windows.single();
     let (camera, cam_transform) = cameras.single();
-    if let Some(hex) = window
+    if let Some(Some(point)) = window
         .cursor_position()
         .and_then(|p| camera.viewport_to_world_2d(cam_transform, p).ok())
-        .map(|p| grid.relative_layout.world_pos_to_hex(p))
+        .map(|p| ImaginaryWorldPoint::from_iso(&TILE_SIZE, &p).into())
     {
         match click.event().button {
-            PointerButton::Primary => commands.trigger(TrySelect(hex)),
-            PointerButton::Secondary => commands.trigger(TryMenu(hex)),
-            PointerButton::Middle => commands.trigger(TryTileInfo(hex)),
+            PointerButton::Primary => commands.trigger(TrySelect(point)),
+            PointerButton::Secondary => commands.trigger(TryMenu(point)),
+            PointerButton::Middle => commands.trigger(TryTileInfo(point)),
         };
     }
 }

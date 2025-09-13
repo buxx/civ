@@ -3,15 +3,19 @@ use bevy::prelude::*;
 use derive_more::Constructor;
 use grid::{CurrentCursorHex, GridResource};
 use move_::{
-    handle_map_offset_by_keys, map_dragging, map_dragging_teardown, react_center_camera_on_grid,
-    CurrentGridCenterResource, DraggingMap,
+    handle_map_offset_by_keys, map_dragging, map_dragging_teardown, CurrentGridCenterResource,
+    DraggingMap,
 };
 use refresh::{react_game_slice_updated, refresh_grid};
 use std::ops::Deref;
 use zoom::map_zoom;
 
 use crate::{
-    assets::tile::tiles_texture_atlas_layout,
+    assets::{
+        select::{select_texture_atlas_layout, SELECT_ATLAS_PATH},
+        tile::{tiles_texture_atlas_layout, TILES_ATLAS_PATH},
+        unit::{units_texture_atlas_layout, UNITS_ATLAS_PATH},
+    },
     ingame::input::update_last_known_cursor_position,
     map::refresh::{
         react_city_removed, react_city_updated, react_unit_removed, react_unit_updated,
@@ -38,7 +42,6 @@ impl Plugin for MapPlugin {
             .add_observer(react_city_removed)
             .add_observer(react_unit_updated)
             .add_observer(react_unit_removed)
-            .add_observer(react_center_camera_on_grid)
             // TODO: move into atlases
             .add_systems(Startup, init_atlases)
             .add_systems(
@@ -52,6 +55,13 @@ impl Plugin for MapPlugin {
                 )
                     .run_if(in_state(AppState::InGame)),
             );
+
+        #[cfg(feature = "debug_tiles")]
+        {
+            use crate::map::grid::CurrentHoverDebugTile;
+
+            app.init_resource::<CurrentHoverDebugTile>();
+        }
     }
 }
 
@@ -66,18 +76,38 @@ impl Deref for AtlasIndex {
     }
 }
 
-#[derive(Event)]
-pub struct CenterCameraOnGrid;
-
 // FIXME BS NOW: move
 #[derive(Resource, Constructor)]
 pub struct AtlasesResource {
-    pub tiles: Handle<TextureAtlasLayout>,
+    pub tiles_atlas: Handle<TextureAtlasLayout>,
+    pub tiles_texture: Handle<Image>,
+    pub units_atlas: Handle<TextureAtlasLayout>,
+    pub units_texture: Handle<Image>,
+    pub select_atlas: Handle<TextureAtlasLayout>,
+    pub select_texture: Handle<Image>,
 }
 
-fn init_atlases(mut commands: Commands, mut atlas: ResMut<Assets<TextureAtlasLayout>>) {
-    let tiles = atlas.add(tiles_texture_atlas_layout());
-    commands.insert_resource(AtlasesResource::new(tiles));
+fn init_atlases(
+    mut commands: Commands,
+    mut atlas: ResMut<Assets<TextureAtlasLayout>>,
+    assets: Res<AssetServer>,
+) {
+    let tiles_atlas = atlas.add(tiles_texture_atlas_layout());
+    let units_atlas = atlas.add(units_texture_atlas_layout());
+    let select_atlas = atlas.add(select_texture_atlas_layout());
+
+    let tiles_texture = assets.load(TILES_ATLAS_PATH);
+    let units_texture = assets.load(UNITS_ATLAS_PATH);
+    let select_texture = assets.load(SELECT_ATLAS_PATH);
+
+    commands.insert_resource(AtlasesResource::new(
+        tiles_atlas,
+        tiles_texture,
+        units_atlas,
+        units_texture,
+        select_atlas,
+        select_texture,
+    ));
 }
 
 #[derive(Debug, Resource, Deref, DerefMut, Default)]
