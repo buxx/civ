@@ -1,21 +1,29 @@
 use bevy::prelude::*;
-use common::game::{city::CityId, unit::UnitId};
+use common::{
+    game::{city::CityId, unit::UnitId},
+    geo::WorldPoint,
+};
 use derive_more::Constructor;
-use hexx::Hex;
 
 use crate::{
-    assets::{atlas, tile::TILES_ATLAS_PATH},
+    assets::{
+        atlas,
+        tile::{TILES_ATLAS_PATH, TILE_SIZE},
+    },
     core::GameSlicePropagated,
     ingame::GameFrameResource,
     map::AtlasesResource,
-    utils::assets::{DrawContext, DrawHexContext, IntoBundle, Spawn, TILE_Z},
+    utils::{
+        assets::{DrawContext, DrawHexContext, IntoBundle, Spawn, TILE_Z},
+        screen::Isometric,
+    },
 };
 
 use super::{FadeAnimation, GameSliceResource};
 
 #[derive(Debug, Event, Constructor)]
 pub struct SelectUpdated {
-    pub hex: Hex,
+    pub hex: WorldPoint,
     pub selected: Option<Selected>,
 }
 
@@ -44,7 +52,7 @@ impl IntoBundle for Select {
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
         // FIXME: should not do this once (at startup ?)
         let texture = ctx.assets.load(TILES_ATLAS_PATH);
-        let point = ctx.relative_layout().hex_to_world_pos(ctx.hex);
+        let point = ctx.point().iso(TILE_SIZE);
         let atlas_index = atlas::ITEM_SELECTED;
 
         SelectBundle::new(

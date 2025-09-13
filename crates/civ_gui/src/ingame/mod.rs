@@ -4,7 +4,6 @@ use bon::Builder;
 use common::game::{slice::GameSlice as BaseGameSlice, GameFrame as BaseGameFrame};
 use common::geo::WorldPoint;
 use common::space::window::Window as BaseWindow;
-use hexx::Hex;
 use input::menu::on_try_menu;
 use input::select::on_try_select;
 use input::{on_click, update_last_known_cursor_position};
@@ -99,13 +98,13 @@ pub struct HexCity;
 pub struct Point(pub WorldPoint);
 
 #[derive(Debug, Event)]
-pub struct TrySelect(Hex);
+pub struct TrySelect(WorldPoint);
 
 #[derive(Debug, Event)]
-pub struct TryTileInfo(Hex);
+pub struct TryTileInfo(WorldPoint);
 
 #[derive(Debug, Event)]
-pub struct TryMenu(Hex);
+pub struct TryMenu(WorldPoint);
 
 #[derive(Debug, Component)]
 pub struct FadeAnimation {

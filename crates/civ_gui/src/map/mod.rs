@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use derive_more::Constructor;
 use grid::{CurrentCursorHex, GridResource};
 use move_::{
-    handle_map_offset_by_keys, map_dragging, map_dragging_teardown, react_center_camera_on_grid,
-    CurrentGridCenterResource, DraggingMap,
+    handle_map_offset_by_keys, map_dragging, map_dragging_teardown, CurrentGridCenterResource,
+    DraggingMap,
 };
 use refresh::{react_game_slice_updated, refresh_grid};
 use std::ops::Deref;
@@ -38,7 +38,6 @@ impl Plugin for MapPlugin {
             .add_observer(react_city_removed)
             .add_observer(react_unit_updated)
             .add_observer(react_unit_removed)
-            .add_observer(react_center_camera_on_grid)
             // TODO: move into atlases
             .add_systems(Startup, init_atlases)
             .add_systems(
@@ -65,9 +64,6 @@ impl Deref for AtlasIndex {
         &self.0
     }
 }
-
-#[derive(Event)]
-pub struct CenterCameraOnGrid;
 
 // FIXME BS NOW: move
 #[derive(Resource, Constructor)]

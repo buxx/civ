@@ -64,7 +64,8 @@ pub fn react_state_message_(
             }
 
             let city_id = *city_id;
-            Some(Box::new(move |c| c.trigger(CityRemoved(city_id))))
+            let point = *point;
+            Some(Box::new(move |c| c.trigger(CityRemoved(city_id, point))))
         }
         ClientStateMessage::SetUnit(unit) => {
             if let Some(ref mut slice) = &mut (slice.0) {
@@ -113,7 +114,8 @@ pub fn react_state_message_(
             }
 
             let unit_id = *unit_id;
-            Some(Box::new(move |c| c.trigger(UnitRemoved(unit_id))))
+            let point = *point;
+            Some(Box::new(move |c| c.trigger(UnitRemoved(unit_id, point))))
         }
     }
 }

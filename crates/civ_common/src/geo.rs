@@ -1,6 +1,6 @@
 use bon::Builder;
 use derive_more::Constructor;
-use glam::{U64Vec2, Vec2};
+use glam::{U64Vec2, UVec2, Vec2};
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -14,6 +14,16 @@ pub struct WorldPoint {
 impl WorldPoint {
     pub fn new(x: u64, y: u64) -> Self {
         Self { x, y }
+    }
+
+    pub fn from_iso(size: UVec2, point: Vec2) -> Self {
+        let sx = (point.x - point.y) * (size.x as f32 * 0.5);
+        let sy = (point.x + point.y) * (size.y as f32 * 0.5);
+
+        Self {
+            x: sx as u64,
+            y: sy as u64,
+        }
     }
 
     pub fn apply(&self, pos: (i32, i32)) -> Self {

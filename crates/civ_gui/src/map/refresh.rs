@@ -417,7 +417,7 @@ pub fn react_unit_removed(
     mut grid: ResMut<GridResource>,
     mut commands: Commands,
 ) {
-    let unit_id = &trigger.event().0;
+    let (unit_id, point) = (trigger.event().0, trigger.event().1);
 
     if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
         debug!("Remove unit: {unit_id}");
@@ -430,7 +430,7 @@ pub fn react_unit_removed(
             &mut commands,
             &ctx,
             grid,
-            Action::RemoveUnit(*unit_id),
+            Action::RemoveUnit(unit_id, point),
         );
 
         commands.trigger(GameSlicePropagated);
