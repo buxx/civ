@@ -51,6 +51,13 @@ impl Plugin for MapPlugin {
                 )
                     .run_if(in_state(AppState::InGame)),
             );
+
+        #[cfg(feature = "debug_tiles")]
+        {
+            use crate::map::grid::CurrentHoverDebugTile;
+
+            app.init_resource::<CurrentHoverDebugTile>();
+        }
     }
 }
 

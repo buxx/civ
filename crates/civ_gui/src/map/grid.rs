@@ -7,6 +7,9 @@ use common::{
 use derive_more::Constructor;
 use rustc_hash::FxHashMap;
 
+#[cfg(feature = "debug_tiles")]
+use crate::map::AtlasIndex;
+
 #[derive(Debug, Resource, Constructor, Default)]
 pub struct GridResource(pub Option<Grid>);
 
@@ -56,3 +59,7 @@ impl<T: Send + Sync> std::ops::Deref for GridHexResource<T> {
 
 #[derive(Resource, Deref, DerefMut, Default)]
 pub struct CurrentCursorHex(pub Option<ImaginaryWorldPoint>);
+
+#[cfg(feature = "debug_tiles")]
+#[derive(Resource, Deref, DerefMut, Default)]
+pub struct CurrentHoverDebugTile(pub Option<(Entity, AtlasIndex)>);

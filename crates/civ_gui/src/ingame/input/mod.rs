@@ -1,5 +1,5 @@
 use bevy::{prelude::*, window::PrimaryWindow};
-use common::geo::WorldPoint;
+use common::geo::{ImaginaryWorldPoint, WorldPoint};
 
 use crate::{assets::tile::TILE_SIZE, ingame::TryTileInfo};
 
@@ -26,11 +26,12 @@ pub fn on_click(
 ) {
     let window = windows.single();
     let (camera, cam_transform) = cameras.single();
-    if let Some(point) = window
+    if let Some(Some(point)) = window
         .cursor_position()
         .and_then(|p| camera.viewport_to_world_2d(cam_transform, p).ok())
-        .map(|p| WorldPoint::from_iso(TILE_SIZE, p))
+        .map(|p| ImaginaryWorldPoint::from_iso(TILE_SIZE, p).into())
     {
+        dbg!(&point);
         match click.event().button {
             PointerButton::Primary => commands.trigger(TrySelect(point)),
             PointerButton::Secondary => commands.trigger(TryMenu(point)),

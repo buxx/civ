@@ -40,7 +40,7 @@ pub fn refresh_grid(
     if waiting.0 {
         return;
     }
-    let Some(_grid) = &grid.0 else { return };
+    let Some(grid) = &grid.0 else { return };
 
     let window = windows.single();
     let screen_center_point = Vec2::new(window.width() / 2.0, window.height() / 2.0);
@@ -49,10 +49,13 @@ pub fn refresh_grid(
     if let Ok(screen_center_world2d) =
         camera.viewport_to_world_2d(cam_transform, screen_center_point)
     {
-        let screen_center_world_point = ImaginaryWorldPoint::new(
-            screen_center_world2d.x as i64 / TILE_SIZE.x as i64,
-            screen_center_world2d.y as i64 / TILE_SIZE.y as i64,
-        );
+        let screen_center_world_point =
+            ImaginaryWorldPoint::from_iso(TILE_SIZE, screen_center_world2d);
+        // dbg!(screen_center_world_point);
+        // let screen_center_world_point = ImaginaryWorldPoint::new(
+        //     screen_center_world2d.x as i64 / TILE_SIZE.x as i64,
+        //     screen_center_world2d.y as i64 / TILE_SIZE.y as i64,
+        // );
         let window_contains_tiles_x =
             window.width() / 2.0 / (TILE_SIZE.x as f32 / cam_transform.scale().x);
         let window_contains_tiles_y =
@@ -62,7 +65,7 @@ pub fn refresh_grid(
             .min(5.0);
 
         // FIXME BS NOW: real distance from grid.center and screen_center_world_point
-        let distance = 5000.0;
+        let distance = 0.0;
 
         if distance as f32 > min_diff {
             let window_width = window.width() * cam_transform.scale().x;
