@@ -14,6 +14,7 @@ use crate::{
     assets::{
         atlas,
         tile::{TILES_ATLAS_PATH, TILE_SIZE},
+        unit::{UNITS_ATLAS_PATH, UNIT_SIZE},
     },
     ingame::{HexCity, HexTile, HexUnit},
     map::{AtlasIndex, AtlasesResource},
@@ -183,8 +184,8 @@ impl IntoBundle for Vec<ClientUnit> {
     type DebugBundleType = ();
 
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
-        let texture = ctx.assets.load(TILES_ATLAS_PATH);
-        let point = ctx.point().iso(TILE_SIZE);
+        let texture = ctx.assets.load(UNITS_ATLAS_PATH);
+        let point = ctx.point().iso(UNIT_SIZE);
         let atlas_index = atlas::UNIT_SETTLER;
 
         // FIXME: Must be computed from list (first, for example)
@@ -194,7 +195,7 @@ impl IntoBundle for Vec<ClientUnit> {
                 image: texture.clone(),
                 texture_atlas: Some(TextureAtlas {
                     index: *atlas_index,
-                    layout: ctx.atlases.tiles.clone(),
+                    layout: ctx.atlases.units.clone(),
                 }),
                 ..default()
             },
