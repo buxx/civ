@@ -34,7 +34,6 @@ pub fn refresh_grid(
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     grid: Res<GridResource>,
-    // current: Res<CurrentGridCenterResource>,
     mut waiting: ResMut<WaitingForGameSlice>,
 ) {
     if waiting.0 {
@@ -49,41 +48,49 @@ pub fn refresh_grid(
     if let Ok(screen_center_world2d) =
         camera.viewport_to_world_2d(cam_transform, screen_center_point)
     {
-        let screen_center_world_point =
-            ImaginaryWorldPoint::from_iso(TILE_SIZE, screen_center_world2d);
-        // dbg!(screen_center_world_point);
-        // let screen_center_world_point = ImaginaryWorldPoint::new(
-        //     screen_center_world2d.x as i64 / TILE_SIZE.x as i64,
-        //     screen_center_world2d.y as i64 / TILE_SIZE.y as i64,
-        // );
-        let window_contains_tiles_x =
-            window.width() / 2.0 / (TILE_SIZE.x as f32 / cam_transform.scale().x);
-        let window_contains_tiles_y =
-            window.height() / 2.0 / (TILE_SIZE.y as f32 / cam_transform.scale().y);
-        let min_diff = window_contains_tiles_x
-            .min(window_contains_tiles_y)
-            .min(5.0);
+        if need_refresh(window, cam_transform, grid, &screen_center_world2d) {
+            let center = ImaginaryWorldPoint::from_iso(&TILE_SIZE, &screen_center_world2d);
+            let (tiles_size_width, tiles_size_height) = window_tiles_size(window, cam_transform);
 
-        // FIXME BS NOW: real distance from grid.center and screen_center_world_point
-        let distance = 0.0;
+            let resolution = Resolution::new(tiles_size_width, tiles_size_height);
+            let window = common::space::window::Window::from_around(&center, &resolution);
 
-        if distance as f32 > min_diff {
-            let window_width = window.width() * cam_transform.scale().x;
-            let window_height = window.height() * cam_transform.scale().y;
-            let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as u64;
-            let tiles_in_height = (window_height / (TILE_SIZE.y as f32)) as u64;
-            let tiles_size = tiles_in_height.max(tiles_in_width);
-            let tiles_size = tiles_size * 2;
-
-            let window = common::space::window::Window::from_around(
-                &screen_center_world_point,
-                &Resolution::new(tiles_size, tiles_size),
-            );
             waiting.0 = true;
-
             to_server!(commands, ClientToServerInGameMessage::SetWindow(window));
         }
     }
+}
+
+fn need_refresh(
+    window: &Window,
+    cam_transform: &GlobalTransform,
+    grid: &Grid,
+    screen_center_world2d: &Vec2,
+) -> bool {
+    let screen_center_world_point =
+        ImaginaryWorldPoint::from_iso(&TILE_SIZE, screen_center_world2d);
+    let window_contains_tiles_x =
+        window.width() / 2.0 / (TILE_SIZE.x as f32 / cam_transform.scale().x);
+    let window_contains_tiles_y =
+        window.height() / 2.0 / (TILE_SIZE.y as f32 / cam_transform.scale().y);
+    let min_diff = window_contains_tiles_x.min(window_contains_tiles_y);
+
+    let distance = (screen_center_world_point.x - grid.center.x)
+        .abs()
+        .max((screen_center_world_point.y - grid.center.y).abs());
+
+    distance as f32 > min_diff
+}
+
+fn window_tiles_size(window: &Window, cam_transform: &GlobalTransform) -> (u64, u64) {
+    let window_width = window.width() * cam_transform.scale().x;
+    let window_height = window.height() * cam_transform.scale().y;
+    let tiles_in_width = (window_width / (TILE_SIZE.x as f32)) as u64;
+    let tiles_in_height = (window_height / (TILE_SIZE.y as f32)) as u64;
+    let tiles_size = tiles_in_height.max(tiles_in_width);
+    let tiles_size = tiles_size * 2;
+
+    (tiles_size, tiles_size)
 }
 
 #[derive(Constructor)]

@@ -29,9 +29,8 @@ pub fn on_click(
     if let Some(Some(point)) = window
         .cursor_position()
         .and_then(|p| camera.viewport_to_world_2d(cam_transform, p).ok())
-        .map(|p| ImaginaryWorldPoint::from_iso(TILE_SIZE, p).into())
+        .map(|p| ImaginaryWorldPoint::from_iso(&TILE_SIZE, &p).into())
     {
-        dbg!(&point);
         match click.event().button {
             PointerButton::Primary => commands.trigger(TrySelect(point)),
             PointerButton::Secondary => commands.trigger(TryMenu(point)),
