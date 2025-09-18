@@ -1,4 +1,4 @@
-use bevy::{ecs::prelude::*, prelude::*};
+use bevy::{ecs::prelude::*, prelude::*, sprite::Anchor};
 use common::{
     game::{
         slice::{ClientCity, ClientUnit, GameSlice},
@@ -144,6 +144,7 @@ impl IntoBundle for CtxTile<Tile> {
                     index: *atlas_index,
                     layout: ctx.atlases.tiles.clone(),
                 }),
+                // anchor: Anchor::BottomCenter,
                 ..default()
             },
             Transform::from_xyz(point.x, point.y, z),

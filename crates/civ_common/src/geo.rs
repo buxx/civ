@@ -100,12 +100,14 @@ impl ImaginaryWorldPoint {
     }
 
     pub fn from_iso(size: UVec2, point: Vec2) -> Self {
+        // Shift the point up by half the sprite's height
+        // because sprite is displayed by using center anchor.
+        let point = Vec2::new(point.x, point.y + size.y as f32 / 2.0);
+
         let (x, y) = (
             (point.x / size.x as f32 + point.y / size.y as f32),
             (point.y / size.y as f32 - point.x / size.x as f32),
         );
-
-        // dbg!(x, y);
 
         Self {
             x: x as i64,
