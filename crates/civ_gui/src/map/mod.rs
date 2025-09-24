@@ -11,7 +11,10 @@ use std::ops::Deref;
 use zoom::map_zoom;
 
 use crate::{
-    assets::{tile::tiles_texture_atlas_layout, unit::units_texture_atlas_layout},
+    assets::{
+        select::select_texture_atlas_layout, tile::tiles_texture_atlas_layout,
+        unit::units_texture_atlas_layout,
+    },
     ingame::input::update_last_known_cursor_position,
     map::refresh::{
         react_city_removed, react_city_updated, react_unit_removed, react_unit_updated,
@@ -77,13 +80,15 @@ impl Deref for AtlasIndex {
 pub struct AtlasesResource {
     pub tiles: Handle<TextureAtlasLayout>,
     pub units: Handle<TextureAtlasLayout>,
+    pub select: Handle<TextureAtlasLayout>,
 }
 
 fn init_atlases(mut commands: Commands, mut atlas: ResMut<Assets<TextureAtlasLayout>>) {
     let tiles = atlas.add(tiles_texture_atlas_layout());
     let units = atlas.add(units_texture_atlas_layout());
+    let select = atlas.add(select_texture_atlas_layout());
 
-    commands.insert_resource(AtlasesResource::new(tiles, units));
+    commands.insert_resource(AtlasesResource::new(tiles, units, select));
 }
 
 #[derive(Debug, Resource, Deref, DerefMut, Default)]

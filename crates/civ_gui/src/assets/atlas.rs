@@ -12,7 +12,4 @@ pub const UNIT_SETTLER: AtlasIndex = AtlasIndex(24);
 pub const CITY_JUNGLE: AtlasIndex = AtlasIndex(12);
 
 // TODO
-pub const ITEM_SELECTED: AtlasIndex = AtlasIndex(154);
-
-// TODO
 pub const ACTION_SETTLE: AtlasIndex = AtlasIndex(12);

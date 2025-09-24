@@ -1,3 +1,4 @@
+mod animation;
 use bevy::prelude::*;
 use bevy_egui::egui;
 use bon::Builder;
@@ -10,6 +11,7 @@ use input::{on_click, update_last_known_cursor_position};
 use interact::unit::settle::on_setup_settle;
 use selected::{on_select_updated, SelectedResource};
 
+use crate::ingame::animation::{fade_animations, sprite_sheet_animations};
 use crate::ingame::input::info::on_try_tile_info;
 use crate::ingame::interact::unit::info::UnitInfoResource;
 use crate::ingame::interact::unit::settle::SettleCityNameResource;
@@ -52,6 +54,10 @@ impl Plugin for InGamePlugin {
             .add_systems(
                 Update,
                 (fade_animations,).run_if(in_state(AppState::InGame)),
+            )
+            .add_systems(
+                Update,
+                (sprite_sheet_animations,).run_if(in_state(AppState::InGame)),
             )
             .add_observer(on_click)
             .add_observer(on_try_select)
@@ -105,38 +111,6 @@ pub struct TryTileInfo(WorldPoint);
 
 #[derive(Debug, Event)]
 pub struct TryMenu(WorldPoint);
-
-#[derive(Debug, Component)]
-pub struct FadeAnimation {
-    timer: Timer,
-    direction: f32, // 1.0 = fade in, -1.0 = fade out
-}
-
-impl Default for FadeAnimation {
-    fn default() -> Self {
-        Self {
-            timer: Timer::from_seconds(0.5, TimerMode::Repeating),
-            direction: 1.0,
-        }
-    }
-}
-
-fn fade_animations(time: Res<Time>, mut query: Query<(&mut Sprite, &mut FadeAnimation)>) {
-    for (mut sprite, mut fade) in &mut query {
-        fade.timer.tick(time.delta());
-
-        // Update alpha value
-        let current_alpha = sprite.color.alpha();
-        let elapsed = time.delta().as_millis() as f32;
-        let new_alpha = (current_alpha + (elapsed / 100.0 * fade.direction)).clamp(0.0, 1.0);
-        sprite.color.set_alpha(new_alpha);
-
-        // Flip direction when timer finishes
-        if fade.timer.finished() {
-            fade.direction *= -1.0;
-        }
-    }
-}
 
 pub trait DrawUiComponent {
     fn draw(
