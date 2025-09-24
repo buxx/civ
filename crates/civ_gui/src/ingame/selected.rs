@@ -47,18 +47,17 @@ impl IntoBundle for Select {
     type DebugBundleType = ();
 
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
-        // FIXME: should not do this once (at startup ?) --> in ctx.atlases
-        let texture = ctx.assets.load(SELECT_ATLAS_PATH);
         let point = ctx.point().iso(SELECT_SIZE);
+        // FIXME: from constant in assets::select
         let animation = SpriteSheetAnimation::new(0, 3, 5);
 
         SelectBundle::new(
             *self,
             Sprite {
-                image: texture.clone(),
+                image: ctx.atlases.select_texture.clone(),
                 texture_atlas: Some(TextureAtlas {
                     index: animation.first_sprite_index,
-                    layout: ctx.atlases.select.clone(),
+                    layout: ctx.atlases.select_atlas.clone(),
                 }),
                 ..default()
             },

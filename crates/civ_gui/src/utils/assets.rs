@@ -11,11 +11,7 @@ use common::{
 use derive_more::Constructor;
 
 use crate::{
-    assets::{
-        atlas,
-        tile::{TILES_ATLAS_PATH, TILE_SIZE},
-        unit::{UNITS_ATLAS_PATH, UNIT_SIZE},
-    },
+    assets::{atlas, tile::TILE_SIZE, unit::UNIT_SIZE},
     ingame::{HexCity, HexTile, HexUnit},
     map::{AtlasIndex, AtlasesResource},
     utils::screen::Isometric,
@@ -129,8 +125,6 @@ impl IntoBundle for CtxTile<Tile> {
     type DebugBundleType = DebugHexTileBundle;
 
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> HexTileBundle {
-        // FIXME: should not do this once (at startup ?)
-        let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.point().iso(TILE_SIZE);
         let atlas_index = match self {
             CtxTile::Outside => atlas::TILE_BLACK,
@@ -140,10 +134,10 @@ impl IntoBundle for CtxTile<Tile> {
         HexTileBundle::new(
             HexTile,
             Sprite {
-                image: texture.clone(),
+                image: ctx.atlases.tiles_texture.clone(),
                 texture_atlas: Some(TextureAtlas {
                     index: *atlas_index,
-                    layout: ctx.atlases.tiles.clone(),
+                    layout: ctx.atlases.tiles_atlas.clone(),
                 }),
                 // anchor: Anchor::BottomCenter,
                 ..default()
@@ -184,7 +178,6 @@ impl IntoBundle for Vec<ClientUnit> {
     type DebugBundleType = ();
 
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
-        let texture = ctx.assets.load(UNITS_ATLAS_PATH);
         let point = ctx.point().iso(UNIT_SIZE);
         let atlas_index = atlas::UNIT_SETTLER;
 
@@ -192,10 +185,10 @@ impl IntoBundle for Vec<ClientUnit> {
         HexUnitBundle::new(
             HexUnit,
             Sprite {
-                image: texture.clone(),
+                image: ctx.atlases.units_texture.clone(),
                 texture_atlas: Some(TextureAtlas {
                     index: *atlas_index,
-                    layout: ctx.atlases.units.clone(),
+                    layout: ctx.atlases.units_atlas.clone(),
                 }),
                 ..default()
             },
@@ -231,8 +224,6 @@ impl IntoBundle for ClientCity {
     type DebugBundleType = ();
 
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
-        // FIXME: should not do this once (at startup ?)
-        let texture = ctx.assets.load(TILES_ATLAS_PATH);
         let point = ctx.point().iso(TILE_SIZE);
         let atlas_index = atlas::CITY_JUNGLE;
 
@@ -240,10 +231,10 @@ impl IntoBundle for ClientCity {
         HexUnitBundle::new(
             HexUnit,
             Sprite {
-                image: texture.clone(),
+                image: ctx.atlases.tiles_texture.clone(),
                 texture_atlas: Some(TextureAtlas {
                     index: *atlas_index,
-                    layout: ctx.atlases.tiles.clone(),
+                    layout: ctx.atlases.tiles_atlas.clone(),
                 }),
                 ..default()
             },
@@ -266,9 +257,6 @@ impl IntoBundle for ClientTask {
     type DebugBundleType = ();
 
     fn bundle(&self, ctx: &DrawHexContext, z: f32) -> Self::BundleType {
-        // TODO: use atlas index dedicated to tasks
-        let texture = ctx.assets.load(TILES_ATLAS_PATH);
-
         let atlas_index = match self.type_() {
             ClientTaskType::Idle => todo!(),
             ClientTaskType::Settle(_) => atlas::ACTION_SETTLE,
@@ -276,10 +264,10 @@ impl IntoBundle for ClientTask {
 
         ClientTaskBundle::new(
             Sprite {
-                image: texture.clone(),
+                image: ctx.atlases.tiles_texture.clone(),
                 texture_atlas: Some(TextureAtlas {
                     index: *atlas_index,
-                    layout: ctx.atlases.tiles.clone(),
+                    layout: ctx.atlases.tiles_atlas.clone(),
                 }),
                 ..default()
             },

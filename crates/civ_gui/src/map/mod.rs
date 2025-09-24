@@ -12,8 +12,9 @@ use zoom::map_zoom;
 
 use crate::{
     assets::{
-        select::select_texture_atlas_layout, tile::tiles_texture_atlas_layout,
-        unit::units_texture_atlas_layout,
+        select::{select_texture_atlas_layout, SELECT_ATLAS_PATH},
+        tile::{tiles_texture_atlas_layout, TILES_ATLAS_PATH},
+        unit::{units_texture_atlas_layout, UNITS_ATLAS_PATH},
     },
     ingame::input::update_last_known_cursor_position,
     map::refresh::{
@@ -78,17 +79,35 @@ impl Deref for AtlasIndex {
 // FIXME BS NOW: move
 #[derive(Resource, Constructor)]
 pub struct AtlasesResource {
-    pub tiles: Handle<TextureAtlasLayout>,
-    pub units: Handle<TextureAtlasLayout>,
-    pub select: Handle<TextureAtlasLayout>,
+    pub tiles_atlas: Handle<TextureAtlasLayout>,
+    pub tiles_texture: Handle<Image>,
+    pub units_atlas: Handle<TextureAtlasLayout>,
+    pub units_texture: Handle<Image>,
+    pub select_atlas: Handle<TextureAtlasLayout>,
+    pub select_texture: Handle<Image>,
 }
 
-fn init_atlases(mut commands: Commands, mut atlas: ResMut<Assets<TextureAtlasLayout>>) {
-    let tiles = atlas.add(tiles_texture_atlas_layout());
-    let units = atlas.add(units_texture_atlas_layout());
-    let select = atlas.add(select_texture_atlas_layout());
+fn init_atlases(
+    mut commands: Commands,
+    mut atlas: ResMut<Assets<TextureAtlasLayout>>,
+    assets: Res<AssetServer>,
+) {
+    let tiles_atlas = atlas.add(tiles_texture_atlas_layout());
+    let units_atlas = atlas.add(units_texture_atlas_layout());
+    let select_atlas = atlas.add(select_texture_atlas_layout());
 
-    commands.insert_resource(AtlasesResource::new(tiles, units, select));
+    let tiles_texture = assets.load(TILES_ATLAS_PATH);
+    let units_texture = assets.load(UNITS_ATLAS_PATH);
+    let select_texture = assets.load(SELECT_ATLAS_PATH);
+
+    commands.insert_resource(AtlasesResource::new(
+        tiles_atlas,
+        tiles_texture,
+        units_atlas,
+        units_texture,
+        select_atlas,
+        select_texture,
+    ));
 }
 
 #[derive(Debug, Resource, Deref, DerefMut, Default)]
