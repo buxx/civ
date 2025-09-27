@@ -63,6 +63,8 @@ pub enum PreferencesError {
     Deserialize(#[from] serde_json::Error),
     #[error("Can't determine home")]
     CantDetermineHome,
+    #[error("Cookie error: {0}")]
+    CookieRelatedError(String),
 }
 
 #[cfg(not(target_arch = "wasm32"))]

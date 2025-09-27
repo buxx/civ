@@ -2,6 +2,7 @@ use async_std::channel::{unbounded, Receiver, Sender};
 
 use bevy::prelude::*;
 use bon::Builder;
+#[cfg(not(target_arch = "wasm32"))]
 use civ_server::world::reader::WorldReaderError;
 #[cfg(not(target_arch = "wasm32"))]
 use civ_world::WorldGeneratorError;
@@ -124,6 +125,7 @@ pub struct WorldGenerationProgressReceiverResource(
     pub Option<Receiver<Progress<WorldGeneratorError>>>,
 );
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Resource)]
 pub struct StartEmbeddedServerReceiverResource(pub Option<Receiver<Progress<WorldReaderError>>>);
 

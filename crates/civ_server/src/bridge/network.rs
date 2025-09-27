@@ -113,7 +113,15 @@ impl Bridge for NetworkBridge {
                 NetEvent::Connected(_, _) => unreachable!(), // There is no connect() calls.
                 NetEvent::Accepted(_, _) => {}
                 NetEvent::Message(endpoint, input_data) => {
-                    let message: ClientToServerMessage = bincode::deserialize(input_data).unwrap();
+                    let message = match bincode::deserialize::<ClientToServerMessage>(input_data) {
+                        Ok(message) => message,
+                        Err(error) => {
+                            log::error!("Receive error: {error}");
+                            return;
+                        }
+                    };
+                    dbg!(&message);
+
                     match &message {
                         ClientToServerMessage::Network(message_) => match &message_ {
                             ClientToServerNetworkMessage::Hello(client, _) => {

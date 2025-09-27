@@ -12,8 +12,6 @@ civ_common = { path = "../civ_common" }
 civ_derive = { path = "../civ_derive", features = ["geo"] }
 bevy = { version = "0.15.1", features = ["dynamic_linking", "wayland"] }
 image = { version = "0.25.5", default-features = false }
-wayland-sys = { version = "0.31", features = ["dlopen"] }
-rand.workspace = true
 env_logger.workspace = true
 log.workspace = true
 bon.workspace = true
@@ -60,6 +58,7 @@ civ_world = { path = "../civ_world" }
 message-io.workspace = true
 clap.workspace = true
 home.workspace = true
+wayland-sys = { version = "0.31", features = ["dlopen"] }
 
 [profile.dev]
 opt-level = 1

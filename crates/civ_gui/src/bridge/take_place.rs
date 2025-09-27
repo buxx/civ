@@ -1,7 +1,12 @@
 use bevy::{prelude::*, window::PrimaryWindow};
-use common::network::message::ClientToServerEstablishmentMessage;
+use common::network::message::{
+    ClientToServerEstablishmentMessage, ClientToServerGameMessage, ClientToServerMessage,
+};
 
-use crate::{menu::join::TakePlaceEvent, to_server, utils::gui::window::IntoResolution};
+use crate::{
+    bridge::SendMessageToServerEvent, menu::join::TakePlaceEvent, to_server,
+    utils::gui::window::IntoResolution,
+};
 
 pub fn take_place(
     trigger: Trigger<TakePlaceEvent>,
@@ -16,8 +21,9 @@ pub fn take_place(
 
     info!("Taking place as {} ...", &flag);
 
-    to_server!(
-        commands,
-        ClientToServerEstablishmentMessage::TakePlace(flag, resolution)
-    );
+    commands.trigger(SendMessageToServerEvent(ClientToServerMessage::Game(
+        ClientToServerGameMessage::Establishment(ClientToServerEstablishmentMessage::TakePlace(
+            flag, resolution,
+        )),
+    )));
 }
