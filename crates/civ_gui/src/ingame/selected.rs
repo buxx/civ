@@ -6,7 +6,7 @@ use common::{
 use derive_more::Constructor;
 
 use crate::{
-    assets::select::{SELECT_ATLAS_PATH, SELECT_SIZE},
+    assets::select::SELECT_SIZE,
     core::GameSlicePropagated,
     ingame::{animation::SpriteSheetAnimation, GameFrameResource},
     map::AtlasesResource,
@@ -90,7 +90,7 @@ pub fn on_select_updated(
     if let (Some(slice), Some(frame)) = (&slice.0, frame.0) {
         let SelectUpdated { hex, selected } = trigger.event();
 
-        if let Ok(entity) = query.get_single() {
+        if let Ok(entity) = query.single() {
             commands.entity(entity).despawn();
         }
 

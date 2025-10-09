@@ -74,9 +74,11 @@ macro_rules! add_unit_component {
 #[macro_export]
 macro_rules! add_tile_component {
     ($app:expr, $resource:ty) => {
+        use bevy_egui::EguiContextPass;
+
         $app.init_resource::<$resource>()
             .add_systems(
-                Update,
+                EguiContextPass,
                 ($crate::ingame::interact::draw_component::<$resource>,)
                     .run_if(in_state(AppState::InGame)),
             )
@@ -145,11 +147,11 @@ pub fn draw_component<R: UiComponentResource>(
     let mut disband = false;
 
     if let (Some(component), Some(frame)) = (resource.component_mut(), frame.0) {
-        if let Ok((mut egui_settings, _)) = egui.get_single_mut() {
+        if let Ok((mut egui_settings, _)) = egui.single_mut() {
             egui_settings.scale_factor = EGUI_DISPLAY_FACTOR;
         }
 
-        let window = windows.single();
+        let Ok(window) = windows.single() else { return };
         disband = component.draw(contexts.ctx_mut(), window, &mut commands, frame);
     }
 

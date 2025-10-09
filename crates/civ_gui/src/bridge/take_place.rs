@@ -10,8 +10,10 @@ pub fn take_place(
     cameras: Query<&GlobalTransform, With<Camera>>,
 ) {
     let flag = trigger.event().0;
-    let window = windows.single();
-    let cam_transform = cameras.single();
+    let Ok(window) = windows.single() else { return };
+    let Ok(cam_transform) = cameras.single() else {
+        return;
+    };
     let resolution = (window, cam_transform).resolution();
 
     info!("Taking place as {} ...", &flag);

@@ -1,4 +1,4 @@
-use bevy::sprite::TextureAtlasLayout;
+use bevy::image::TextureAtlasLayout;
 use glam::UVec2;
 
 pub const UNIT_SIZE: UVec2 = UVec2::new(63, 48);

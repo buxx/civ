@@ -234,8 +234,10 @@ pub fn join_embedded_server(
     cameras: Query<&GlobalTransform>,
 ) {
     let conf = SingleConfiguration::from_state(&state.0.single);
-    let window = windows.single();
-    let cam_transform = cameras.single();
+    let Ok(window) = windows.single() else { return };
+    let Ok(cam_transform) = cameras.single() else {
+        return;
+    };
     let resolution = (window, cam_transform).resolution();
 
     to_server!(

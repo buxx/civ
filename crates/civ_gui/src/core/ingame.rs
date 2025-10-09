@@ -69,6 +69,9 @@ pub fn on_game_window_updated(
     if let Some(window) = &window.0 {
         let center = window.center();
         let position = center.iso(TILE_SIZE);
-        camera.single_mut().translation = Vec3::new(position.x, position.y, 0.);
+        let Ok(mut camera) = camera.single_mut() else {
+            return;
+        };
+        camera.translation = Vec3::new(position.x, position.y, 0.);
     }
 }

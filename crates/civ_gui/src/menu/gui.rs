@@ -9,9 +9,9 @@ use super::{
     state::{MenuStateResource, Screen},
 };
 
-fn set_scale_factor(mut context_settings: Query<(&mut EguiContextSettings, &Window)>) {
-    if let Ok((mut egui_settings, _)) = context_settings.get_single_mut() {
-        egui_settings.scale_factor = 2.0;
+fn set_scale_factor(mut settings: Query<(&mut EguiContextSettings, &Window)>) {
+    if let Ok((mut settings, _)) = settings.single_mut() {
+        settings.scale_factor = 2.0;
     }
 }
 

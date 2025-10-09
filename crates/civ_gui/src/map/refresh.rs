@@ -1,6 +1,6 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use common::{
-    game::{city::CityId, slice::ClientCity, unit::UnitId},
+    game::{slice::ClientCity, unit::UnitId},
     geo::{ImaginaryWorldPoint, WorldPoint},
     network::message::ClientToServerInGameMessage,
     space::window::Resolution,
@@ -41,9 +41,11 @@ pub fn refresh_grid(
     }
     let Some(grid) = &grid.0 else { return };
 
-    let window = windows.single();
+    let Ok(window) = windows.single() else { return };
     let screen_center_point = Vec2::new(window.width() / 2.0, window.height() / 2.0);
-    let (camera, cam_transform) = cameras.single();
+    let Ok((camera, cam_transform)) = cameras.single() else {
+        return;
+    };
 
     if let Ok(screen_center_world2d) =
         camera.viewport_to_world_2d(cam_transform, screen_center_point)
@@ -95,8 +97,8 @@ fn window_tiles_size(window: &Window, cam_transform: &GlobalTransform) -> (u64, 
 
 #[derive(Constructor)]
 struct GridUpdater<'a> {
-    window: &'a Window,
-    transform: &'a GlobalTransform,
+    _window: &'a Window,
+    _transform: &'a GlobalTransform,
     // TODO: To free-up usage of these objects, set them only for recreate method ?
     tiles: &'a Query<'a, 'a, Entity, With<HexTile>>,
     cities: &'a Query<'a, 'a, Entity, With<HexCity>>,
@@ -182,17 +184,17 @@ impl<'a> GridUpdater<'a> {
     fn create(&mut self, commands: &mut Commands, ctx: &'a DrawContext<'a>) {
         // Tiles
         for entity in self.tiles.iter() {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
 
         // Cities
         for entity in self.cities.iter() {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
 
         // Units
         for entity in self.units.iter() {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
 
         let grid_ = self.build_grid(commands, ctx);
@@ -220,7 +222,7 @@ impl<'a> GridUpdater<'a> {
                     grid_hex.city = city;
                 }
             }
-            Action::RemoveCity(_, point) => {
+            Action::RemoveCity(point) => {
                 self.despawn_city(grid, point, commands);
             }
             Action::SetUnit(unit) => {
@@ -234,7 +236,7 @@ impl<'a> GridUpdater<'a> {
                     grid_hex.units = units;
                 }
             }
-            Action::RemoveUnit(_, point) => {
+            Action::RemoveUnit(_unit_id, point) => {
                 self.despawn_units(grid, point, commands);
                 // FIXME BS NOW: respawn (removed unit was maybe not alone)
             }
@@ -245,7 +247,7 @@ impl<'a> GridUpdater<'a> {
         if let Some(grid) = grid.get(point) {
             if let Some(resource) = &grid.city {
                 // TODO: modify GridResource too ? (see refresh.rs, already done here)
-                commands.entity(resource.entity).despawn_recursive();
+                commands.entity(resource.entity).despawn();
             }
         }
     }
@@ -254,7 +256,7 @@ impl<'a> GridUpdater<'a> {
         if let Some(grid) = grid.get(point) {
             if let Some(resource) = &grid.units {
                 // TODO: modify GridResource too ? (see refresh.rs, already done here)
-                commands.entity(resource.entity).despawn_recursive();
+                commands.entity(resource.entity).despawn();
             }
         }
     }
@@ -264,7 +266,7 @@ pub enum Action {
     SetUnit(ClientUnit),
     RemoveUnit(UnitId, WorldPoint),
     SetCity(ClientCity),
-    RemoveCity(CityId, WorldPoint),
+    RemoveCity(WorldPoint),
 }
 
 // FIXME Optimizations :
@@ -294,8 +296,10 @@ pub fn react_game_slice_updated(
         debug!("Refresh from game slice: {slice:?}");
 
         // FIXME BS NOW: despawn must be in GridUpdater
-        let window = windows.single();
-        let (_, transform) = cameras.single();
+        let Ok(window) = windows.single() else { return };
+        let Ok((_, transform)) = cameras.single() else {
+            return;
+        };
 
         let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
         GridUpdater::new(window, transform, &tiles, &cities, &units).create(&mut commands, &ctx);
@@ -326,8 +330,10 @@ pub fn react_city_updated(
     if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
         debug!("Set city: {city_id}");
 
-        let window = windows.single();
-        let (_, transform) = cameras.single();
+        let Ok(window) = windows.single() else { return };
+        let Ok((_, transform)) = cameras.single() else {
+            return;
+        };
 
         let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
         GridUpdater::new(window, transform, &tiles, &cities, &units).update(
@@ -361,15 +367,17 @@ pub fn react_city_removed(
     if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
         debug!("Remove city: {city_id}");
 
-        let window = windows.single();
-        let (_, transform) = cameras.single();
+        let Ok(window) = windows.single() else { return };
+        let Ok((_, transform)) = cameras.single() else {
+            return;
+        };
 
         let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
         GridUpdater::new(window, transform, &tiles, &cities, &units).update(
             &mut commands,
             &ctx,
             grid,
-            Action::RemoveCity(city_id, point),
+            Action::RemoveCity(point),
         );
 
         commands.trigger(GameSlicePropagated);
@@ -397,8 +405,10 @@ pub fn react_unit_updated(
     if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
         debug!("Set unit: {unit_id}");
 
-        let window = windows.single();
-        let (_, transform) = cameras.single();
+        let Ok(window) = windows.single() else { return };
+        let Ok((_, transform)) = cameras.single() else {
+            return;
+        };
 
         let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
         GridUpdater::new(window, transform, &tiles, &cities, &units).update(
@@ -432,8 +442,10 @@ pub fn react_unit_removed(
     if let (Some(slice), Some(frame), Some(grid)) = (&slice.0, frame.0, &mut grid.0) {
         debug!("Remove unit: {unit_id}");
 
-        let window = windows.single();
-        let (_, transform) = cameras.single();
+        let Ok(window) = windows.single() else { return };
+        let Ok((_, transform)) = cameras.single() else {
+            return;
+        };
 
         let ctx = DrawContext::new(slice, &assets, &atlases, &frame);
         GridUpdater::new(window, transform, &tiles, &cities, &units).update(
