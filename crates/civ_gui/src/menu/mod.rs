@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{EguiContextPass, EguiPlugin};
+use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
 
 use derive_more::Constructor;
 use despawn::despawn_menu;
@@ -31,13 +31,14 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         let state = MenuStateResource(MenuState::from_context(&self.context));
 
-        app.add_plugins(EguiPlugin {
-            enable_multipass_for_primary_context: true,
-        })
-        .insert_resource(state)
-        .add_systems(OnEnter(AppState::Menu), spawn_menu)
-        .add_systems(EguiContextPass, gui::gui.run_if(in_state(AppState::Menu)))
-        .add_systems(OnExit(AppState::Menu), despawn_menu)
-        .add_observer(switch);
+        app.add_plugins(EguiPlugin::default())
+            .insert_resource(state)
+            .add_systems(OnEnter(AppState::Menu), spawn_menu)
+            .add_systems(
+                EguiPrimaryContextPass,
+                gui::gui.run_if(in_state(AppState::Menu)),
+            )
+            .add_systems(OnExit(AppState::Menu), despawn_menu)
+            .add_observer(switch);
     }
 }

@@ -74,11 +74,11 @@ macro_rules! add_unit_component {
 #[macro_export]
 macro_rules! add_tile_component {
     ($app:expr, $resource:ty) => {
-        use bevy_egui::EguiContextPass;
+        use bevy_egui::EguiPrimaryContextPass;
 
         $app.init_resource::<$resource>()
             .add_systems(
-                EguiContextPass,
+                EguiPrimaryContextPass,
                 ($crate::ingame::interact::draw_component::<$resource>,)
                     .run_if(in_state(AppState::InGame)),
             )
@@ -143,7 +143,7 @@ pub fn draw_component<R: UiComponentResource>(
     mut contexts: EguiContexts,
     frame: Res<GameFrameResource>,
     windows: Query<&Window>,
-) {
+) -> Result {
     let mut disband = false;
 
     if let (Some(component), Some(frame)) = (resource.component_mut(), frame.0) {
@@ -151,13 +151,15 @@ pub fn draw_component<R: UiComponentResource>(
             egui_settings.scale_factor = EGUI_DISPLAY_FACTOR;
         }
 
-        let Ok(window) = windows.single() else { return };
-        disband = component.draw(contexts.ctx_mut(), window, &mut commands, frame);
+        let window = windows.single()?;
+        disband = component.draw(contexts.ctx_mut()?, window, &mut commands, frame);
     }
 
     if disband {
         *resource.component_mut() = None;
     }
+
+    Ok(())
 }
 
 pub trait WithUnitId {
@@ -183,7 +185,7 @@ pub fn city_resource_on_event<
     R: Resource + Set<Option<T>>,
     T: From<ClientCity>,
 >(
-    trigger: Trigger<E>,
+    trigger: On<E>,
     slice: Res<GameSliceResource>,
     mut resource: ResMut<R>,
 ) {
@@ -199,7 +201,7 @@ pub fn unit_resource_on_event<
     R: Resource + Set<Option<T>>,
     T: From<ClientUnit>,
 >(
-    trigger: Trigger<E>,
+    trigger: On<E>,
     slice: Res<GameSliceResource>,
     mut resource: ResMut<R>,
 ) {
@@ -215,7 +217,7 @@ pub fn tile_resource_on_event<
     R: Resource + Set<Option<T>>,
     T: for<'a> TryFrom<(GeoContext, &'a CtxTile<Tile>)>,
 >(
-    trigger: Trigger<E>,
+    trigger: On<E>,
     slice: Res<GameSliceResource>,
     mut resource: ResMut<R>,
 ) {
@@ -233,7 +235,7 @@ pub fn rebuild_unit_resource_on_slice_propagated<
     R: Resource + Get<Option<T>> + Set<Option<T>>,
     T: From<ClientUnit> + WithUnitId,
 >(
-    _trigger: Trigger<GameSlicePropagated>,
+    _trigger: On<GameSlicePropagated>,
     slice: Res<GameSliceResource>,
     mut resource: ResMut<R>,
 ) {
@@ -252,7 +254,7 @@ pub fn rebuild_city_resource_on_slice_propagated<
     R: Resource + Get<Option<T>> + Set<Option<T>>,
     T: From<ClientCity> + WithCityId,
 >(
-    _trigger: Trigger<GameSlicePropagated>,
+    _trigger: On<GameSlicePropagated>,
     slice: Res<GameSliceResource>,
     mut resource: ResMut<R>,
 ) {
@@ -271,7 +273,7 @@ pub fn rebuild_tile_resource_on_slice_propagated<
     R: Resource + Get<Option<T>> + Set<Option<T>>,
     T: for<'a> TryFrom<(GeoContext, &'a CtxTile<Tile>)> + Geo,
 >(
-    _trigger: Trigger<GameSlicePropagated>,
+    _trigger: On<GameSlicePropagated>,
     slice: Res<GameSliceResource>,
     mut resource: ResMut<R>,
 ) {

@@ -32,7 +32,7 @@ impl ZoomType {
 
 pub fn map_zoom(
     mut camera: Query<&mut Transform, With<Camera2d>>,
-    mut event: EventReader<MouseWheel>,
+    mut event: MessageReader<MouseWheel>,
 ) {
     if let Ok(mut camera) = camera.single_mut() {
         for ev in event.read() {

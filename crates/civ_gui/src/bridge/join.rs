@@ -9,7 +9,7 @@ use common::{
 
 use crate::{bridge::SendMessageToServerEvent, menu::join::JoinEvent, state::ClientIdResource};
 
-pub fn join(trigger: Trigger<JoinEvent>, mut commands: Commands, client_id: Res<ClientIdResource>) {
+pub fn join(trigger: On<JoinEvent>, mut commands: Commands, client_id: Res<ClientIdResource>) {
     let player_id = trigger.event().0;
     let client_id = client_id.0;
     info!(

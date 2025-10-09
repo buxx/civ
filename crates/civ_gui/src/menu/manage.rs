@@ -38,7 +38,7 @@
 // }
 
 // pub fn react_connect(
-//     _trigger: Trigger<ConnectEvent>,
+//     _trigger: On<ConnectEvent>,
 //     to_server_sender: Res<ClientToServerSenderResource>,
 //     player_id_input: Res<PlayerIdInput>,
 //     keep_connected_input: Res<KeepConnectedInput>,
@@ -79,7 +79,7 @@
 // }
 
 // pub fn take_place(
-//     _trigger: Trigger<TakePlaceEvent>,
+//     _trigger: On<TakePlaceEvent>,
 //     to_server_sender: Res<ClientToServerSenderResource>,
 //     // flag_input: Res<FlagInput>,
 //     mut taking_place: ResMut<TakingPlaceResource>,
@@ -99,7 +99,7 @@
 // }
 
 // pub fn react_establishment(
-//     trigger: Trigger<EstablishmentMessage>,
+//     trigger: On<EstablishmentMessage>,
 //     mut next_state: ResMut<NextState<AppState>>,
 //     mut connecting: ResMut<ConnectingResource>,
 //     mut taking_place: ResMut<TakingPlaceResource>,

@@ -20,7 +20,7 @@ pub fn update_last_known_cursor_position(
 }
 
 pub fn on_click(
-    click: Trigger<Pointer<Click>>,
+    click: On<Pointer<Click>>,
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
@@ -32,7 +32,7 @@ pub fn on_click(
     if let Some(Some(point)) = window
         .cursor_position()
         .and_then(|p| camera.viewport_to_world_2d(cam_transform, p).ok())
-        .map(|p| ImaginaryWorldPoint::from_iso(&TILE_SIZE, &p).into())
+        .map(|p| ImaginaryWorldPoint::from_iso(&TILE_SIZE, &glam::Vec2::new(p.x, p.y)).into())
     {
         match click.event().button {
             PointerButton::Primary => commands.trigger(TrySelect(point)),

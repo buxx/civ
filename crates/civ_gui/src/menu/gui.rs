@@ -20,10 +20,10 @@ pub fn gui(
     mut contexts: EguiContexts,
     egui: Query<(&mut EguiContextSettings, &Window)>,
     mut state: ResMut<MenuStateResource>,
-) {
+) -> Result {
     set_scale_factor(egui);
 
-    egui::TopBottomPanel::top("menu").show(contexts.ctx_mut(), |ui| {
+    egui::TopBottomPanel::top("menu").show(contexts.ctx_mut()?, |ui| {
         if let Some((label, progress)) = &state.progress {
             ui.label(format!("{} {}%", label, (progress * 100.) as isize));
             return;
@@ -43,4 +43,6 @@ pub fn gui(
             Screen::Join => join::draw(ui, &mut state.join, commands),
         }
     });
+
+    Ok(())
 }

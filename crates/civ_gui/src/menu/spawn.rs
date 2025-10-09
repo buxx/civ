@@ -24,7 +24,7 @@ pub fn spawn_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ..default()
                 },
                 TextLayout {
-                    justify: JustifyText::Center,
+                    justify: Justify::Center,
                     ..default()
                 },
                 TextColor(Color::srgb(0.9, 0.0, 0.0)),

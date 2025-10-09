@@ -20,7 +20,7 @@ use super::GameWindowUpdated;
 // FIXME BS NOW: split into events (macro ?)
 // TODO: To improve performances, separate each state message in event to lock ResMut only when needed
 pub fn react_server_message(
-    trigger: Trigger<MessageReceivedFromServerEvent>,
+    trigger: On<MessageReceivedFromServerEvent>,
     mut commands: Commands,
     mut state: ResMut<MenuStateResource>,
     mut frame: ResMut<GameFrameResource>,
@@ -62,7 +62,7 @@ pub fn react_server_message(
 }
 
 pub fn on_game_window_updated(
-    _trigger: Trigger<GameWindowUpdated>,
+    _trigger: On<GameWindowUpdated>,
     window: Res<GameWindowResource>,
     mut camera: Query<&mut Transform, With<Camera2d>>,
 ) {

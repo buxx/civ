@@ -73,7 +73,7 @@ pub struct DrawContext<'a> {
 }
 
 impl DrawContext<'_> {
-    pub fn with(&self, point: WorldPoint) -> DrawHexContext {
+    pub fn with(&self, point: WorldPoint) -> DrawHexContext<'_> {
         DrawHexContext::from_ctx(self, point)
     }
 }

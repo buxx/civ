@@ -47,8 +47,9 @@ pub fn refresh_grid(
         return;
     };
 
-    if let Ok(screen_center_world2d) =
-        camera.viewport_to_world_2d(cam_transform, screen_center_point)
+    if let Ok(screen_center_world2d) = camera
+        .viewport_to_world_2d(cam_transform, screen_center_point)
+        .map(|p| glam::Vec2::new(p.x, p.y))
     {
         if need_refresh(window, cam_transform, grid, &screen_center_world2d) {
             let center = ImaginaryWorldPoint::from_iso(&TILE_SIZE, &screen_center_world2d);
@@ -67,7 +68,7 @@ fn need_refresh(
     window: &Window,
     cam_transform: &GlobalTransform,
     grid: &Grid,
-    screen_center_world2d: &Vec2,
+    screen_center_world2d: &glam::Vec2,
 ) -> bool {
     let screen_center_world_point =
         ImaginaryWorldPoint::from_iso(&TILE_SIZE, screen_center_world2d);
@@ -275,7 +276,7 @@ pub enum Action {
 // - manage unit & cities like tiles at server side
 #[allow(clippy::complexity)]
 pub fn react_game_slice_updated(
-    _trigger: Trigger<GameSliceUpdated>,
+    _trigger: On<GameSliceUpdated>,
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
@@ -311,7 +312,7 @@ pub fn react_game_slice_updated(
 
 #[allow(clippy::complexity)]
 pub fn react_city_updated(
-    trigger: Trigger<CityUpdated>,
+    trigger: On<CityUpdated>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     slice: Res<GameSliceResource>,
@@ -349,7 +350,7 @@ pub fn react_city_updated(
 
 #[allow(clippy::complexity)]
 pub fn react_city_removed(
-    trigger: Trigger<CityRemoved>,
+    trigger: On<CityRemoved>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     slice: Res<GameSliceResource>,
@@ -386,7 +387,7 @@ pub fn react_city_removed(
 
 #[allow(clippy::complexity)]
 pub fn react_unit_updated(
-    trigger: Trigger<UnitUpdated>,
+    trigger: On<UnitUpdated>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     slice: Res<GameSliceResource>,
@@ -424,7 +425,7 @@ pub fn react_unit_updated(
 
 #[allow(clippy::complexity)]
 pub fn react_unit_removed(
-    trigger: Trigger<UnitRemoved>,
+    trigger: On<UnitRemoved>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     slice: Res<GameSliceResource>,
