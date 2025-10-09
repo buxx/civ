@@ -39,14 +39,4 @@ pub fn on_try_menu(
             }
         }
     }
-
-    // Is selection, open menu on it
-    if let Some(selected) = selected.0 {
-        match selected {
-            Selected::Unit(SelectedUnit::One(unit_id)) => {
-                commands.trigger(SetupUnitMenu(unit_id));
-            }
-            Selected::City(_city_id) => {}
-        }
-    }
 }
