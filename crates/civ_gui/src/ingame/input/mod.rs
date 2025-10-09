@@ -20,7 +20,7 @@ pub fn update_last_known_cursor_position(
 }
 
 pub fn on_click(
-    click: Trigger<Pointer<Click>>,
+    click: On<Pointer<Click>>,
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,

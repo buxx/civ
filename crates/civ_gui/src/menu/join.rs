@@ -111,7 +111,7 @@ pub fn draw(ui: &mut Ui, state: &mut JoinState, mut commands: Commands) {
 }
 
 // pub fn connect(
-//     trigger: Trigger<ConnectEvent>,
+//     trigger: On<ConnectEvent>,
 //     commands: Commands,
 //     mut state: ResMut<MenuStateResource>,
 //     // to_server_sender: Res<ClientToServerSenderResource>,
@@ -134,7 +134,7 @@ pub fn draw(ui: &mut Ui, state: &mut JoinState, mut commands: Commands) {
 // }
 
 // pub fn take_place(
-//     trigger: Trigger<TakePlaceEvent>,
+//     trigger: On<TakePlaceEvent>,
 //     commands: Commands,
 //     mut state: ResMut<MenuStateResource>,
 //     mut client: ResMut<ClientResource>,

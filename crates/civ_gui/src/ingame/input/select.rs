@@ -8,7 +8,7 @@ use crate::{
 use super::TrySelect;
 
 pub fn on_try_select(
-    trigger: Trigger<TrySelect>,
+    trigger: On<TrySelect>,
     mut commands: Commands,
     mut selected: ResMut<SelectedResource>,
     grid: Res<GridResource>,

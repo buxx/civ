@@ -4,7 +4,7 @@ use common::network::message::ClientToServerEstablishmentMessage;
 use crate::{menu::join::TakePlaceEvent, to_server, utils::gui::window::IntoResolution};
 
 pub fn take_place(
-    trigger: Trigger<TakePlaceEvent>,
+    trigger: On<TakePlaceEvent>,
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<&GlobalTransform, With<Camera>>,

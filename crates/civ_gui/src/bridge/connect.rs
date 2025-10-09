@@ -12,7 +12,7 @@ use super::{ClientToServerReceiverResource, ServerToClientSenderResource};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub fn connect(
-    trigger: Trigger<ConnectEvent>,
+    trigger: On<ConnectEvent>,
     to_server_receiver: Res<ClientToServerReceiverResource>,
     from_server_sender: Res<ServerToClientSenderResource>,
     mut state: ResMut<MenuStateResource>,
@@ -29,7 +29,7 @@ pub fn connect(
 
 #[cfg(target_arch = "wasm32")]
 pub fn connect(
-    trigger: Trigger<ConnectEvent>,
+    trigger: On<ConnectEvent>,
     mut task_runner: AsyncTaskRunner<'_, ()>,
     to_server_receiver: Res<ClientToServerReceiverResource>,
     from_server_sender: Res<ServerToClientSenderResource>,

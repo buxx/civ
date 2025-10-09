@@ -10,7 +10,7 @@ path = "src/main.rs"
 [dependencies]
 civ_common = { path = "../civ_common" }
 civ_derive = { path = "../civ_derive", features = ["geo"] }
-bevy = { version = "0.16", features = ["dynamic_linking", "wayland"] }
+bevy = { version = "0.17.2", features = ["dynamic_linking", "wayland"] }
 image = { version = "0.25.5", default-features = false }
 wayland-sys = { version = "0.31", features = ["dlopen"] }
 rand.workspace = true
@@ -40,7 +40,7 @@ bevy_async_task = "0.4.0"
 async-wsocket = "0.12.0"
 async-std = "1.13.0"
 futures = "0.3.31"
-bevy_egui = "0.34"
+bevy_egui = "0.37.1"
 strum.workspace = true
 strum_macros.workspace = true
 hexx = "0.20"

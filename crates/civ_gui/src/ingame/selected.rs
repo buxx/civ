@@ -79,7 +79,7 @@ pub struct SelectBundle {
 }
 
 pub fn on_select_updated(
-    trigger: Trigger<SelectUpdated>,
+    trigger: On<SelectUpdated>,
     mut commands: Commands,
     query: Query<Entity, With<Select>>,
     atlases: Res<AtlasesResource>,
@@ -108,7 +108,7 @@ pub fn on_select_updated(
 }
 
 pub fn select_on_game_slice_propagated(
-    _trigger: Trigger<GameSlicePropagated>,
+    _trigger: On<GameSlicePropagated>,
     mut commands: Commands,
     slice: Res<GameSliceResource>,
     query: Query<(&Select, Entity)>,

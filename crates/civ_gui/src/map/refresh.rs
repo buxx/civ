@@ -275,7 +275,7 @@ pub enum Action {
 // - manage unit & cities like tiles at server side
 #[allow(clippy::complexity)]
 pub fn react_game_slice_updated(
-    _trigger: Trigger<GameSliceUpdated>,
+    _trigger: On<GameSliceUpdated>,
     mut commands: Commands,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
@@ -311,7 +311,7 @@ pub fn react_game_slice_updated(
 
 #[allow(clippy::complexity)]
 pub fn react_city_updated(
-    trigger: Trigger<CityUpdated>,
+    trigger: On<CityUpdated>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     slice: Res<GameSliceResource>,
@@ -349,7 +349,7 @@ pub fn react_city_updated(
 
 #[allow(clippy::complexity)]
 pub fn react_city_removed(
-    trigger: Trigger<CityRemoved>,
+    trigger: On<CityRemoved>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     slice: Res<GameSliceResource>,
@@ -386,7 +386,7 @@ pub fn react_city_removed(
 
 #[allow(clippy::complexity)]
 pub fn react_unit_updated(
-    trigger: Trigger<UnitUpdated>,
+    trigger: On<UnitUpdated>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     slice: Res<GameSliceResource>,
@@ -424,7 +424,7 @@ pub fn react_unit_updated(
 
 #[allow(clippy::complexity)]
 pub fn react_unit_removed(
-    trigger: Trigger<UnitRemoved>,
+    trigger: On<UnitRemoved>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<(&Camera, &GlobalTransform)>,
     slice: Res<GameSliceResource>,

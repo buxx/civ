@@ -9,7 +9,7 @@ use crate::{
     map::grid::GridResource,
 };
 
-pub fn on_try_menu(trigger: Trigger<TryMenu>, grid: Res<GridResource>, mut commands: Commands) {
+pub fn on_try_menu(trigger: On<TryMenu>, grid: Res<GridResource>, mut commands: Commands) {
     let hex = trigger.event().0;
 
     if let Some(grid) = &grid.0 {

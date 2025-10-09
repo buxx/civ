@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{core::GameSliceUpdated, ingame::GameWindowResource};
 
 pub fn react_game_window_updated(
-    _trigger: Trigger<GameSliceUpdated>,
+    _trigger: On<GameSliceUpdated>,
     window: Res<GameWindowResource>,
     mut _camera: Query<&mut Transform, With<Camera2d>>,
 ) {

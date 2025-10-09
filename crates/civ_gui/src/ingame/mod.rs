@@ -123,7 +123,7 @@ pub trait DrawUiComponent {
 }
 
 fn update_progresses(
-    trigger: Trigger<GameFrameUpdated>,
+    trigger: On<GameFrameUpdated>,
     mut query: Query<(&mut Progress, &mut Text2d)>,
 ) {
     let frame = trigger.event().0;
