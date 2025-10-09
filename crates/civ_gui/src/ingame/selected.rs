@@ -6,7 +6,7 @@ use common::{
 use derive_more::Constructor;
 
 use crate::{
-    assets::select::{SELECT_ATLAS_PATH, SELECT_SIZE},
+    assets::select::SELECT_SIZE,
     core::GameSlicePropagated,
     ingame::{animation::SpriteSheetAnimation, GameFrameResource},
     map::AtlasesResource,
@@ -79,7 +79,7 @@ pub struct SelectBundle {
 }
 
 pub fn on_select_updated(
-    trigger: Trigger<SelectUpdated>,
+    trigger: On<SelectUpdated>,
     mut commands: Commands,
     query: Query<Entity, With<Select>>,
     atlases: Res<AtlasesResource>,
@@ -90,7 +90,7 @@ pub fn on_select_updated(
     if let (Some(slice), Some(frame)) = (&slice.0, frame.0) {
         let SelectUpdated { hex, selected } = trigger.event();
 
-        if let Ok(entity) = query.get_single() {
+        if let Ok(entity) = query.single() {
             commands.entity(entity).despawn();
         }
 
@@ -108,7 +108,7 @@ pub fn on_select_updated(
 }
 
 pub fn select_on_game_slice_propagated(
-    _trigger: Trigger<GameSlicePropagated>,
+    _trigger: On<GameSlicePropagated>,
     mut commands: Commands,
     slice: Res<GameSliceResource>,
     query: Query<(&Select, Entity)>,

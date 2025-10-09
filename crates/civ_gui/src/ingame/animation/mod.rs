@@ -54,7 +54,7 @@ pub fn fade_animations(time: Res<Time>, mut query: Query<(&mut Sprite, &mut Fade
         sprite.color.set_alpha(new_alpha);
 
         // Flip direction when timer finishes
-        if fade.timer.finished() {
+        if fade.timer.is_finished() {
             fade.direction *= -1.0;
         }
     }

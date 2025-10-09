@@ -25,25 +25,29 @@ pub fn handle_map_offset_by_keys(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut camera: Query<&mut Transform, With<Camera2d>>,
 ) {
+    let Ok(mut camera) = camera.single_mut() else {
+        return;
+    };
+
     if keyboard.pressed(KeyCode::ArrowLeft) {
-        let translation = camera.single().translation;
+        let translation = camera.translation;
         let offset = map_offset_value(&keyboard);
-        camera.single_mut().translation = Vec3::new(translation.x - offset, translation.y, 0.);
+        camera.translation = Vec3::new(translation.x - offset, translation.y, 0.);
     }
     if keyboard.pressed(KeyCode::ArrowUp) {
-        let translation = camera.single().translation;
+        let translation = camera.translation;
         let offset = map_offset_value(&keyboard);
-        camera.single_mut().translation = Vec3::new(translation.x, translation.y + offset, 0.);
+        camera.translation = Vec3::new(translation.x, translation.y + offset, 0.);
     }
     if keyboard.pressed(KeyCode::ArrowRight) {
-        let translation = camera.single().translation;
+        let translation = camera.translation;
         let offset = map_offset_value(&keyboard);
-        camera.single_mut().translation = Vec3::new(translation.x + offset, translation.y, 0.);
+        camera.translation = Vec3::new(translation.x + offset, translation.y, 0.);
     }
     if keyboard.pressed(KeyCode::ArrowDown) {
-        let translation = camera.single().translation;
+        let translation = camera.translation;
         let offset = map_offset_value(&keyboard);
-        camera.single_mut().translation = Vec3::new(translation.x, translation.y - offset, 0.);
+        camera.translation = Vec3::new(translation.x, translation.y - offset, 0.);
     }
 }
 
@@ -56,8 +60,9 @@ pub fn map_dragging(
     mut dragging: ResMut<DraggingMap>,
 ) {
     if buttons.pressed(MouseButton::Left) {
-        if let Some(current_position) = windows.single().cursor_position() {
-            if let Ok(mut camera) = camera_query.get_single_mut() {
+        let Ok(window) = windows.single() else { return };
+        if let Some(current_position) = window.cursor_position() {
+            if let Ok(mut camera) = camera_query.single_mut() {
                 dragging.0 = true;
 
                 let delta_x = (last_position.0.x - current_position.x) * camera.scale.x;

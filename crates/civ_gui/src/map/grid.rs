@@ -35,7 +35,7 @@ impl std::ops::DerefMut for Grid {
 
 #[derive(Debug, Constructor)]
 pub struct GridHex {
-    pub point: WorldPoint,
+    pub _point: WorldPoint,
     #[allow(unused)] // Only used in that feature for now
     pub tile: GridHexResource<CtxTile<Tile>>,
     pub city: Option<GridHexResource<ClientCity>>,

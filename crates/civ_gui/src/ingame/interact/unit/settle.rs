@@ -90,7 +90,7 @@ impl DrawUiComponent for SettleCityName {
     }
 }
 
-pub fn on_setup_settle(trigger: Trigger<SetupSettle>, mut commands: Commands) {
+pub fn on_setup_settle(trigger: On<SetupSettle>, mut commands: Commands) {
     let event = trigger.event();
     debug!("Send settle request to server ({}, {})", event.0, &event.1);
 

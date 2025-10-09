@@ -140,7 +140,7 @@ pub struct SendMessageToServerEvent(pub ClientToServerMessage);
 pub struct MessageReceivedFromServerEvent(pub ServerToClientMessage);
 
 fn send_to_server(
-    trigger: Trigger<SendMessageToServerEvent>,
+    trigger: On<SendMessageToServerEvent>,
     to_server_sender: Res<ClientToServerSenderResource>,
 ) {
     to_server_sender

@@ -1,4 +1,4 @@
-use bevy::{ecs::prelude::*, prelude::*, sprite::Anchor};
+use bevy::{ecs::prelude::*, prelude::*};
 use common::{
     game::{
         slice::{ClientCity, ClientUnit, GameSlice},
@@ -67,13 +67,13 @@ pub trait Spawn: IntoBundle {
 #[derive(Constructor)]
 pub struct DrawContext<'a> {
     pub slice: &'a GameSlice,
-    pub assets: &'a AssetServer,
+    pub _assets: &'a AssetServer,
     pub atlases: &'a AtlasesResource,
     pub frame: &'a GameFrame,
 }
 
 impl DrawContext<'_> {
-    pub fn with(&self, point: WorldPoint) -> DrawHexContext {
+    pub fn with(&self, point: WorldPoint) -> DrawHexContext<'_> {
         DrawHexContext::from_ctx(self, point)
     }
 }

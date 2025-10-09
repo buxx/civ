@@ -3,18 +3,13 @@ use bevy::prelude::*;
 use crate::{
     ingame::{
         menu::{city::SetupCityMenu, unit::SetupUnitMenu},
-        selected::{SelectUpdated, Selected, SelectedResource, SelectedUnit},
+        selected::{SelectUpdated, Selected, SelectedUnit},
         TryMenu,
     },
     map::grid::GridResource,
 };
 
-pub fn on_try_menu(
-    trigger: Trigger<TryMenu>,
-    grid: Res<GridResource>,
-    selected: Res<SelectedResource>,
-    mut commands: Commands,
-) {
+pub fn on_try_menu(trigger: On<TryMenu>, grid: Res<GridResource>, mut commands: Commands) {
     let hex = trigger.event().0;
 
     if let Some(grid) = &grid.0 {
@@ -37,16 +32,6 @@ pub fn on_try_menu(
                     return;
                 }
             }
-        }
-    }
-
-    // Is selection, open menu on it
-    if let Some(selected) = selected.0 {
-        match selected {
-            Selected::Unit(SelectedUnit::One(unit_id)) => {
-                commands.trigger(SetupUnitMenu(unit_id));
-            }
-            Selected::City(_city_id) => {}
         }
     }
 }

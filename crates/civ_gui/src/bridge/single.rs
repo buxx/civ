@@ -98,7 +98,7 @@ pub struct FromScratchConfig {
 pub struct LoadFromConfig;
 
 pub fn start_single(
-    _trigger: Trigger<StartSingleEvent>,
+    _trigger: On<StartSingleEvent>,
     state: Res<MenuStateResource>,
     mut progress: ResMut<WorldGenerationProgressReceiverResource>,
 ) {
@@ -161,7 +161,7 @@ pub fn listen_world_generation_progress(
 }
 
 pub fn start_embedded_server(
-    _trigger: Trigger<StartEmbeddedServer>,
+    _trigger: On<StartEmbeddedServer>,
     mut to_server_sender: ResMut<ClientToServerSenderResource>,
     mut from_server_receiver: ResMut<ServerToClientReceiverResource>,
     mut progress: ResMut<StartEmbeddedServerReceiverResource>,
@@ -227,19 +227,21 @@ pub fn listen_start_embedded_server_progress(
 }
 
 pub fn join_embedded_server(
-    _trigger: Trigger<EmbeddedServerReady>,
+    _trigger: On<EmbeddedServerReady>,
     mut commands: Commands,
     state: Res<MenuStateResource>,
     windows: Query<&Window, With<PrimaryWindow>>,
     cameras: Query<&GlobalTransform>,
-) {
+) -> Result {
     let conf = SingleConfiguration::from_state(&state.0.single);
-    let window = windows.single();
-    let cam_transform = cameras.single();
+    let window = windows.single()?;
+    let cam_transform = cameras.single()?;
     let resolution = (window, cam_transform).resolution();
 
     to_server!(
         commands,
         ClientToServerEstablishmentMessage::TakePlace(conf.flag(), resolution)
     );
+
+    Ok(())
 }

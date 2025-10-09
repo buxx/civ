@@ -4,7 +4,7 @@ use common::geo::GeoContext;
 use crate::ingame::{menu::info::SetupTileInfoMenu, GameSliceResource, TryTileInfo};
 
 pub fn on_try_tile_info(
-    trigger: Trigger<TryTileInfo>,
+    trigger: On<TryTileInfo>,
     slice: Res<GameSliceResource>,
     mut commands: Commands,
 ) {

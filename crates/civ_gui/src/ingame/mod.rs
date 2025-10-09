@@ -100,8 +100,8 @@ pub struct HexUnit;
 #[derive(Component, Debug, Clone, Copy)]
 pub struct HexCity;
 
-#[derive(Component, Deref, DerefMut)]
-pub struct Point(pub WorldPoint);
+// #[derive(Component, Deref, DerefMut)]
+// pub struct Point(pub WorldPoint);
 
 #[derive(Debug, Event)]
 pub struct TrySelect(WorldPoint);
@@ -123,7 +123,7 @@ pub trait DrawUiComponent {
 }
 
 fn update_progresses(
-    trigger: Trigger<GameFrameUpdated>,
+    trigger: On<GameFrameUpdated>,
     mut query: Query<(&mut Progress, &mut Text2d)>,
 ) {
     let frame = trigger.event().0;
