@@ -24,7 +24,7 @@ macro_rules! add_city_component {
     ($app:expr, $resource:ty) => {
         $app.init_resource::<$resource>()
             .add_systems(
-                Update,
+                EguiPrimaryContextPass,
                 ($crate::ingame::interact::draw_component::<$resource>,)
                     .run_if(in_state(AppState::InGame)),
             )
@@ -50,7 +50,7 @@ macro_rules! add_unit_component {
     ($app:expr, $resource:ty) => {
         $app.init_resource::<$resource>()
             .add_systems(
-                Update,
+                EguiPrimaryContextPass,
                 ($crate::ingame::interact::draw_component::<$resource>,)
                     .run_if(in_state(AppState::InGame)),
             )
